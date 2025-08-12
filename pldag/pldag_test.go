@@ -13,7 +13,7 @@ func Test_Model_SetPrimities(t *testing.T) {
 
 	assert.Equal(
 		t,
-		*model.primities,
+		*model.variables,
 		map[string]any{
 			"x": nil,
 			"y": nil,
@@ -32,10 +32,30 @@ func Test_Model_SetAnd(t *testing.T) {
 	assert.Equal(
 		t,
 		Operation{
-			variables: []string{"x", "y"},
+			variables: map[string]any{
+				"x": nil,
+				"y": nil,
+			},
 			operation: OperationAnd,
 			bias:      -2,
 		},
 		composite,
+	)
+}
+
+func Test_Model_NewLinearSystem_givenAnd(t *testing.T) {
+	model := New()
+	model.SetPrimities([]string{"x", "y"}...)
+	model.SetAnd([]string{"x", "y"}...)
+
+	linearSystem := model.NewLinearSystem()
+
+	assert.Equal(
+		t,
+		linearSystem,
+		LinearSystem{
+			matrix:          [][]int{{1, 1, -2}, {-1, -1, 1}},
+			rightHandVector: []int{0, -1},
+		},
 	)
 }
