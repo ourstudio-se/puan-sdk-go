@@ -1,0 +1,6 @@
+services:
+  glpk-api:
+    image: glpk-api
+    ports:
+      - "9000:9000"
+    restart: unless-stopped
