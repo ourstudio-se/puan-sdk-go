@@ -2,6 +2,7 @@ package pldag
 
 import (
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -365,4 +366,56 @@ func Test_newConstraintID(t *testing.T) {
 			assert.Equalf(t, tt.want, newConstraintID(tt.coefficients, tt.bias), "newConstraintID(%v, %v)", tt.coefficients, tt.bias)
 		})
 	}
+}
+
+func TestModel_GenerateSystem(t *testing.T) {
+	model := New()
+	model.SetPrimitives([]string{"x", "y", "z", "k", "w"}...)
+
+	andID, _ := model.SetAnd([]string{"x", "y"}...)
+	notID, _ := model.SetNot([]string{"k"}...)
+	orID, _ := model.SetOr([]string{"y", "z"}...)
+
+	xorID, _ := model.SetXor([]string{andID, notID, orID}...)
+	_, _ = model.SetImply("w", xorID)
+
+	lp := model.GenerateSystem()
+
+	expectedVector := []int{0, 1, 1, 2, 4, 0, 1, 1, 1, -1, 0, 0, -2, 1, -1, 0}
+	expectedMatrix := [][]int{
+		{-1, -1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0},
+		{0, -1, -1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, -1, -1, -1, 3, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 1, 1, 1, 0, 3, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, -1, -1, 2, 0, 0},
+		{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, 2},
+		{1, 1, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, -1, 0, 0, -2, 0, 0, 0, 0, 0, 0},
+		{0, 1, 1, 0, 0, 0, 0, -2, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 1, 1, 1, -3, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, -1, -1, -1, 0, -5, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 1, 1, -1, 0, 0},
+		{0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, -2, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, -2},
+	}
+
+	assertEqual(t, expectedMatrix, lp.aMatrix, expectedVector, lp.bVector)
+}
+
+func assertEqual(t *testing.T, expectedMatrix, actualMatrix [][]int, expectedVector, actualVector []int) {
+	sortedActualMatrix := [][]int{}
+	sortedActualVector := []int{}
+	for _, row := range expectedMatrix {
+		for j, actualRow := range actualMatrix {
+			if slices.Equal(row, actualRow) {
+				sortedActualVector = append(sortedActualVector, actualVector[j])
+				sortedActualMatrix = append(sortedActualMatrix, actualMatrix[j])
+			}
+		}
+	}
+
+	assert.Equal(t, expectedMatrix, sortedActualMatrix)
+	assert.Equal(t, expectedVector, sortedActualVector)
 }
