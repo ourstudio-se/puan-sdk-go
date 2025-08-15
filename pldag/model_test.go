@@ -377,11 +377,12 @@ func TestModel_GenerateSystem(t *testing.T) {
 	orID, _ := model.SetOr([]string{"y", "z"}...)
 
 	xorID, _ := model.SetXor([]string{andID, notID, orID}...)
-	_, _ = model.SetImply("w", xorID)
+	implyID, _ := model.SetImply("w", xorID)
+	_ = model.Assume(implyID)
 
 	lp := model.GenerateSystem()
 
-	expectedVector := []int{0, 1, 1, 2, 4, 0, 1, 1, 1, -1, 0, 0, -2, 1, -1, 0}
+	expectedVector := []int{0, 1, 1, 2, 4, 0, 1, 1, 1, -1, 0, 0, -2, 1, -1, 0, -1}
 	expectedMatrix := [][]int{
 		{-1, -1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0},
 		{0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0},
@@ -399,6 +400,7 @@ func TestModel_GenerateSystem(t *testing.T) {
 		{0, 0, 0, 0, 0, 0, 0, 0, 1, 1, -1, 0, 0},
 		{0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, -2, 0},
 		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, -2},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1},
 	}
 
 	assertEqual(t, expectedMatrix, lp.aMatrix, expectedVector, lp.bVector)
@@ -418,4 +420,97 @@ func assertEqual(t *testing.T, expectedMatrix, actualMatrix [][]int, expectedVec
 
 	assert.Equal(t, expectedMatrix, sortedActualMatrix)
 	assert.Equal(t, expectedVector, sortedActualVector)
+}
+
+func TestModel_Assume(t *testing.T) {
+	tests := []struct {
+		name                     string
+		existingAssumedVariables []string
+		existingVariables        []string
+		assumedVariables         []string
+		expectedAssumedVariables []string
+		wantErr                  bool
+	}{
+		{
+			name:                     "valid model",
+			existingAssumedVariables: []string{},
+			existingVariables:        []string{"a", "b", "c"},
+			assumedVariables:         []string{"a", "b"},
+			expectedAssumedVariables: []string{"a", "b"},
+			wantErr:                  false,
+		},
+		{
+			name:                     "invalid assumed variable again",
+			existingAssumedVariables: []string{"a"},
+			existingVariables:        []string{"a", "b", "c"},
+			assumedVariables:         []string{"a", "b"},
+			expectedAssumedVariables: []string{"a"},
+			wantErr:                  true,
+		},
+		{
+			name:                     "invalid assumed variable again",
+			existingAssumedVariables: []string{"b"},
+			existingVariables:        []string{"a", "b", "c"},
+			assumedVariables:         []string{"a", "b"},
+			expectedAssumedVariables: []string{"b"},
+			wantErr:                  true,
+		},
+		{
+			name:                     "invalid assumed non-existing variable",
+			existingAssumedVariables: []string{"b"},
+			existingVariables:        []string{"a", "b", "c"},
+			assumedVariables:         []string{"x"},
+			expectedAssumedVariables: []string{"b"},
+			wantErr:                  true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &Model{
+				variables:        tt.existingVariables,
+				assumedVariables: tt.existingAssumedVariables,
+			}
+
+			err := m.Assume(tt.assumedVariables...)
+			if !tt.wantErr {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
+
+			assert.Equal(t, tt.expectedAssumedVariables, m.assumedVariables, "Assumed variables should match")
+		})
+	}
+}
+
+func Test_createAssume(t *testing.T) {
+	tests := []struct {
+		name      string
+		assumed   string
+		variables []string
+		wantRow   []int
+		wantBias  int
+	}{
+		{
+			name:      "create assume",
+			assumed:   "a",
+			variables: []string{"a", "b", "c"},
+			wantRow:   []int{-1, 0, 0},
+			wantBias:  -1,
+		},
+		{
+			name:      "create assume",
+			assumed:   "b",
+			variables: []string{"a", "b", "c"},
+			wantRow:   []int{0, -1, 0},
+			wantBias:  -1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := createAssume(tt.assumed, tt.variables)
+			assert.Equalf(t, tt.wantRow, got, "createAssume(%v, %v)", tt.assumed, tt.variables)
+			assert.Equalf(t, tt.wantBias, got1, "createAssume(%v, %v)", tt.assumed, tt.variables)
+		})
+	}
 }

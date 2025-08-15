@@ -60,8 +60,9 @@ func (b Bias) negate() int {
 
 type (
 	Model struct {
-		variables   []string
-		constraints []Constraint
+		variables        []string
+		constraints      []Constraint
+		assumedVariables []string
 	}
 
 	Constraint struct {
@@ -73,8 +74,9 @@ type (
 
 func New() *Model {
 	return &Model{
-		variables:   []string{},
-		constraints: []Constraint{},
+		variables:        []string{},
+		constraints:      []Constraint{},
+		assumedVariables: []string{},
 	}
 }
 
@@ -131,6 +133,21 @@ func (m *Model) SetXor(variables ...string) (string, error) {
 	return m.SetAnd([]string{atLeastID, atMostID}...)
 }
 
+func (m *Model) Assume(variables ...string) error {
+	for _, v := range variables {
+		if slices.Contains(m.assumedVariables, v) {
+			return errors.New("variable already assumed")
+		}
+		if !slices.Contains(m.variables, v) {
+			return errors.New("variable not in model")
+		}
+	}
+
+	m.assumedVariables = append(m.assumedVariables, variables...)
+
+	return nil
+}
+
 func (m *Model) GenerateSystem() LinearSystem {
 	var aMatrix [][]int
 	var bVector []int
@@ -145,7 +162,25 @@ func (m *Model) GenerateSystem() LinearSystem {
 		bVector = append(bVector, b)
 	}
 
+	for _, assumed := range m.assumedVariables {
+		row, b := createAssume(assumed, m.variables)
+		aMatrix = append(aMatrix, row)
+		bVector = append(bVector, b)
+	}
+
 	return LinearSystem{aMatrix, bVector}
+}
+
+func createAssume(assumed string, variables []string) ([]int, int) {
+	row := make([]int, len(variables))
+	for i, v := range variables {
+		if v == assumed {
+			row[i] = -1
+			continue
+		}
+	}
+
+	return row, -1
 }
 
 func (m *Model) setAtLeast(variables []string, amount int) (string, error) {
