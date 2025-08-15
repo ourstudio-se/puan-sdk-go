@@ -6,6 +6,8 @@ import (
 	"maps"
 	"math"
 	"slices"
+
+	"github.com/go-errors/errors"
 )
 
 // implies, and, or, xor, not
@@ -36,17 +38,21 @@ func (c coefficientValues) negate() coefficientValues {
 }
 
 func (c coefficientValues) calculateMaxAbsInnerBound() int {
-	minValue, maxValue := 0, 0
+	sumNegatives, sumPositives := 0, 0
 	for _, value := range c {
 		if value < 0 {
-			minValue += value
+			sumNegatives += value
 		}
 		if value > 0 {
-			maxValue += value
+			sumPositives += value
 		}
 	}
 
-	return int(math.Max(math.Abs(float64(minValue)), math.Abs(float64(maxValue))))
+	absSumNegatives := math.Abs(float64(sumNegatives))
+	absSumPositives := math.Abs(float64(sumPositives))
+	maxValue := math.Max(absSumNegatives, absSumPositives)
+
+	return int(maxValue)
 }
 
 type Bias int
@@ -79,8 +85,13 @@ func (m *Model) SetPrimitives(primitives ...string) {
 	m.variables = append(m.variables, primitives...)
 }
 
-func (m *Model) SetAnd(variables ...string) string {
-	return m.setAtLeast(variables, len(variables))
+func (m *Model) SetAnd(variables ...string) (string, error) {
+	id, err := m.setAtLeast(variables, len(variables))
+	if err != nil {
+		return "", err
+	}
+
+	return id, nil
 }
 
 func (m *Model) GenerateSystem() LinearSystem {
@@ -100,21 +111,36 @@ func (m *Model) GenerateSystem() LinearSystem {
 	return LinearSystem{aMatrix, bVector}
 }
 
-func (m *Model) setAtLeast(variables []string, amount int) string {
-	constraint := newAtLeastConstraint(variables, amount)
+func (m *Model) setAtLeast(variables []string, amount int) (string, error) {
+	constraint, err := newAtLeastConstraint(variables, amount)
+	if err != nil {
+		return "", err
+	}
+
 	m.setConstraint(constraint)
 
-	return constraint.id
+	return constraint.id, nil
 }
 
-func (m *Model) setAtMost(variables []string, amount int) string {
-	constraint := newAtMostConstraint(variables, amount)
+func (m *Model) setAtMost(variables []string, amount int) (string, error) {
+	constraint, err := newAtMostConstraint(variables, amount)
+	if err != nil {
+		return "", err
+	}
 	m.setConstraint(constraint)
 
-	return constraint.id
+	return constraint.id, nil
 }
 
-func newAtLeastConstraint(variables []string, amount int) Constraint {
+func newAtLeastConstraint(variables []string, amount int) (Constraint, error) {
+	if amount > len(variables) {
+		return Constraint{}, errors.New("amount cannot be greater than number of variables")
+	}
+
+	if amount < 0 {
+		return Constraint{}, errors.New("amount cannot be negative")
+	}
+
 	coefficients := make(coefficientValues)
 	for _, v := range variables {
 		coefficients[v] = 1
@@ -124,10 +150,18 @@ func newAtLeastConstraint(variables []string, amount int) Constraint {
 
 	constraint := newConstraint(coefficients, bias)
 
-	return constraint
+	return constraint, nil
 }
 
-func newAtMostConstraint(variables []string, amount int) Constraint {
+func newAtMostConstraint(variables []string, amount int) (Constraint, error) {
+	if amount > len(variables) {
+		return Constraint{}, errors.New("amount cannot be greater than number of variables")
+	}
+
+	if amount < 0 {
+		return Constraint{}, errors.New("amount cannot be negative")
+	}
+
 	coefficients := make(coefficientValues)
 	for _, v := range variables {
 		coefficients[v] = -1
@@ -137,7 +171,7 @@ func newAtMostConstraint(variables []string, amount int) Constraint {
 
 	constraint := newConstraint(coefficients, bias)
 
-	return constraint
+	return constraint, nil
 }
 
 func newConstraint(coefficients coefficientValues, bias Bias) Constraint {
