@@ -15,8 +15,13 @@ func main() {
 
 	model := pldag.New()
 	model.SetPrimitives([]string{"x", "y"}...)
-	ref := model.SetAnd([]string{"x", "y"}...)
+	ref, err := model.SetAnd([]string{"x", "y"}...)
+	if err != nil {
+		panic(err)
+	}
 
-	system := model.GenerateSystem([]string{ref}...)
+	_ = ref
+
+	system := model.GenerateSystem()
 	fmt.Println(system)
 }

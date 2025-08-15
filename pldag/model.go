@@ -11,7 +11,6 @@ import (
 )
 
 // implies, and, or, xor, not
-// hash id for each variable
 
 type LinearSystem struct {
 	aMatrix [][]int
@@ -58,7 +57,7 @@ func (c coefficientValues) calculateMaxAbsInnerBound() int {
 type Bias int
 
 func (b Bias) negate() int {
-	return int(-b + 1)
+	return int(-b - 1)
 }
 
 type (
@@ -132,7 +131,7 @@ func (m *Model) setAtMost(variables []string, amount int) (string, error) {
 	return constraint.id, nil
 }
 
-func newAtLeastConstraint(variables []string, amount int) (Constraint, error) {
+func newAtMostConstraint(variables []string, amount int) (Constraint, error) {
 	if amount > len(variables) {
 		return Constraint{}, errors.New("amount cannot be greater than number of variables")
 	}
@@ -153,7 +152,7 @@ func newAtLeastConstraint(variables []string, amount int) (Constraint, error) {
 	return constraint, nil
 }
 
-func newAtMostConstraint(variables []string, amount int) (Constraint, error) {
+func newAtLeastConstraint(variables []string, amount int) (Constraint, error) {
 	if amount > len(variables) {
 		return Constraint{}, errors.New("amount cannot be greater than number of variables")
 	}
@@ -213,12 +212,12 @@ func newConstraintID(coefficients coefficientValues, bias Bias) string {
 func createConstraintImpliesSupport(c Constraint, variables []string) ([]int, int) {
 	coefficients := c.coefficients.negate()
 	innerBound := coefficients.calculateMaxAbsInnerBound()
-	negatedBias := c.bias.negate()
+	negatedBias := c.bias.negate() // == 1
 
 	constraintRow := make([]int, len(variables))
 	for i, v := range variables {
 		if v == c.id {
-			constraintRow[i] = innerBound + negatedBias
+			constraintRow[i] = negatedBias - innerBound
 			continue
 		}
 
@@ -234,12 +233,12 @@ func createConstraintImpliesSupport(c Constraint, variables []string) ([]int, in
 
 func createSupportImpliesConstraint(c Constraint, variables []string) ([]int, int) {
 	innerBound := c.coefficients.calculateMaxAbsInnerBound()
-	b := int(c.bias) - innerBound
+	b := int(c.bias) + innerBound
 
 	constraintRow := make([]int, len(variables))
 	for i, v := range variables {
 		if v == c.id {
-			constraintRow[i] = -innerBound
+			constraintRow[i] = innerBound
 			continue
 		}
 

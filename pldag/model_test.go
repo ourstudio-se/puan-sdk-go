@@ -135,11 +135,11 @@ func Test_newAtLeastConstraint(t *testing.T) {
 			want: Constraint{
 				id: "id",
 				coefficients: coefficientValues{
-					"a": 1,
-					"b": 1,
-					"c": 1,
+					"a": -1,
+					"b": -1,
+					"c": -1,
 				},
-				bias: Bias(2),
+				bias: Bias(-2),
 			},
 			wantErr: false,
 		},
@@ -157,10 +157,10 @@ func Test_newAtLeastConstraint(t *testing.T) {
 			want: Constraint{
 				id: "id",
 				coefficients: coefficientValues{
-					"a": 1,
-					"b": 1,
+					"a": -1,
+					"b": -1,
 				},
-				bias: Bias(2),
+				bias: Bias(-2),
 			},
 			wantErr: false,
 		},
@@ -224,11 +224,11 @@ func Test_newAtMostConstraint(t *testing.T) {
 			want: Constraint{
 				id: "id",
 				coefficients: coefficientValues{
-					"a": -1,
-					"b": -1,
-					"c": -1,
+					"a": 1,
+					"b": 1,
+					"c": 1,
 				},
-				bias: Bias(-2),
+				bias: Bias(2),
 			},
 			wantErr: false,
 		},
@@ -246,10 +246,10 @@ func Test_newAtMostConstraint(t *testing.T) {
 			want: Constraint{
 				id: "id",
 				coefficients: coefficientValues{
-					"a": -1,
-					"b": -1,
+					"a": 1,
+					"b": 1,
 				},
-				bias: Bias(-2),
+				bias: Bias(2),
 			},
 			wantErr: false,
 		},
