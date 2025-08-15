@@ -10,8 +10,6 @@ import (
 	"github.com/go-errors/errors"
 )
 
-// implies, and, or, xor, not
-
 type LinearSystem struct {
 	aMatrix [][]int
 	bVector []int
@@ -91,6 +89,46 @@ func (m *Model) SetAnd(variables ...string) (string, error) {
 	}
 
 	return id, nil
+}
+
+func (m *Model) SetOr(variables ...string) (string, error) {
+	id, err := m.setAtLeast(variables, 1)
+	if err != nil {
+		return "", err
+	}
+
+	return id, nil
+}
+
+func (m *Model) SetNot(variables ...string) (string, error) {
+	id, err := m.setAtMost(variables, 0)
+	if err != nil {
+		return "", err
+	}
+
+	return id, nil
+}
+
+func (m *Model) SetImply(condition, consequence string) (string, error) {
+	notID, err := m.SetNot(condition)
+	if err != nil {
+		return "", err
+	}
+
+	return m.SetOr([]string{notID, consequence}...)
+}
+
+func (m *Model) SetXor(variables ...string) (string, error) {
+	atLeastID, err := m.setAtLeast(variables, 1)
+	if err != nil {
+		return "", err
+	}
+	atMostID, err := m.setAtMost(variables, 1)
+	if err != nil {
+		return "", err
+	}
+
+	return m.SetAnd([]string{atLeastID, atMostID}...)
 }
 
 func (m *Model) GenerateSystem() LinearSystem {
@@ -212,7 +250,7 @@ func newConstraintID(coefficients coefficientValues, bias Bias) string {
 func createConstraintImpliesSupport(c Constraint, variables []string) ([]int, int) {
 	coefficients := c.coefficients.negate()
 	innerBound := coefficients.calculateMaxAbsInnerBound()
-	negatedBias := c.bias.negate() // == 1
+	negatedBias := c.bias.negate()
 
 	constraintRow := make([]int, len(variables))
 	for i, v := range variables {
