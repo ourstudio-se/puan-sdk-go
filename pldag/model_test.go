@@ -463,6 +463,14 @@ func TestModel_Assume(t *testing.T) {
 			expectedAssumedVariables: []string{"b"},
 			wantErr:                  true,
 		},
+		{
+			name:                     "duplicated assumed variable",
+			existingAssumedVariables: []string{},
+			existingVariables:        []string{"a", "b", "c"},
+			assumedVariables:         []string{"a", "a"},
+			expectedAssumedVariables: []string{},
+			wantErr:                  true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

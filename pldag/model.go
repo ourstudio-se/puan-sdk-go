@@ -134,7 +134,12 @@ func (m *Model) SetXor(variables ...string) (string, error) {
 }
 
 func (m *Model) Assume(variables ...string) error {
+	seen := make(map[string]any)
 	for _, v := range variables {
+		if _, ok := seen[v]; ok {
+			return errors.New("duplicated variable")
+		}
+		seen[v] = nil
 		if slices.Contains(m.assumedVariables, v) {
 			return errors.New("variable already assumed")
 		}
