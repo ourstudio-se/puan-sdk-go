@@ -13,9 +13,9 @@ func NewClient(baseURL string) *Client {
 }
 
 func (c *Client) Solve(
-	system pldag.LinearSystem,
+	system pldag.Polyhedron,
 	variables []string,
 	objective map[string]int,
 ) (string, error) {
-
+	panic("not implemented")
 }
