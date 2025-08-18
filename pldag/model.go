@@ -15,6 +15,57 @@ type Polyhedron struct {
 	bVector []int
 }
 
+type SparseMatrix struct {
+	row    []int
+	column []int
+	value  []int
+}
+
+func (p Polyhedron) SparseMatrix() SparseMatrix {
+	var row []int
+	var column []int
+	var value []int
+
+	for rowIndex := range p.aMatrix {
+		for columIndex := range p.aMatrix[rowIndex] {
+			if p.aMatrix[rowIndex][columIndex] != 0 {
+				row = append(row, rowIndex)
+				column = append(column, columIndex)
+				value = append(value, p.aMatrix[rowIndex][columIndex])
+			}
+		}
+	}
+
+	return SparseMatrix{
+		row:    row,
+		column: column,
+		value:  value,
+	}
+}
+
+type Shape struct {
+	rows, columns int
+}
+
+func (s Shape) NrOfRows() int {
+	return s.rows
+}
+
+func (s Shape) NrOfColumns() int {
+	return s.columns
+}
+
+func (p Polyhedron) Shape() Shape {
+	if len(p.aMatrix) == 0 {
+		return Shape{}
+	}
+
+	return Shape{
+		rows:    len(p.aMatrix),
+		columns: len(p.aMatrix[0]),
+	}
+}
+
 func (p Polyhedron) A() [][]int {
 	return p.aMatrix
 }
@@ -94,6 +145,10 @@ func (c AuxiliaryConstraints) coefficientIDs() []string {
 	}
 
 	return ids
+}
+
+func (m *Model) Variables() []string {
+	return m.variables
 }
 
 func New() *Model {

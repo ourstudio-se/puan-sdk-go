@@ -513,3 +513,82 @@ func TestModel_newAssumedConstraint(t *testing.T) {
 		})
 	}
 }
+
+func TestPolyhedron_Shape(t *testing.T) {
+	tests := []struct {
+		name    string
+		aMatrix [][]int
+		want    Shape
+	}{
+		{
+			name: "valid polyhedron",
+			aMatrix: [][]int{
+				{1, 1},
+			},
+			want: Shape{1, 2},
+		},
+		{
+			name:    "nil polyhedron",
+			aMatrix: nil,
+			want:    Shape{},
+		},
+		{
+			name:    "empty polyhedron",
+			aMatrix: [][]int{},
+			want:    Shape{},
+		},
+		{
+			name:    "empty polyhedron",
+			aMatrix: [][]int{{}, {}},
+			want:    Shape{2, 0},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := Polyhedron{
+				aMatrix: tt.aMatrix,
+			}
+			assert.Equalf(t, tt.want, p.Shape(), "Shape()")
+		})
+	}
+}
+
+func TestPolyhedron_SparseMatrix(t *testing.T) {
+	tests := []struct {
+		name    string
+		aMatrix [][]int
+		want    SparseMatrix
+	}{
+		{
+			name: "valid polyhedron",
+			aMatrix: [][]int{
+				{1, 1},
+			},
+			want: SparseMatrix{
+				row:    []int{0, 0},
+				column: []int{0, 1},
+				value:  []int{1, 1},
+			},
+		},
+		{
+			name: "valid polyhedron",
+			aMatrix: [][]int{
+				{1, 1, 2},
+				{1, 1, 0},
+			},
+			want: SparseMatrix{
+				row:    []int{0, 0, 0, 1, 1},
+				column: []int{0, 1, 2, 0, 1},
+				value:  []int{1, 1, 2, 1, 1},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := Polyhedron{
+				aMatrix: tt.aMatrix,
+			}
+			assert.Equalf(t, tt.want, p.SparseMatrix(), "SparseMatrix()")
+		})
+	}
+}
