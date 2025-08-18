@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/go-errors/errors"
+	"github.com/google/uuid"
 )
 
 type Polyhedron struct {
@@ -54,15 +55,15 @@ func (c coefficientValues) calculateMaxAbsInnerBound() int {
 
 type Bias int
 
-func (b Bias) negate() int {
-	return int(-b - 1)
+func (b Bias) negate() Bias {
+	return -b - 1
 }
 
 type (
 	Model struct {
-		variables        []string
-		constraints      []Constraint
-		assumedVariables []string
+		variables         []string
+		constraints       Constraints
+		assumeConstraints Constraints
 	}
 
 	Constraint struct {
@@ -70,13 +71,31 @@ type (
 		coefficients coefficientValues
 		bias         Bias
 	}
+
+	Constraints []Constraint
 )
+
+func (c Constraints) coefficientIDs() []string {
+	idMap := make(map[string]any)
+	for _, constraint := range c {
+		for coefficientID, _ := range constraint.coefficients {
+			idMap[coefficientID] = nil
+		}
+	}
+
+	ids := make([]string, len(idMap))
+	for id := range idMap {
+		ids = append(ids, id)
+	}
+
+	return ids
+}
 
 func New() *Model {
 	return &Model{
-		variables:        []string{},
-		constraints:      []Constraint{},
-		assumedVariables: []string{},
+		variables:         []string{},
+		constraints:       Constraints{},
+		assumeConstraints: Constraints{},
 	}
 }
 
@@ -134,21 +153,44 @@ func (m *Model) SetXor(variables ...string) (string, error) {
 }
 
 func (m *Model) Assume(variables ...string) error {
+	err := m.validateAssumedVariables(variables...)
+	if err != nil {
+		return err
+	}
+
+	constraint := m.newAssumedConstraint(variables...)
+	m.assumeConstraints = append(m.assumeConstraints, constraint)
+
+	return nil
+}
+
+func (m *Model) newAssumedConstraint(variables ...string) Constraint {
+	coefficients := make(coefficientValues, len(variables))
+	for _, id := range variables {
+		coefficients[id] = -1
+	}
+
+	bias := Bias(-len(variables))
+
+	return newConstraint(coefficients, bias)
+}
+
+func (m *Model) validateAssumedVariables(assumedVariables ...string) error {
+	existingAssumedVariables := m.assumeConstraints.coefficientIDs()
 	seen := make(map[string]any)
-	for _, v := range variables {
+	for _, v := range assumedVariables {
 		if _, ok := seen[v]; ok {
 			return errors.New("duplicated variable")
 		}
 		seen[v] = nil
-		if slices.Contains(m.assumedVariables, v) {
+
+		if slices.Contains(existingAssumedVariables, v) {
 			return errors.New("variable already assumed")
 		}
 		if !slices.Contains(m.variables, v) {
 			return errors.New("variable not in model")
 		}
 	}
-
-	m.assumedVariables = append(m.assumedVariables, variables...)
 
 	return nil
 }
@@ -157,35 +199,85 @@ func (m *Model) GeneratePolyhedron() Polyhedron {
 	var aMatrix [][]int
 	var bVector []int
 
-	for _, c := range m.constraints {
-		row, b := createSupportImpliesConstraint(c, m.variables)
+	constraintsWithSupport := m.toConstraintsWithSupport()
+	constraintsInMatrix := append(constraintsWithSupport, m.assumeConstraints...)
+	for _, c := range constraintsInMatrix {
+		row := c.asMatrixRow(m.variables)
+		bias := int(c.bias)
 		aMatrix = append(aMatrix, row)
-		bVector = append(bVector, b)
-
-		row, b = createConstraintImpliesSupport(c, m.variables)
-		aMatrix = append(aMatrix, row)
-		bVector = append(bVector, b)
-	}
-
-	for _, assumed := range m.assumedVariables {
-		row, b := createAssume(assumed, m.variables)
-		aMatrix = append(aMatrix, row)
-		bVector = append(bVector, b)
+		bVector = append(bVector, bias)
 	}
 
 	return Polyhedron{aMatrix, bVector}
 }
 
-func createAssume(assumed string, variables []string) ([]int, int) {
+func (m *Model) toConstraintsWithSupport() []Constraint {
+	var constraints []Constraint
+	for _, c := range m.constraints {
+		supportImpliesConstraint, constraintImpliesSupport := c.toConstraintsWithSupport()
+		constraints = append(constraints, supportImpliesConstraint)
+		constraints = append(constraints, constraintImpliesSupport)
+	}
+
+	return constraints
+}
+
+func (c Constraint) asMatrixRow(variables []string) []int {
 	row := make([]int, len(variables))
-	for i, v := range variables {
-		if v == assumed {
-			row[i] = -1
-			continue
+	for i, id := range variables {
+		if value, ok := c.coefficients[id]; ok {
+			row[i] = value
+		} else {
+			row[i] = 0
 		}
 	}
 
-	return row, -1
+	return row
+}
+
+func (c Constraint) toConstraintsWithSupport() (Constraint, Constraint) {
+	supportImpliesConstraint := c.newSupportImpliesConstraint()
+	constraintImpliesSupport := c.newConstraintImpliesSupport()
+
+	return supportImpliesConstraint, constraintImpliesSupport
+}
+
+func (c Constraint) newConstraintImpliesSupport() Constraint {
+	negatedCoefficients := c.coefficients.negate()
+	innerBound := negatedCoefficients.calculateMaxAbsInnerBound()
+	negatedBias := c.bias.negate()
+
+	newCoefficients := make(coefficientValues, len(c.coefficients)+1)
+	for coefficientID, value := range negatedCoefficients {
+		newCoefficients[coefficientID] = value
+	}
+
+	newCoefficients[c.id] = int(negatedBias) - innerBound
+
+	return Constraint{
+		id:           uuid.New().String(),
+		coefficients: newCoefficients,
+		bias:         negatedBias,
+	}
+
+}
+
+func (c Constraint) newSupportImpliesConstraint() Constraint {
+	innerBound := c.coefficients.calculateMaxAbsInnerBound()
+	bias := Bias(int(c.bias) + innerBound)
+
+	newCoefficients := make(coefficientValues, len(c.coefficients)+1)
+	for coefficientID, value := range c.coefficients {
+		newCoefficients[coefficientID] = value
+	}
+
+	newCoefficients[c.id] = innerBound
+
+	return Constraint{
+		id:           uuid.New().String(),
+		coefficients: newCoefficients,
+		bias:         bias,
+	}
 }
 
 func (m *Model) setAtLeast(variables []string, amount int) (string, error) {
@@ -285,47 +377,4 @@ func newConstraintID(coefficients coefficientValues, bias Bias) string {
 	h.Write([]byte(fmt.Sprintf("%d", bias)))
 
 	return fmt.Sprintf("%x", h.Sum(nil))
-}
-
-func createConstraintImpliesSupport(c Constraint, variables []string) ([]int, int) {
-	coefficients := c.coefficients.negate()
-	innerBound := coefficients.calculateMaxAbsInnerBound()
-	negatedBias := c.bias.negate()
-
-	constraintRow := make([]int, len(variables))
-	for i, v := range variables {
-		if v == c.id {
-			constraintRow[i] = negatedBias - innerBound
-			continue
-		}
-
-		if value, ok := coefficients[v]; ok {
-			constraintRow[i] = value
-		} else {
-			constraintRow[i] = 0
-		}
-	}
-
-	return constraintRow, negatedBias
-}
-
-func createSupportImpliesConstraint(c Constraint, variables []string) ([]int, int) {
-	innerBound := c.coefficients.calculateMaxAbsInnerBound()
-	b := int(c.bias) + innerBound
-
-	constraintRow := make([]int, len(variables))
-	for i, v := range variables {
-		if v == c.id {
-			constraintRow[i] = innerBound
-			continue
-		}
-
-		if value, ok := c.coefficients[v]; ok {
-			constraintRow[i] = value
-		} else {
-			constraintRow[i] = 0
-		}
-	}
-
-	return constraintRow, b
 }

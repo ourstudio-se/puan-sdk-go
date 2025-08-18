@@ -104,7 +104,7 @@ func TestBias_negate(t *testing.T) {
 	tests := []struct {
 		name string
 		b    Bias
-		want int
+		want Bias
 	}{
 		{
 			name: "should negate bias",
@@ -368,7 +368,7 @@ func Test_newConstraintID(t *testing.T) {
 	}
 }
 
-func TestModel_GenerateSystem(t *testing.T) {
+func TestModel_GeneratePolyhedron(t *testing.T) {
 	model := New()
 	model.SetPrimitives([]string{"x", "y", "z", "k", "w"}...)
 
@@ -410,11 +410,16 @@ func assertEqual(t *testing.T, expectedMatrix, actualMatrix [][]int, expectedVec
 	sortedActualMatrix := [][]int{}
 	sortedActualVector := []int{}
 	for _, row := range expectedMatrix {
+		found := false
 		for j, actualRow := range actualMatrix {
 			if slices.Equal(row, actualRow) {
+				found = true
 				sortedActualVector = append(sortedActualVector, actualVector[j])
 				sortedActualMatrix = append(sortedActualMatrix, actualMatrix[j])
 			}
+		}
+		if !found {
+			t.Errorf("Expected row %v not found in actual matrix", row)
 		}
 	}
 
@@ -422,61 +427,54 @@ func assertEqual(t *testing.T, expectedMatrix, actualMatrix [][]int, expectedVec
 	assert.Equal(t, expectedVector, sortedActualVector)
 }
 
-func TestModel_Assume(t *testing.T) {
+func TestValidateAssumedVariables(t *testing.T) {
 	tests := []struct {
-		name                     string
-		existingAssumedVariables []string
-		existingVariables        []string
-		assumedVariables         []string
-		expectedAssumedVariables []string
-		wantErr                  bool
+		name                       string
+		existingAssumedConstraints Constraints
+		existingVariables          []string
+		assumedVariables           []string
+		wantErr                    bool
 	}{
 		{
-			name:                     "valid model",
-			existingAssumedVariables: []string{},
-			existingVariables:        []string{"a", "b", "c"},
-			assumedVariables:         []string{"a", "b"},
-			expectedAssumedVariables: []string{"a", "b"},
-			wantErr:                  false,
+			name:                       "valid model",
+			existingAssumedConstraints: Constraints{},
+			existingVariables:          []string{"a", "b", "c"},
+			assumedVariables:           []string{"a", "b"},
+			wantErr:                    false,
 		},
 		{
-			name:                     "invalid assumed variable again",
-			existingAssumedVariables: []string{"a"},
-			existingVariables:        []string{"a", "b", "c"},
-			assumedVariables:         []string{"a", "b"},
-			expectedAssumedVariables: []string{"a"},
-			wantErr:                  true,
+			name: "invalid assumed variable again",
+			existingAssumedConstraints: Constraints{
+				{
+					coefficients: coefficientValues{
+						"a": 1,
+						"b": 1,
+					},
+					bias: Bias(2),
+				},
+			},
+			existingVariables: []string{"a", "b", "c"},
+			assumedVariables:  []string{"a", "b"},
+			wantErr:           true,
 		},
 		{
-			name:                     "invalid assumed variable again",
-			existingAssumedVariables: []string{"b"},
-			existingVariables:        []string{"a", "b", "c"},
-			assumedVariables:         []string{"a", "b"},
-			expectedAssumedVariables: []string{"b"},
-			wantErr:                  true,
+			name:              "invalid assumed non-existing variable",
+			existingVariables: []string{"a", "b", "c"},
+			assumedVariables:  []string{"x"},
+			wantErr:           true,
 		},
 		{
-			name:                     "invalid assumed non-existing variable",
-			existingAssumedVariables: []string{"b"},
-			existingVariables:        []string{"a", "b", "c"},
-			assumedVariables:         []string{"x"},
-			expectedAssumedVariables: []string{"b"},
-			wantErr:                  true,
-		},
-		{
-			name:                     "duplicated assumed variable",
-			existingAssumedVariables: []string{},
-			existingVariables:        []string{"a", "b", "c"},
-			assumedVariables:         []string{"a", "a"},
-			expectedAssumedVariables: []string{},
-			wantErr:                  true,
+			name:              "duplicated assumed variable",
+			existingVariables: []string{"a", "b", "c"},
+			assumedVariables:  []string{"a", "a"},
+			wantErr:           true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &Model{
-				variables:        tt.existingVariables,
-				assumedVariables: tt.existingAssumedVariables,
+				variables:         tt.existingVariables,
+				assumeConstraints: tt.existingAssumedConstraints,
 			}
 
 			err := m.Assume(tt.assumedVariables...)
@@ -485,40 +483,36 @@ func TestModel_Assume(t *testing.T) {
 			} else {
 				assert.Error(t, err)
 			}
-
-			assert.Equal(t, tt.expectedAssumedVariables, m.assumedVariables, "Assumed variables should match")
 		})
 	}
 }
 
-func Test_createAssume(t *testing.T) {
+func TestModel_newAssumedConstraint(t *testing.T) {
 	tests := []struct {
 		name      string
-		assumed   string
 		variables []string
-		wantRow   []int
-		wantBias  int
+		want      Constraint
 	}{
 		{
-			name:      "create assume",
-			assumed:   "a",
-			variables: []string{"a", "b", "c"},
-			wantRow:   []int{-1, 0, 0},
-			wantBias:  -1,
-		},
-		{
-			name:      "create assume",
-			assumed:   "b",
-			variables: []string{"a", "b", "c"},
-			wantRow:   []int{0, -1, 0},
-			wantBias:  -1,
+			name:      "valid constraint",
+			variables: []string{"a", "b"},
+			want: Constraint{
+				coefficients: coefficientValues{
+					"a": -1,
+					"b": -1,
+				},
+				bias: Bias(-2),
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := createAssume(tt.assumed, tt.variables)
-			assert.Equalf(t, tt.wantRow, got, "createAssume(%v, %v)", tt.assumed, tt.variables)
-			assert.Equalf(t, tt.wantBias, got1, "createAssume(%v, %v)", tt.assumed, tt.variables)
+			m := &Model{}
+			constraint := m.newAssumedConstraint(tt.variables...)
+			assert.Equalf(t, tt.want.bias, constraint.bias, "Bias should match")
+			for _, v := range tt.variables {
+				assert.Equalf(t, -1, constraint.coefficients[v], "Coefficients should match")
+			}
 		})
 	}
 }
