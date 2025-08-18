@@ -380,7 +380,7 @@ func TestModel_GenerateSystem(t *testing.T) {
 	implyID, _ := model.SetImply("w", xorID)
 	_ = model.Assume(implyID)
 
-	lp := model.GenerateSystem()
+	lp := model.GeneratePolyhedron()
 
 	expectedVector := []int{0, 1, 1, 2, 4, 0, 1, 1, 1, -1, 0, 0, -2, 1, -1, 0, -1}
 	expectedMatrix := [][]int{

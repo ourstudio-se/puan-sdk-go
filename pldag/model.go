@@ -10,17 +10,17 @@ import (
 	"github.com/go-errors/errors"
 )
 
-type LinearSystem struct {
+type Polyhedron struct {
 	aMatrix [][]int
 	bVector []int
 }
 
-func (l LinearSystem) A() [][]int {
-	return l.aMatrix
+func (p Polyhedron) A() [][]int {
+	return p.aMatrix
 }
 
-func (l LinearSystem) B() []int {
-	return l.bVector
+func (p Polyhedron) B() []int {
+	return p.bVector
 }
 
 type coefficientValues map[string]int
@@ -153,7 +153,7 @@ func (m *Model) Assume(variables ...string) error {
 	return nil
 }
 
-func (m *Model) GenerateSystem() LinearSystem {
+func (m *Model) GeneratePolyhedron() Polyhedron {
 	var aMatrix [][]int
 	var bVector []int
 
@@ -173,7 +173,7 @@ func (m *Model) GenerateSystem() LinearSystem {
 		bVector = append(bVector, b)
 	}
 
-	return LinearSystem{aMatrix, bVector}
+	return Polyhedron{aMatrix, bVector}
 }
 
 func createAssume(assumed string, variables []string) ([]int, int) {
