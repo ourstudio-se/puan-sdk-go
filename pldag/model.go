@@ -8,7 +8,6 @@ import (
 	"slices"
 
 	"github.com/go-errors/errors"
-	"github.com/google/uuid"
 )
 
 type Polyhedron struct {
@@ -22,6 +21,12 @@ func (p Polyhedron) A() [][]int {
 
 func (p Polyhedron) B() []int {
 	return p.bVector
+}
+
+type Bias int
+
+func (b Bias) negate() Bias {
+	return -b - 1
 }
 
 type coefficientValues map[string]int
@@ -53,17 +58,11 @@ func (c coefficientValues) calculateMaxAbsInnerBound() int {
 	return int(maxValue)
 }
 
-type Bias int
-
-func (b Bias) negate() Bias {
-	return -b - 1
-}
-
 type (
 	Model struct {
 		variables         []string
 		constraints       Constraints
-		assumeConstraints Constraints
+		assumeConstraints AuxiliaryConstraints
 	}
 
 	Constraint struct {
@@ -72,10 +71,16 @@ type (
 		bias         Bias
 	}
 
-	Constraints []Constraint
+	AuxiliaryConstraint struct {
+		coefficients coefficientValues
+		bias         Bias
+	}
+
+	Constraints          []Constraint
+	AuxiliaryConstraints []AuxiliaryConstraint
 )
 
-func (c Constraints) coefficientIDs() []string {
+func (c AuxiliaryConstraints) coefficientIDs() []string {
 	idMap := make(map[string]any)
 	for _, constraint := range c {
 		for coefficientID, _ := range constraint.coefficients {
@@ -95,7 +100,7 @@ func New() *Model {
 	return &Model{
 		variables:         []string{},
 		constraints:       Constraints{},
-		assumeConstraints: Constraints{},
+		assumeConstraints: AuxiliaryConstraints{},
 	}
 }
 
@@ -164,7 +169,7 @@ func (m *Model) Assume(variables ...string) error {
 	return nil
 }
 
-func (m *Model) newAssumedConstraint(variables ...string) Constraint {
+func (m *Model) newAssumedConstraint(variables ...string) AuxiliaryConstraint {
 	coefficients := make(coefficientValues, len(variables))
 	for _, id := range variables {
 		coefficients[id] = -1
@@ -172,7 +177,7 @@ func (m *Model) newAssumedConstraint(variables ...string) Constraint {
 
 	bias := Bias(-len(variables))
 
-	return newConstraint(coefficients, bias)
+	return newAuxiliaryConstraint(coefficients, bias)
 }
 
 func (m *Model) validateAssumedVariables(assumedVariables ...string) error {
@@ -199,7 +204,7 @@ func (m *Model) GeneratePolyhedron() Polyhedron {
 	var aMatrix [][]int
 	var bVector []int
 
-	constraintsWithSupport := m.toConstraintsWithSupport()
+	constraintsWithSupport := m.toAuxiliaryConstraintsWithSupport()
 	constraintsInMatrix := append(constraintsWithSupport, m.assumeConstraints...)
 	for _, c := range constraintsInMatrix {
 		row := c.asMatrixRow(m.variables)
@@ -211,10 +216,10 @@ func (m *Model) GeneratePolyhedron() Polyhedron {
 	return Polyhedron{aMatrix, bVector}
 }
 
-func (m *Model) toConstraintsWithSupport() []Constraint {
-	var constraints []Constraint
+func (m *Model) toAuxiliaryConstraintsWithSupport() AuxiliaryConstraints {
+	var constraints AuxiliaryConstraints
 	for _, c := range m.constraints {
-		supportImpliesConstraint, constraintImpliesSupport := c.toConstraintsWithSupport()
+		supportImpliesConstraint, constraintImpliesSupport := c.toAuxiliaryConstraintsWithSupport()
 		constraints = append(constraints, supportImpliesConstraint)
 		constraints = append(constraints, constraintImpliesSupport)
 	}
@@ -222,7 +227,7 @@ func (m *Model) toConstraintsWithSupport() []Constraint {
 	return constraints
 }
 
-func (c Constraint) asMatrixRow(variables []string) []int {
+func (c AuxiliaryConstraint) asMatrixRow(variables []string) []int {
 	row := make([]int, len(variables))
 	for i, id := range variables {
 		if value, ok := c.coefficients[id]; ok {
@@ -235,14 +240,14 @@ func (c Constraint) asMatrixRow(variables []string) []int {
 	return row
 }
 
-func (c Constraint) toConstraintsWithSupport() (Constraint, Constraint) {
+func (c Constraint) toAuxiliaryConstraintsWithSupport() (AuxiliaryConstraint, AuxiliaryConstraint) {
 	supportImpliesConstraint := c.newSupportImpliesConstraint()
 	constraintImpliesSupport := c.newConstraintImpliesSupport()
 
 	return supportImpliesConstraint, constraintImpliesSupport
 }
 
-func (c Constraint) newConstraintImpliesSupport() Constraint {
+func (c Constraint) newConstraintImpliesSupport() AuxiliaryConstraint {
 	negatedCoefficients := c.coefficients.negate()
 	innerBound := negatedCoefficients.calculateMaxAbsInnerBound()
 	negatedBias := c.bias.negate()
@@ -254,15 +259,14 @@ func (c Constraint) newConstraintImpliesSupport() Constraint {
 
 	newCoefficients[c.id] = int(negatedBias) - innerBound
 
-	return Constraint{
-		id:           uuid.New().String(),
+	return AuxiliaryConstraint{
 		coefficients: newCoefficients,
 		bias:         negatedBias,
 	}
 
 }
 
-func (c Constraint) newSupportImpliesConstraint() Constraint {
+func (c Constraint) newSupportImpliesConstraint() AuxiliaryConstraint {
 	innerBound := c.coefficients.calculateMaxAbsInnerBound()
 	bias := Bias(int(c.bias) + innerBound)
 
@@ -273,8 +277,7 @@ func (c Constraint) newSupportImpliesConstraint() Constraint {
 
 	newCoefficients[c.id] = innerBound
 
-	return Constraint{
-		id:           uuid.New().String(),
+	return AuxiliaryConstraint{
 		coefficients: newCoefficients,
 		bias:         bias,
 	}
@@ -347,6 +350,14 @@ func newConstraint(coefficients coefficientValues, bias Bias) Constraint {
 	id := newConstraintID(coefficients, bias)
 	constraint := Constraint{
 		id:           id,
+		coefficients: coefficients,
+		bias:         bias,
+	}
+	return constraint
+}
+
+func newAuxiliaryConstraint(coefficients coefficientValues, bias Bias) AuxiliaryConstraint {
+	constraint := AuxiliaryConstraint{
 		coefficients: coefficients,
 		bias:         bias,
 	}
