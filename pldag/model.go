@@ -16,9 +16,9 @@ type Polyhedron struct {
 }
 
 type SparseMatrix struct {
-	row    []int
-	column []int
-	value  []int
+	Row    []int
+	Column []int
+	Value  []int
 }
 
 func (p Polyhedron) SparseMatrix() SparseMatrix {
@@ -37,9 +37,9 @@ func (p Polyhedron) SparseMatrix() SparseMatrix {
 	}
 
 	return SparseMatrix{
-		row:    row,
-		column: column,
-		value:  value,
+		Row:    row,
+		Column: column,
+		Value:  value,
 	}
 }
 

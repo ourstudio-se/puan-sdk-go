@@ -86,7 +86,7 @@ func Test_coefficientValues_calculateMaxAbsInnerBound(t *testing.T) {
 			want: 0,
 		},
 		{
-			name: "nil value",
+			name: "nil Value",
 			c:    nil,
 			want: 0,
 		},
@@ -419,7 +419,7 @@ func assertEqual(t *testing.T, expectedMatrix, actualMatrix [][]int, expectedVec
 			}
 		}
 		if !found {
-			t.Errorf("Expected row %v not found in actual matrix", row)
+			t.Errorf("Expected Row %v not found in actual matrix", row)
 		}
 	}
 
@@ -565,9 +565,9 @@ func TestPolyhedron_SparseMatrix(t *testing.T) {
 				{1, 1},
 			},
 			want: SparseMatrix{
-				row:    []int{0, 0},
-				column: []int{0, 1},
-				value:  []int{1, 1},
+				Row:    []int{0, 0},
+				Column: []int{0, 1},
+				Value:  []int{1, 1},
 			},
 		},
 		{
@@ -577,9 +577,9 @@ func TestPolyhedron_SparseMatrix(t *testing.T) {
 				{1, 1, 0},
 			},
 			want: SparseMatrix{
-				row:    []int{0, 0, 0, 1, 1},
-				column: []int{0, 1, 2, 0, 1},
-				value:  []int{1, 1, 2, 1, 1},
+				Row:    []int{0, 0, 0, 1, 1},
+				Column: []int{0, 1, 2, 0, 1},
+				Value:  []int{1, 1, 2, 1, 1},
 			},
 		},
 	}
