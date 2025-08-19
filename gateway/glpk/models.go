@@ -1,5 +1,67 @@
 package glpk
 
+import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+
+	"github.com/go-errors/errors"
+
+	"github.com/ourstudio-se/puan-sdk-go/pldag"
+)
+
+func (c *Client) newSolveRequestHTTP(polyhedron pldag.Polyhedron, variables []string, objective ...Objective) (*http.Request, error) {
+	request := newSolveRequest(polyhedron, variables, objective...)
+
+	jsonData, err := json.Marshal(request)
+	if err != nil {
+		return nil, errors.Errorf("failed to marshal request: %s", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, c.BaseURL+"/solve", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, errors.Errorf("failed to create request: %s", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	return req, nil
+}
+
+func newSolveRequest(polyhedron pldag.Polyhedron, variables []string, objective ...Objective) *SolveRequest {
+	sparseMatrix := polyhedron.SparseMatrix()
+	b := polyhedron.B()
+
+	var tmpVariables []Variable
+	for _, v := range variables {
+		tmpVariables = append(tmpVariables, Variable{
+			ID:    v,
+			Bound: [2]int{0, 1},
+		})
+	}
+
+	request := &SolveRequest{
+		Polyhedron: Polyhedron{
+			A: SparseMatrix{
+				Rows: sparseMatrix.Row,
+				Cols: sparseMatrix.Column,
+				Vals: sparseMatrix.Value,
+				Shape: Shape{
+					Nrows: polyhedron.Shape().NrOfColumns(),
+					Ncols: polyhedron.Shape().NrOfRows(),
+				},
+			},
+			B:         b,
+			Variables: tmpVariables,
+		},
+
+		Objectives: append([]Objective{}, objective...),
+		Direction:  "maximize",
+	}
+
+	return request
+}
+
 type SolveRequest struct {
 	Polyhedron Polyhedron  `json:"polyhedron"`
 	Objectives []Objective `json:"objectives"`

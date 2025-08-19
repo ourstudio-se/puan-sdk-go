@@ -30,40 +30,7 @@ func (c *Client) Solve(
 	variables []string,
 	objective map[string]int,
 ) (SolveResponse, error) {
-	sparseMatrix := polyhedron.SparseMatrix()
-	b := polyhedron.B()
-
-	var tmpVariables []Variable
-	for _, v := range variables {
-		tmpVariables = append(tmpVariables, Variable{
-			ID:    v,
-			Bound: [2]int{0, 1},
-		})
-	}
-
-	tmpObjective := Objective{}
-	for _, v := range variables {
-		tmpObjective[v] = 1
-	}
-
-	request := &SolveRequest{
-		Polyhedron: Polyhedron{
-			A: SparseMatrix{
-				Rows: sparseMatrix.Row,
-				Cols: sparseMatrix.Column,
-				Vals: sparseMatrix.Value,
-				Shape: Shape{
-					Nrows: polyhedron.Shape().NrOfColumns(),
-					Ncols: polyhedron.Shape().NrOfRows(),
-				},
-			},
-			B:         b,
-			Variables: tmpVariables,
-		},
-
-		Objectives: []Objective{objective},
-		Direction:  "maximize",
-	}
+	request := newSolveRequest(polyhedron, variables, objective)
 
 	jsonData, err := json.Marshal(request)
 	if err != nil {
