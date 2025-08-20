@@ -194,6 +194,13 @@ func Test_newAtLeastConstraint(t *testing.T) {
 			want:      Constraint{},
 			wantErr:   true,
 		},
+		{
+			name:      "duplicated variables should return error",
+			variables: []string{"a", "a"},
+			amount:    2,
+			want:      Constraint{},
+			wantErr:   true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -280,6 +287,13 @@ func Test_newAtMostConstraint(t *testing.T) {
 			name:      "negative amount should return error",
 			variables: nil,
 			amount:    -1,
+			want:      Constraint{},
+			wantErr:   true,
+		},
+		{
+			name:      "duplicated variables should return error",
+			variables: []string{"a", "a"},
+			amount:    2,
 			want:      Constraint{},
 			wantErr:   true,
 		},

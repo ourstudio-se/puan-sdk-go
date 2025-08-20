@@ -161,6 +161,7 @@ func New() *Model {
 
 func (m *Model) SetPrimitives(primitives ...string) {
 	m.variables = append(m.variables, primitives...)
+	// m.primitive ...
 }
 
 func (m *Model) SetAnd(variables ...string) (string, error) {
@@ -210,6 +211,10 @@ func (m *Model) SetXor(variables ...string) (string, error) {
 	}
 
 	return m.SetAnd([]string{atLeastID, atMostID}...)
+}
+
+func (m *Model) SetOneOrNone(variables ...string) (string, error) {
+	return m.setAtMost(variables, 1)
 }
 
 func (m *Model) Assume(variables ...string) error {
@@ -360,6 +365,10 @@ func (m *Model) setAtMost(variables []string, amount int) (string, error) {
 }
 
 func newAtMostConstraint(variables []string, amount int) (Constraint, error) {
+	if containsDuplicates(variables) {
+		return Constraint{}, errors.New("duplicated variables")
+	}
+
 	if amount > len(variables) {
 		return Constraint{}, errors.New("amount cannot be greater than number of variables")
 	}
@@ -381,6 +390,10 @@ func newAtMostConstraint(variables []string, amount int) (Constraint, error) {
 }
 
 func newAtLeastConstraint(variables []string, amount int) (Constraint, error) {
+	if containsDuplicates(variables) {
+		return Constraint{}, errors.New("duplicated variables")
+	}
+
 	if amount > len(variables) {
 		return Constraint{}, errors.New("amount cannot be greater than number of variables")
 	}
@@ -399,6 +412,18 @@ func newAtLeastConstraint(variables []string, amount int) (Constraint, error) {
 	constraint := newConstraint(coefficients, bias)
 
 	return constraint, nil
+}
+
+func containsDuplicates[T comparable](elements []T) bool {
+	seen := make(map[T]any)
+	for _, e := range elements {
+		if _, ok := seen[e]; ok {
+			return true
+		}
+		seen[e] = nil
+	}
+
+	return false
 }
 
 func newConstraint(coefficients coefficientValues, bias Bias) Constraint {
