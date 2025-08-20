@@ -37,7 +37,7 @@ func (s *Selections) extractActiveSelections() Selections {
 }
 
 func (s *Selections) extractSelectionsIDs() []string {
-	ids := make([]string, len(*s))
+	ids := make([]string, 0, len(*s))
 	for _, selection := range *s {
 		ids = append(ids, selection.ID)
 	}

@@ -131,3 +131,46 @@ func TestCreate(t *testing.T) {
 		})
 	}
 }
+
+func TestSelections_extractSelectionsIDs(t *testing.T) {
+	tests := []struct {
+		name string
+		s    Selections
+		want []string
+	}{
+		{
+			"empty selections",
+			Selections{},
+			[]string{},
+		},
+		{
+			"one selection",
+			Selections{{
+				ID:     "x",
+				Action: ADD,
+			}},
+			[]string{"x"},
+		},
+		{
+			"two selections",
+			Selections{
+				{
+					ID:     "x",
+					Action: ADD,
+				},
+				{
+					ID:     "y",
+					Action: ADD,
+				},
+			},
+			[]string{"x", "y"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.s.extractSelectionsIDs(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("extractSelectionsIDs() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
