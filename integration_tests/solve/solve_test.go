@@ -36,7 +36,7 @@ func Test_Remove_Selection(t *testing.T) {
 	}
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.Create(model.Variables(), selectionsIDs)
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, nil)
 
 	client := glpk.NewClient(url)
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -65,7 +65,7 @@ func Test_Add_Consequence(t *testing.T) {
 	}
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.Create(model.Variables(), selectionsIDs)
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, nil)
 
 	client := glpk.NewClient(url)
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -85,6 +85,12 @@ func Test_Select_Exactly_One_With_Additional_Requirements(t *testing.T) {
 	model.SetPrimitives([]string{"packageA", "packageB", "packageC", "item1"}...)
 	exactlyOneOfThePackages, _ := model.SetXor("packageA", "packageB", "packageC")
 	packageBRequiresItem1, _ := model.SetImply("packageB", "item1")
+	preferredA, _ := model.SetAnd("packageA", exactlyOneOfThePackages)
+
+	xorWithPreference := weights.XORWithPreference{
+		XORID:              exactlyOneOfThePackages,
+		PreferredVariantID: preferredA,
+	}
 
 	root, _ := model.SetAnd(exactlyOneOfThePackages, packageBRequiresItem1)
 	_ = model.Assume(root)
@@ -103,7 +109,7 @@ func Test_Select_Exactly_One_With_Additional_Requirements(t *testing.T) {
 	}
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.Create(model.Variables(), selectionsIDs)
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
 
 	client := glpk.NewClient(url)
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -129,17 +135,22 @@ func Test_Select_Packages_When_XOR_Between_Packages(t *testing.T) {
 	includedItemsInA, _ := model.SetAnd("item1", "item2")
 	includedItemsInB, _ := model.SetAnd("item1", "item2", "item3")
 
-	packageARequiredItems, _ := model.SetImply("packageA", includedItemsInA)
-	packageBRequiredItems, _ := model.SetImply("packageB", includedItemsInB)
+	packageA, _ := model.SetImply("packageA", includedItemsInA)
+	packageB, _ := model.SetImply("packageB", includedItemsInB)
 
 	exactlyOneOfThePackages, _ := model.SetXor("packageA", "packageB")
-
+	preferredA, _ := model.SetAnd("packageA", exactlyOneOfThePackages)
 	// This to ensure that if the items are selected, then the package is selected as well.
 	anyOfThePackages, _ := model.SetOr("packageA", "packageB")
-	itemsInAIsInBothPackages, _ := model.SetImply(includedItemsInA, anyOfThePackages)
-	itemsInBIsPackageB, _ := model.SetImply(includedItemsInB, "packageB")
+	reverseBothPackages, _ := model.SetImply(includedItemsInA, anyOfThePackages)
+	reversePackageB, _ := model.SetImply(includedItemsInB, "packageB")
 
-	root, _ := model.SetAnd(packageARequiredItems, packageBRequiredItems, exactlyOneOfThePackages, itemsInAIsInBothPackages, itemsInBIsPackageB)
+	xorWithPreference := weights.XORWithPreference{
+		XORID:              exactlyOneOfThePackages,
+		PreferredVariantID: preferredA,
+	}
+
+	root, _ := model.SetAnd(exactlyOneOfThePackages, reverseBothPackages, reversePackageB, packageA, packageB)
 	_ = model.Assume(root)
 
 	polyhedron := model.GeneratePolyhedron()
@@ -156,7 +167,7 @@ func Test_Select_Packages_When_XOR_Between_Packages(t *testing.T) {
 	}
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.Create(model.Variables(), selectionsIDs)
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
 
 	client := glpk.NewClient(url)
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -207,7 +218,7 @@ func Test_Cheapest_Package_When_XOR_Between(t *testing.T) {
 	}
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.Create(model.Variables(), selectionsIDs)
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, nil)
 
 	client := glpk.NewClient(url)
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -259,7 +270,7 @@ func Test_Upgrade_Package_When_XOR_Between(t *testing.T) {
 
 	selections := weights.Selections{}
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.Create(model.Variables(), selectionsIDs)
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, nil)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 
@@ -279,7 +290,7 @@ func Test_Upgrade_Package_When_XOR_Between(t *testing.T) {
 		},
 	}
 	selectionsIDs = selections.ExtractActiveSelectionIDS()
-	objective = weights.Create(model.Variables(), selectionsIDs)
+	objective = weights.Create(model.PrimitiveVariables(), selectionsIDs, nil)
 
 	resp, _ = client.Solve(polyhedron, model.Variables(), objective)
 
@@ -303,7 +314,7 @@ func Test_Upgrade_Package_When_XOR_Between(t *testing.T) {
 		},
 	}
 	selectionsIDs = selections.ExtractActiveSelectionIDS()
-	objective = weights.Create(model.Variables(), selectionsIDs)
+	objective = weights.Create(model.PrimitiveVariables(), selectionsIDs, nil)
 
 	resp, _ = client.Solve(polyhedron, model.Variables(), objective)
 
@@ -364,7 +375,7 @@ func Test_Downgrade_Package_When_XOR_Between(t *testing.T) {
 		},
 	}
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.Create(model.Variables(), selectionsIDs)
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, nil)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 
@@ -388,7 +399,7 @@ func Test_Downgrade_Package_When_XOR_Between(t *testing.T) {
 		},
 	}
 	selectionsIDs = selections.ExtractActiveSelectionIDS()
-	objective = weights.Create(model.Variables(), selectionsIDs)
+	objective = weights.Create(model.PrimitiveVariables(), selectionsIDs, nil)
 
 	resp, _ = client.Solve(polyhedron, model.Variables(), objective)
 
@@ -412,7 +423,7 @@ func Test_Downgrade_Package_When_XOR_Between(t *testing.T) {
 		},
 	}
 	selectionsIDs = selections.ExtractActiveSelectionIDS()
-	objective = weights.Create(model.Variables(), selectionsIDs)
+	objective = weights.Create(model.PrimitiveVariables(), selectionsIDs, nil)
 
 	resp, _ = client.Solve(polyhedron, model.Variables(), objective)
 
@@ -452,7 +463,7 @@ func Test_Select_Component_With_Indirect_Package_Requirement(t *testing.T) {
 	}
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.Create(model.Variables(), selectionsIDs)
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, nil)
 
 	client := glpk.NewClient(url)
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -518,7 +529,7 @@ func Test_Will_Delete_Package_From_Selected_Actions_When_Adding_Upgrading_Packag
 	}
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.Create(model.Variables(), selectionsIDs)
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, nil)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 
@@ -528,4 +539,267 @@ func Test_Will_Delete_Package_From_Selected_Actions_When_Adding_Upgrading_Packag
 	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
 	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
 	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
+}
+
+func Test_XOR_With_Preferred(t *testing.T) {
+	model := pldag.New()
+	model.SetPrimitives([]string{"item1", "item2"}...)
+
+	exactlyOneItem, _ := model.SetXor([]string{"item1", "item2"}...)
+	xorWithPreferred := weights.XORWithPreference{
+		XORID:              exactlyOneItem,
+		PreferredVariantID: "item2",
+	}
+	_ = model.Assume(exactlyOneItem)
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selections := weights.Selections{}
+
+	selectionsIDs := selections.ExtractActiveSelectionIDS()
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreferred})
+
+	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, len(resp.Solutions))
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item1"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
+}
+
+func Test_Select_Same_Selected_Exactly_One_Constrainted_Component(t *testing.T) {
+	model := pldag.New()
+	model.SetPrimitives([]string{"item1", "item2", "item3"}...)
+
+	exactlyOneItem, _ := model.SetXor([]string{"item1", "item2", "item3"}...)
+
+	xorWithPreferred := weights.XORWithPreference{
+		XORID:              exactlyOneItem,
+		PreferredVariantID: "item1",
+	}
+
+	_ = model.Assume(exactlyOneItem)
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selections := weights.Selections{
+		{
+			ID:     "item2",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "item2",
+			Action: weights.REMOVE,
+		},
+	}
+
+	selectionsIDs := selections.ExtractActiveSelectionIDS()
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreferred})
+
+	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, len(resp.Solutions))
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item2"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item3"])
+}
+
+func Test_default_component_in_package_when_part_in_multiple_xors(t *testing.T) {
+	model := pldag.New()
+	model.SetPrimitives([]string{"packageA", "item1", "item2", "item3", "item4", "item5"}...)
+
+	packageAVariantOne, _ := model.SetAnd("packageA", "item1", "item2", "item3")
+	packageAVariantTwo, _ := model.SetAnd("packageA", "item1", "item2", "item4", "item5")
+
+	exactlyOneVariant, _ := model.SetXor(packageAVariantOne, packageAVariantTwo)
+
+	xorWithPreferred := weights.XORWithPreference{
+		XORID:              exactlyOneVariant,
+		PreferredVariantID: packageAVariantOne,
+	}
+
+	model.Assume(exactlyOneVariant)
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selections := weights.Selections{}
+
+	selectionsIDs := selections.ExtractActiveSelectionIDS()
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreferred})
+
+	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, len(resp.Solutions))
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item4"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item5"])
+}
+
+func Test_default_component_in_package_when_part_in_multiple_xors_heavy_variant_preferred(t *testing.T) {
+	model := pldag.New()
+	model.SetPrimitives([]string{"packageA", "item1", "item2", "item3", "item4", "item5"}...)
+
+	packageAVariantOne, _ := model.SetAnd("packageA", "item1", "item2", "item3")
+	packageAVariantTwo, _ := model.SetAnd("packageA", "item1", "item2", "item4", "item5")
+
+	exactlyOneVariant, _ := model.SetXor(packageAVariantOne, packageAVariantTwo)
+
+	xorWithPreferred := weights.XORWithPreference{
+		XORID:              exactlyOneVariant,
+		PreferredVariantID: packageAVariantTwo,
+	}
+	model.Assume(exactlyOneVariant)
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selections := weights.Selections{}
+
+	selectionsIDs := selections.ExtractActiveSelectionIDS()
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreferred})
+
+	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, len(resp.Solutions))
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item3"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item4"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item5"])
+}
+
+func Test_select_single_xor_component_when_another_xor_pair_is_preferred(t *testing.T) {
+	model := pldag.New()
+	model.SetPrimitives([]string{"packageA", "item1", "item2", "item3"}...)
+
+	packageAVariantOne, _ := model.SetAnd("packageA", "item1")
+	packageAVariantTwo, _ := model.SetAnd("packageA", "item2", "item3")
+
+	exactlyOneVariant, _ := model.SetXor(packageAVariantOne, packageAVariantTwo)
+	packageAVariants, _ := model.SetImply("packageA", exactlyOneVariant)
+	xorWithPreferred := weights.XORWithPreference{
+		XORID:              exactlyOneVariant,
+		PreferredVariantID: packageAVariantTwo,
+	}
+
+	model.Assume(packageAVariants)
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selections := weights.Selections{
+		{
+			ID:     "packageA",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "item1",
+			Action: weights.ADD,
+		},
+	}
+
+	selectionsIDs := selections.ExtractActiveSelectionIDS()
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreferred})
+
+	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, len(resp.Solutions))
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item2"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item3"])
+}
+
+func Test_select_single_xor_component_when_another_xor_pair_is_preferred_no_selection(t *testing.T) {
+	model := pldag.New()
+	model.SetPrimitives([]string{"packageA", "item1", "item2", "item3"}...)
+
+	packageAVariantOne, _ := model.SetAnd("packageA", "item1")
+	packageAVariantTwo, _ := model.SetAnd("packageA", "item2", "item3")
+
+	exactlyOneVariant, _ := model.SetXor(packageAVariantOne, packageAVariantTwo)
+	packageAVariants, _ := model.SetImply("packageA", exactlyOneVariant)
+
+	xorWithPreferred := weights.XORWithPreference{
+		XORID:              exactlyOneVariant,
+		PreferredVariantID: packageAVariantTwo,
+	}
+
+	model.Assume(packageAVariants)
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selections := weights.Selections{}
+
+	selectionsIDs := selections.ExtractActiveSelectionIDS()
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreferred})
+
+	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, len(resp.Solutions))
+	assert.Equal(t, 0, resp.Solutions[0].Solution["packageA"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item1"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item2"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item3"])
+}
+
+func Test_select_single_xor_component_when_another_xor_pair_is_preferred_with_selection(t *testing.T) {
+	model := pldag.New()
+	model.SetPrimitives([]string{"packageA", "item1", "item2", "item3", "item4", "item5"}...)
+
+	packageAVariantTwoItems, _ := model.SetAnd("item2", "item3", "item4", "item5")
+	packageAVariantOne, _ := model.SetAnd("packageA", "item1")
+	packageAVariantTwo, _ := model.SetAnd("packageA", packageAVariantTwoItems)
+
+	exactlyOneVariant, _ := model.SetXor(packageAVariantOne, packageAVariantTwo)
+
+	packageAVariants, _ := model.SetImply("packageA", exactlyOneVariant)
+	reversePackageAVariantOne, _ := model.SetImply("item1", "packageA")
+	reversePackageAVariantTwo, _ := model.SetImply(packageAVariantTwoItems, "packageA")
+
+	xorWithPreferred := weights.XORWithPreference{
+		XORID:              exactlyOneVariant,
+		PreferredVariantID: packageAVariantOne,
+	}
+	root, _ := model.SetAnd(packageAVariants, reversePackageAVariantOne, reversePackageAVariantTwo)
+	model.Assume(root)
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selections := weights.Selections{
+		//{
+		//	ID:     "packageA",
+		//	Action: weights.ADD,
+		//},
+		{
+			ID:     "item2",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "item3",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "item4",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "item5",
+			Action: weights.ADD,
+		},
+	}
+
+	selectionsIDs := selections.ExtractActiveSelectionIDS()
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreferred})
+
+	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, len(resp.Solutions))
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item1"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item4"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item5"])
 }

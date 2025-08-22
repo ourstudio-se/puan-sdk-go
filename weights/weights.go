@@ -1,5 +1,11 @@
 package weights
 
+import (
+	"math"
+
+	"github.com/ourstudio-se/puan-sdk-go/utils"
+)
+
 const ADD Action = "ADD"
 const REMOVE Action = "REMOVE"
 
@@ -47,13 +53,36 @@ func (s *Selections) extractSelectionsIDs() []string {
 
 type Weights map[string]int
 
-func Create(variables []string, selectedIDs []string) Weights {
+type XORWithPreference struct {
+	XORID              string
+	PreferredVariantID string
+}
+
+func Create(variables, selectedIDs []string, xorsWithPreference []XORWithPreference) Weights {
+	notSelectedIDs := utils.Without(variables, selectedIDs)
+	preferredWeights := calculatePreferredWeights(notSelectedIDs, xorsWithPreference)
+
 	weights := newWeights(variables)
-	if len(selectedIDs) == 0 {
-		return weights
-	}
 
 	weights.setWeights(selectedIDs)
+
+	for id, weight := range preferredWeights {
+		weights[id] = weight
+	}
+
+	return weights
+}
+
+func calculatePreferredWeights(notSelectedIDs []string, xorsWithPreference []XORWithPreference) Weights {
+	weights := make(map[string]int)
+	notSelectedSum := -2 * len(notSelectedIDs)
+	for _, xor := range xorsWithPreference {
+		preferenceWeight := math.Abs(float64(notSelectedSum)) - 1
+		constraintWeight := notSelectedSum + 2
+
+		weights[xor.PreferredVariantID] = int(preferenceWeight)
+		weights[xor.XORID] = constraintWeight
+	}
 
 	return weights
 }
@@ -95,7 +124,7 @@ func (w *Weights) calculateSumOfNonSelectedWeights() int {
 func newWeights(variables []string) Weights {
 	weights := make(Weights, len(variables))
 	for _, v := range variables {
-		weights[v] = -1
+		weights[v] = -2
 	}
 
 	return weights

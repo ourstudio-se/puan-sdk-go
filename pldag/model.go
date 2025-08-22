@@ -8,6 +8,8 @@ import (
 	"slices"
 
 	"github.com/go-errors/errors"
+
+	"github.com/ourstudio-se/puan-sdk-go/utils"
 )
 
 type Polyhedron struct {
@@ -130,6 +132,17 @@ type (
 	Constraints          []Constraint
 	AuxiliaryConstraints []AuxiliaryConstraint
 )
+
+func (m *Model) PrimitiveVariables() []string {
+	constraintIDs := make([]string, len(m.constraints))
+	for i, _ := range m.constraints {
+		constraintIDs[i] = m.constraints[i].id
+	}
+
+	primitiveIDs := utils.Without(m.variables, constraintIDs)
+
+	return primitiveIDs
+}
 
 func (c AuxiliaryConstraints) coefficientIDs() []string {
 	idMap := make(map[string]any)
