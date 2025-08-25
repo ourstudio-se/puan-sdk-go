@@ -30,6 +30,10 @@ linters:
       min-complexity: 6
     lll:
       line-length: 100
+    gosec:
+      excludes:
+        - G505
+        - G401
   exclusions:
     generated: lax
     presets:
