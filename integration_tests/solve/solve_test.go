@@ -592,6 +592,372 @@ func Test_default_component_in_package_when_part_in_multiple_xors(t *testing.T) 
 	assert.Equal(t, 0, resp.Solutions[0].Solution["item5"])
 }
 
+func Test_select_component_with_indirect_package_requirement(t *testing.T) {
+	/*
+		There exists a chain of requirements: (e) -> (f) -> (a) -> (x,y,z).
+		We select (e) and expect our result configuration to (e,f,a,x,y,z)
+	*/
+
+	model := pldag.New()
+	model.SetPrimitives("packageA", "packageE", "packageF", "item1", "item2", "item3")
+
+	includedItemsInA, _ := model.SetAnd("item1", "item2", "item3")
+	packageA, _ := model.SetAnd("packageA", includedItemsInA)
+
+	packageERequiresF, _ := model.SetImply("packageE", "packageF")
+	packageFRequiresA, _ := model.SetImply("packageF", packageA)
+
+	root, _ := model.SetAnd(packageERequiresF, packageFRequiresA)
+	_ = model.Assume(root)
+
+	selections := weights.Selections{
+		{
+			ID:     "packageE",
+			Action: weights.ADD,
+		},
+	}
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selectionsIDs := selections.ExtractActiveSelectionIDS()
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, nil)
+
+	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, len(resp.Solutions))
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageE"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageF"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
+}
+
+func Test_select_single_xor_component_when_another_xor_pair_is_preferred(t *testing.T) {
+	/*
+		Package (a) has two variants: (a,x) and (a,y,z) with the latter
+		being preferred. We select (a,x) and expect the result configuration
+		(a,x)
+	*/
+
+	model, xorWithPreference := select_single_xor_component_when_another_xor_pair_is_preferred_setup()
+
+	selections := weights.Selections{
+		{
+			ID:     "packageA",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "item1",
+			Action: weights.ADD,
+		},
+	}
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selectionsIDs := selections.ExtractActiveSelectionIDS()
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, xorWithPreference)
+
+	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, len(resp.Solutions))
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item2"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item3"])
+}
+
+func Test_select_xor_pair_when_xor_pair_is_preferred(t *testing.T) {
+	/*
+	   	Package (a) has two variants: (a,x) and (a,y,z) with the latter
+	      being preferred. We select (a,y,z) and expect the result configuration
+	      (a,y,z). This test is just to make sure that there is no weird behavior
+	      such as an empty configuration as result.
+	*/
+
+	model, xorWithPreference := select_single_xor_component_when_another_xor_pair_is_preferred_setup()
+
+	selections := weights.Selections{ // TODO: How should packages be handled as selections?
+		{
+			ID:     "packageA",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "item2",
+			Action: weights.ADD,
+		},
+		{
+			ID: "item3",
+		},
+	}
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selectionsIDs := selections.ExtractActiveSelectionIDS()
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, xorWithPreference)
+
+	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, len(resp.Solutions))
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item1"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
+}
+
+func Test_deselect_package_when_xor_pair_is_preferred_over_single_xor_component(t *testing.T) {
+	/*
+		Given rules a -> xor(x,y), a -> xor(x,z). (y,z) is preferred oved (x)
+		If a(yz) is already selected, check that we will remove package when deselecting a
+	*/
+	model, xorWithPreference := select_single_xor_component_when_another_xor_pair_is_preferred_setup()
+
+	selections := weights.Selections{ // TODO: How should packages be handled as selections?
+		{
+			ID:     "packageA",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "item2",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "item3",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "packageA",
+			Action: weights.REMOVE,
+		},
+		{
+			ID:     "item2",
+			Action: weights.REMOVE,
+		},
+		{
+			ID:     "item3",
+			Action: weights.REMOVE,
+		},
+	}
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selectionsIDs := selections.ExtractActiveSelectionIDS()
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, xorWithPreference)
+
+	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, len(resp.Solutions))
+	assert.Equal(t, 0, resp.Solutions[0].Solution["packageA"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item1"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item2"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item3"])
+}
+
+func Test_select_single_xor_component_when_xor_pair_is_already_selected(t *testing.T) {
+	/*
+		Given rules a -> xor(x,y), a -> xor(x,z). (y,z) is preferred oved (x)
+		If a(yz) is already selected, check that we will select a(x) variant when selecting x
+	*/
+
+	model, xorWithPreference := select_single_xor_component_when_another_xor_pair_is_preferred_setup()
+
+	selections := weights.Selections{ // TODO: How should packages be handled as selections?
+		{
+			ID:     "packageA",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "item2",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "item3",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "packageA",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "item1",
+			Action: weights.ADD,
+		},
+	}
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selectionsIDs := selections.ExtractActiveSelectionIDS()
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, xorWithPreference)
+
+	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, len(resp.Solutions))
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item2"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item3"])
+}
+
+func Test_select_one_component_in_xor_pair_when_single_xor_component_is_already_selected(t *testing.T) {
+	/*
+		Given rules a -> xor(x,y), a -> xor(x,z). (y,z) is preferred oved (x)
+		If a(x) is already selected, check that we will get ayz config when selecting y (or z)
+	*/
+
+	model, xorWithPreference := select_single_xor_component_when_another_xor_pair_is_preferred_setup()
+
+	selections := weights.Selections{
+		{
+			ID:     "packageA",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "item1",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "item2",
+			Action: weights.ADD,
+		},
+	}
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selectionsIDs := selections.ExtractActiveSelectionIDS()
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, xorWithPreference)
+
+	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, len(resp.Solutions))
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item1"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
+}
+
+func select_single_xor_component_when_another_xor_pair_is_preferred_setup() (*pldag.Model, []weights.XORWithPreference) {
+	model := pldag.New()
+	model.SetPrimitives("packageA", "item1", "item2", "item3")
+
+	includedItemsInPackageVariantTwo, _ := model.SetAnd("item2", "item3")
+	packageVariantOne, _ := model.SetAnd("packageA", "item1")
+	packageVariantTwo, _ := model.SetAnd("packageA", includedItemsInPackageVariantTwo)
+
+	exactlyOnePackage, _ := model.SetXor(packageVariantOne, packageVariantTwo)
+	packageVariants, _ := model.SetImply("packageA", exactlyOnePackage)
+
+	xorWithPreference := []weights.XORWithPreference{
+		{
+			XORID:              exactlyOnePackage,
+			PreferredVariantID: packageVariantTwo,
+		},
+	}
+
+	reversedVariantOne, _ := model.SetImply("item1", packageVariantOne)
+	reversedVariantTwo, _ := model.SetImply(includedItemsInPackageVariantTwo, packageVariantTwo)
+
+	exactlyItem1OrItem2, _ := model.SetXor("item1", "item2") // TODO: are x and y forbidden together?
+	exactlyItem1OrItem3, _ := model.SetXor("item1", "item3")
+	exactlyOneCombinationOfItems, _ := model.SetAnd(exactlyItem1OrItem2, exactlyItem1OrItem3)
+	itemVariants, _ := model.SetImply("packageA", exactlyOneCombinationOfItems)
+
+	root, _ := model.SetAnd(packageVariants, reversedVariantOne, reversedVariantTwo, itemVariants)
+	_ = model.Assume(root)
+
+	return model, xorWithPreference
+}
+
+func Test_will_change_package_variant_when_package_is_preselected_with_component_requiring_package(t *testing.T) { // TODO: Check that the logic is correctly implemented.
+	/*
+		# Following rules are applied (with preferreds on the left xor-component)
+		# a -> x
+		# a -> b
+		# a -> ~c
+		# a -> ~d
+		# b -> xor(c, a)
+		# c -> ~a
+		# x -> xor(c, a)
+		# x -> xor(d, b)
+		# Our case is that a is already selected, which indirectly will add
+		# package x with its preferred components c and d
+		# Then we select xc and we expect a to be replaced
+	*/
+
+	model := pldag.New()
+	model.SetPrimitives("packageA", "packageB", "packageC", "packageD", "packageX")
+
+	notPackageA, _ := model.SetNot("packageA")
+	notPackageC, _ := model.SetNot("packageC")
+	notPackageD, _ := model.SetNot("packageD")
+
+	packageARequiresX, _ := model.SetImply("packageA", "packageX")
+	packageARequiresB, _ := model.SetImply("packageA", "packageB")
+	packageAForbidsPackageC, _ := model.SetImply("packageA", notPackageC)
+	packageAForbidsPackageD, _ := model.SetImply("packageA", notPackageD)
+	packageCForbidsPackageA, _ := model.SetImply("packageC", notPackageA)
+
+	exactlyOneOfPackageCOrA, _ := model.SetXor("packageC", "packageA")
+	exactlyOneOfPackageDOrB, _ := model.SetXor("packageD", "packageB")
+
+	packageBRequiresExactlyPackageCOrA, _ := model.SetImply("packageB", exactlyOneOfPackageCOrA)
+	packageXRequiresExactlyPackageCOrA, _ := model.SetImply("packageX", exactlyOneOfPackageCOrA)
+	packageXRequiresExactlyPackageDOrB, _ := model.SetImply("packageX", exactlyOneOfPackageDOrB)
+
+	packageBVariantOne, _ := model.SetAnd("packageB", exactlyOneOfPackageCOrA)
+	xorWithPreferencePackageB := weights.XORWithPreference{
+		XORID:              exactlyOneOfPackageCOrA,
+		PreferredVariantID: packageBVariantOne,
+	}
+
+	packageXVariantOne, _ := model.SetAnd("packageX", exactlyOneOfPackageCOrA)
+	xorWithPreferencePackageXOne := weights.XORWithPreference{
+		XORID:              exactlyOneOfPackageCOrA,
+		PreferredVariantID: packageXVariantOne,
+	}
+
+	packageXVariantTwo, _ := model.SetAnd("packageX", exactlyOneOfPackageDOrB)
+	xorWithPreferencePackageXTwo := weights.XORWithPreference{
+		XORID:              exactlyOneOfPackageDOrB,
+		PreferredVariantID: packageXVariantTwo,
+	}
+
+	root, _ := model.SetAnd(packageARequiresX, packageARequiresB, packageAForbidsPackageC, packageAForbidsPackageD, packageCForbidsPackageA, packageBRequiresExactlyPackageCOrA, packageXRequiresExactlyPackageCOrA, packageXRequiresExactlyPackageDOrB)
+	_ = model.Assume(root)
+
+	selections := weights.Selections{
+		{
+			ID:     "packageA",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "packageX",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "packageC",
+			Action: weights.ADD,
+		},
+		{
+			ID:     "packageD",
+			Action: weights.ADD,
+		},
+	}
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selectionsIDs := selections.ExtractActiveSelectionIDS()
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreferencePackageB, xorWithPreferencePackageXOne, xorWithPreferencePackageXTwo})
+
+	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, len(resp.Solutions))
+	assert.Equal(t, 0, resp.Solutions[0].Solution["packageA"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["packageB"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageC"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageD"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageX"])
+}
+
 /*
 OLD TESTS BELOW
 */
@@ -1254,7 +1620,7 @@ func Test_default_component_in_package_when_part_in_multiple_xors_heavy_variant_
 	assert.Equal(t, 1, resp.Solutions[0].Solution["item5"])
 }
 
-func Test_select_single_xor_component_when_another_xor_pair_is_preferred(t *testing.T) {
+func Test_select_single_xor_component_when_another_xor_pair_is_preferred1(t *testing.T) {
 	model := pldag.New()
 	model.SetPrimitives([]string{"packageA", "item1", "item2", "item3"}...)
 
@@ -1382,9 +1748,7 @@ func Test_select_single_xor_component_when_another_xor_pair_is_preferred_with_se
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
 	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item4"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item5"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
 }
