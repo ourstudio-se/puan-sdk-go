@@ -1,3 +1,3 @@
 # PUAN SDK GO
 
-SDK for ILP modelling and matric creation.
+SDK for ILP modelling
