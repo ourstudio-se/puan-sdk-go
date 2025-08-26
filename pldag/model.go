@@ -230,6 +230,19 @@ func (m *Model) SetOneOrNone(variables ...string) (string, error) {
 	return m.setAtMost(variables, 1)
 }
 
+func (m *Model) SetEquivalent(variableOne, variableTwo string) (string, error) {
+	andID, err := m.SetAnd(variableOne, variableTwo)
+	if err != nil {
+		return "", err
+	}
+	notID, err := m.SetNot(variableOne, variableTwo)
+	if err != nil {
+		return "", err
+	}
+
+	return m.SetOr(andID, notID)
+}
+
 func (m *Model) Assume(variables ...string) error {
 	err := m.validateAssumedVariables(variables...)
 	if err != nil {
