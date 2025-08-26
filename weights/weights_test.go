@@ -75,63 +75,6 @@ func TestSelections_extractActiveSelections(t *testing.T) {
 	}
 }
 
-func TestCreate(t *testing.T) {
-	tests := []struct {
-		name        string
-		variables   []string
-		selectedIDs []string
-		want        Weights
-	}{
-		{
-			"no selected IDs",
-			[]string{"a", "b", "c"},
-			[]string{},
-			Weights{
-				"a": -1,
-				"b": -1,
-				"c": -1,
-			},
-		},
-		{
-			"a selected",
-			[]string{"a", "b", "c"},
-			[]string{"a"},
-			Weights{
-				"a": 3,
-				"b": -1,
-				"c": -1,
-			},
-		},
-		{
-			"a, b selected",
-			[]string{"a", "b", "c"},
-			[]string{"a", "b"},
-			Weights{
-				"a": 2,
-				"b": 4,
-				"c": -1,
-			},
-		},
-		{
-			"a, b, c selected",
-			[]string{"a", "b", "c"},
-			[]string{"a", "b", "c"},
-			Weights{
-				"a": 1,
-				"b": 2,
-				"c": 4,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := Create(tt.variables, tt.selectedIDs, nil); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Create() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestSelections_extractSelectionsIDs(t *testing.T) {
 	tests := []struct {
 		name string
@@ -170,6 +113,68 @@ func TestSelections_extractSelectionsIDs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.s.extractSelectionsIDs(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("extractSelectionsIDs() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCreate(t *testing.T) {
+	tests := []struct {
+		name         string
+		variables    []string
+		selectedIDs  []string
+		preferredIDs []string
+		want         Weights
+	}{
+		{
+			name:         "with preferred and selected IDs",
+			variables:    []string{"a", "b", "c"},
+			selectedIDs:  []string{"a"},
+			preferredIDs: []string{"c"},
+			want: Weights{
+				"a": 5,
+				"b": -1,
+				"c": 3,
+			},
+		},
+		{
+			name:         "with preferred and no selected IDs",
+			variables:    []string{"a", "b", "c"},
+			selectedIDs:  []string{},
+			preferredIDs: []string{"c"},
+			want: Weights{
+				"a": -1,
+				"b": -1,
+				"c": 3,
+			},
+		},
+		{
+			name:         "with preferred IDs and no selected IDs",
+			variables:    []string{"a", "b", "c"},
+			selectedIDs:  []string{},
+			preferredIDs: []string{"a", "c"},
+			want: Weights{
+				"a": 2,
+				"b": -1,
+				"c": 2,
+			},
+		},
+		{
+			name:         "with preferred IDs and selected IDs",
+			variables:    []string{"a", "b", "c"},
+			selectedIDs:  []string{"b"},
+			preferredIDs: []string{"a", "c"},
+			want: Weights{
+				"a": 2,
+				"b": 5,
+				"c": 2,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Create(tt.variables, tt.selectedIDs, tt.preferredIDs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Create() = %v, want %v", got, tt.want)
 			}
 		})
 	}
