@@ -9,6 +9,8 @@ type OptionalPreferred struct {
 	PreferredID string
 }
 
+// Helst inte, kan bli komplext.
+// axuillary id
 type OptionalPreferreds []OptionalPreferred
 
 func (o *OptionalPreferreds) ExtractNonRedundantPreferredIDs(selectedIDs []string) []string {

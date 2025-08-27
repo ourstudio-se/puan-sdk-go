@@ -619,7 +619,7 @@ func change_package_when_xor_between_multiple_packages_setup() (*pldag.Model, we
 	return model, compulsoryPreferreds, optionalPreferreds
 }
 
-func Test_default_component_in_package_when_part_in_multiple_xors(t *testing.T) { // TODO: Check that the logic is correctly implemented.
+func Test_default_component_in_package_when_part_in_multiple_xors(t *testing.T) {
 	/*
 		Package (a) has two variants: (a,x,y,n) and (a,x,y,m,o) with
 		preferred on the former. Nothing is preselected and we expect
@@ -918,16 +918,53 @@ func Test_select_single_xor_component_when_xor_pair_is_already_selected(t *testi
 	assert.Equal(t, 0, resp.Solutions[0].Solution["item3"])
 }
 
-func Test_select_one_component_in_xor_pair_when_single_xor_component_is_already_selected(t *testing.T) {
+func Test_select_only_package_selected_with_heavy_preferred_in_xor(t *testing.T) {
 	/*
 		Given rules a -> xor(x,y), a -> xor(x,z). (y,z) is preferred oved (x)
-		If a(x) is already selected, check that we will get ayz config when selecting y (or z)
+		If a is selected, check that we will get ayz
 	*/
 
-	// TODO: Failing test. Could in python tests, packageA and item1 are selected as a unit.
+	model, compulsoryPreferreds, optionalPreferreds := select_single_xor_component_when_another_xor_pair_is_preferred_setup()
+
+	selections := weights.Selections{
+		{
+			ID:     "packageA",
+			Action: weights.ADD,
+		},
+	}
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selectionsIDs := selections.ExtractActiveSelectionIDS()
+	compulsoryPreferredIDs := compulsoryPreferreds.ExtractNonRedundantPreferredIDs(selectionsIDs)
+	optionalPreferredIDs := optionalPreferreds.ExtractNonRedundantPreferredIDs(selectionsIDs)
+
+	preferredIDs := append([]string{}, optionalPreferredIDs...)
+	preferredIDs = append(preferredIDs, compulsoryPreferredIDs...)
+
+	objective := weights.Create(model.PrimitiveVariables(), selectionsIDs, preferredIDs)
+
+	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, len(resp.Solutions))
+	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
+	assert.Equal(t, 0, resp.Solutions[0].Solution["item1"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
+	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
+}
+
+func Test_select_one_component_in_xor_pair_when_single_xor_component_is_already_selected(t *testing.T) {
+	/*
+		Given rules a -> xor(item1,item2), a -> xor(item1,item3). (item2,item3) is preferred oved (item1)
+		If a(item1) is already selected, check that we will get a item2 item3 config when selecting item2 (or item3)
+	*/
+
+	// TODO: Failing test. In python tests, packageA and item1 are selected as a unit.
 	// The test succeeds if packageA is chosen again after item1, should it be in which context it is selected?.
 	model, compulsoryPreferreds, optionalPreferreds := select_single_xor_component_when_another_xor_pair_is_preferred_setup()
 
+	// variantOnePreffered  a, item2, item3
+	// variantTwo  a, item1
 	selections := weights.Selections{
 		{
 			ID:     "packageA",
@@ -967,26 +1004,26 @@ func select_single_xor_component_when_another_xor_pair_is_preferred_setup() (*pl
 	model := pldag.New()
 	model.SetPrimitives("packageA", "item1", "item2", "item3")
 
-	exactlyOneItemOneOrTwo, _ := model.SetXor("item1", "item2")
-	exactlyOneItemOneOrThree, _ := model.SetXor("item1", "item3")
+	includedItemsInVariantONe, _ := model.SetAnd("item2", "item3")
+	packageVariantOne, _ := model.SetAnd("packageA", includedItemsInVariantONe)
+	packageVariantTwo, _ := model.SetAnd("packageA", "item1")
 
-	packageARequiresItemsOne, _ := model.SetImply("packageA", exactlyOneItemOneOrTwo)
-	packageARequiresItemsTwo, _ := model.SetImply("packageA", exactlyOneItemOneOrThree)
+	exactlyOneVariant, _ := model.SetXor(packageVariantOne, packageVariantTwo)
+	packageA, _ := model.SetImply("packageA", exactlyOneVariant)
+	reversePackageVariantOne, _ := model.SetImply(includedItemsInVariantONe, "packageA")
+	reversePackageVariantTwo, _ := model.SetImply("item1", "packageA")
 
-	notItem1, _ := model.SetNot("item1")
-	notItem2, _ := model.SetNot("item2")
-	notItem3, _ := model.SetNot("item3")
-
-	preferredTrigger, _ := model.SetAnd(notItem1, notItem2, notItem3, "packageA")
+	preferred, _ := model.SetAnd("packageA", packageVariantOne)
 	compulsoryPreferreds := weights.CompulsoryPreferreds{}
 	optionalPreferreds := weights.OptionalPreferreds{
 		{
 			PrimitiveID: "packageA",
-			PreferredID: preferredTrigger,
+			PreferredID: preferred,
 		},
 	}
 
-	root, _ := model.SetAnd(packageARequiresItemsOne, packageARequiresItemsTwo)
+	root, _ := model.SetAnd(packageA, reversePackageVariantOne, reversePackageVariantTwo)
+	_ = model.Assume(root)
 	_ = model.Assume(root)
 
 	return model, compulsoryPreferreds, optionalPreferreds
