@@ -143,6 +143,13 @@ func Test_toSparseMatrix(t *testing.T) {
 	assert.Equal(t, entity.Shape().NrOfColumns(), sparseMatrix.Shape.Ncols)
 }
 
-func Test_toBoolenVariables(t *testing.T) {
-	variables := toBooleanVariables(fake.New[[]string]())
+func Test_toBooleanVariables(t *testing.T) {
+	variableIDs := fake.New[[]string]()
+	variables := toBooleanVariables(variableIDs)
+
+	assert.Equal(t, len(variableIDs), len(variables))
+	for i, v := range variables {
+		assert.Equal(t, variableIDs[i], v.ID)
+		assert.Equal(t, [2]int{0, 1}, v.Bound)
+	}
 }
