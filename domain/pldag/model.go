@@ -329,7 +329,14 @@ func (m *Model) GeneratePolyhedron() Polyhedron {
 		bVector = append(bVector, bias)
 	}
 
-	return Polyhedron{aMatrix, bVector}
+	return NewPolyhedron(aMatrix, bVector)
+}
+
+func NewPolyhedron(aMatrix [][]int, bVector []int) Polyhedron {
+	return Polyhedron{
+		aMatrix: aMatrix,
+		bVector: bVector,
+	}
 }
 
 func (m *Model) toAuxiliaryConstraintsWithSupport() AuxiliaryConstraints {

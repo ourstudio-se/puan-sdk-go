@@ -86,7 +86,7 @@ func Test_solutionResponse_validate_givenMultipleSolutions_shouldReturnError(
 	assert.Error(t, err)
 }
 
-func Test_solutionResponse_validate_givenUnexpedStatus_shouldReturnError(
+func Test_solutionResponse_validate_givenUnexpectedStatus_shouldReturnError(
 	t *testing.T,
 ) {
 	solution := SolutionResponse{
