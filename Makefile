@@ -1,5 +1,5 @@
 .PHONY: test
-test:
+test: glpk
 	@go test -count=5 -race -cover ./...
 
 .PHONY: lint
