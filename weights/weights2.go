@@ -29,13 +29,17 @@ func CalculateObjective(
 		sumOfPreferredWeights,
 	)
 
-	weights := make(Weights)
-	maps.Copy(weights, notSelectedWeights)
-	maps.Copy(weights, selectedWeights)
-	maps.Copy(weights, xorWeights)
-	maps.Copy(weights, preferenceWeights)
+	weights := notSelectedWeights.
+		Concat(selectedWeights).
+		Concat(xorWeights).
+		Concat(preferenceWeights)
 
-	return weights
+	return *weights
+}
+
+func (w *Weights) Concat(weights Weights) *Weights {
+	maps.Copy(*w, weights)
+	return w
 }
 
 func (w *Weights) sum() int {
