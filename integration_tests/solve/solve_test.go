@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
+	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
 	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
 	"github.com/ourstudio-se/puan-sdk-go/weights"
 )
@@ -117,10 +118,18 @@ func Test_select_exactly_one_constrainted_component_with_additional_requirements
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 0, solution["packageA"])
-	assert.Equal(t, 1, solution["packageB"])
-	assert.Equal(t, 0, solution["packageC"])
-	assert.Equal(t, 1, solution["item1"])
+
+	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"packageA": 0,
+			"packageB": 1,
+			"packageC": 0,
+			"item1":    1,
+		},
+		primitiveSolution,
+	)
 }
 
 func Test_select_same_not_constrainted_selected_component(t *testing.T) {
