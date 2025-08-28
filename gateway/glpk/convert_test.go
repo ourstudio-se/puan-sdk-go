@@ -4,9 +4,11 @@ import (
 	"testing"
 
 	"github.com/go-faker/faker/v4"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
 	"github.com/ourstudio-se/puan-sdk-go/fake"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_solutionResponse_asEntity_givenSingleSolution_shouldReturnThatSolution(
@@ -117,4 +119,30 @@ func Test_solutionResponse_validate_givenError_shouldReturnThatError(
 	err := solution.validate()
 
 	assert.Error(t, err)
+}
+
+func Test_toSparseMatrix(t *testing.T) {
+	shape := pldag.NewShape(
+		fake.New[int](),
+		fake.New[int](),
+	)
+
+	entity := pldag.NewSparseMatrix(
+		fake.New[[]int](),
+		fake.New[[]int](),
+		fake.New[[]int](),
+		shape,
+	)
+
+	sparseMatrix := toSparseMatrix(entity)
+
+	assert.Equal(t, entity.Rows(), sparseMatrix.Rows)
+	assert.Equal(t, entity.Columns(), sparseMatrix.Cols)
+	assert.Equal(t, entity.Values(), sparseMatrix.Vals)
+	assert.Equal(t, entity.Shape().NrOfRows(), sparseMatrix.Shape.Nrows)
+	assert.Equal(t, entity.Shape().NrOfColumns(), sparseMatrix.Shape.Ncols)
+}
+
+func Test_toBoolenVariables(t *testing.T) {
+	variables := toBooleanVariables(fake.New[[]string]())
 }

@@ -1,7 +1,6 @@
 package glpk
 
 import (
-	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -84,12 +83,12 @@ func newRequestPayload(
 }
 
 func (c *Client) newRequest(body SolveRequest) (*http.Request, error) {
-	bodyBytes, err := json.Marshal(body)
+	buffer, err := body.asBufferedBytes()
 	if err != nil {
-		return nil, errors.Wrap(err, 0)
+		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, c.BaseURL+"/solve", bytes.NewBuffer(bodyBytes))
+	req, err := http.NewRequest(http.MethodPost, c.BaseURL+"/solve", buffer)
 	if err != nil {
 		return nil, errors.Wrap(err, 0)
 	}

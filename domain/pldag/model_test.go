@@ -446,7 +446,7 @@ func assertEqual(
 			}
 		}
 		if !found {
-			t.Errorf("Expected rows %v not found in actual matrix", row)
+			t.Errorf("Expected nrOfRows %v not found in actual matrix", row)
 		}
 	}
 

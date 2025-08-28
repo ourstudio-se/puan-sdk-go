@@ -55,24 +55,35 @@ func (p Polyhedron) SparseMatrix() SparseMatrix {
 		}
 	}
 
+	return NewSparseMatrix(row, column, value, p.shape())
+}
+
+func NewSparseMatrix(rows, columns, values []int, shape Shape) SparseMatrix {
 	return SparseMatrix{
-		rows:    row,
-		columns: column,
-		values:  value,
-		shape:   p.shape(),
+		rows:    rows,
+		columns: columns,
+		values:  values,
+		shape:   shape,
 	}
 }
 
 type Shape struct {
-	rows, columns int
+	nrOfRows, nrOfColumns int
+}
+
+func NewShape(rows, columns int) Shape {
+	return Shape{
+		nrOfRows:    rows,
+		nrOfColumns: columns,
+	}
 }
 
 func (s Shape) NrOfRows() int {
-	return s.rows
+	return s.nrOfRows
 }
 
 func (s Shape) NrOfColumns() int {
-	return s.columns
+	return s.nrOfColumns
 }
 
 func (p Polyhedron) shape() Shape {
@@ -80,10 +91,10 @@ func (p Polyhedron) shape() Shape {
 		return Shape{}
 	}
 
-	return Shape{
-		rows:    len(p.aMatrix),
-		columns: len(p.aMatrix[0]),
-	}
+	nrOfRows := len(p.aMatrix)
+	nrOfColumns := len(p.aMatrix[0])
+
+	return NewShape(nrOfRows, nrOfColumns)
 }
 
 func (p Polyhedron) A() [][]int {

@@ -1,6 +1,8 @@
 package glpk
 
 import (
+	"bytes"
+	"encoding/json"
 	"strings"
 
 	"github.com/go-errors/errors"
@@ -70,4 +72,13 @@ func toBooleanVariables(variableIDs []string) []Variable {
 	}
 
 	return variables
+}
+
+func (s SolveRequest) asBufferedBytes() (*bytes.Buffer, error) {
+	bodyBytes, err := json.Marshal(s)
+	if err != nil {
+		return nil, errors.Wrap(err, 0)
+	}
+
+	return bytes.NewBuffer(bodyBytes), nil
 }
