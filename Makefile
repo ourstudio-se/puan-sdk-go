@@ -8,8 +8,8 @@ lint:
 
 .PHONY: glpk
 glpk:
-	@docker-compose up -d glpk-api
+	@docker compose up -d glpk-api
 
 .PHONY: down
 down:
-	@docker-compose down
+	@docker compose down
