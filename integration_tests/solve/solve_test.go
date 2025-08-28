@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
-	"github.com/ourstudio-se/puan-sdk-go/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/weights"
 )
 
@@ -66,14 +66,13 @@ const url = "http://127.0.0.1:9000"
 //		selectionsIDs,
 //		[]weights.XORWithPreference{xorWithPreference},
 //	)
-//	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-//	assert.Equal(t, 1, len(resp.Solutions))
-//	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
-//	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
-//	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
-//	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
-//	assert.Equal(t, 1, resp.Solutions[0].Solution["item4"])
-//	assert.Equal(t, 0, resp.Solutions[0].Solution["item5"])
+//	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+//	//	assert.Equal(t, 1, solution["packageA"])
+//	assert.Equal(t, 1, solution["item1"])
+//	assert.Equal(t, 1, solution["item2"])
+//	assert.Equal(t, 1, solution["item3"])
+//	assert.Equal(t, 1, solution["item4"])
+//	assert.Equal(t, 0, solution["item5"])
 //}
 
 func Test_select_exactly_one_constrainted_component_with_additional_requirements(t *testing.T) {
@@ -117,12 +116,11 @@ func Test_select_exactly_one_constrainted_component_with_additional_requirements
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageB"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageC"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 0, solution["packageA"])
+	assert.Equal(t, 1, solution["packageB"])
+	assert.Equal(t, 0, solution["packageC"])
+	assert.Equal(t, 1, solution["item1"])
 }
 
 func Test_select_same_not_constrainted_selected_component(t *testing.T) {
@@ -154,10 +152,9 @@ func Test_select_same_not_constrainted_selected_component(t *testing.T) {
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
 	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, nil)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageB"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 0, solution["packageA"])
+	assert.Equal(t, 0, solution["packageB"])
 }
 
 func Test_select_same_selected_exactly_one_constrainted_component(t *testing.T) {
@@ -200,11 +197,10 @@ func Test_select_same_selected_exactly_one_constrainted_component(t *testing.T) 
 		[]weights.XORWithPreference{xorWithPreferred},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageB"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageC"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, solution["packageA"])
+	assert.Equal(t, 0, solution["packageB"])
+	assert.Equal(t, 0, solution["packageC"])
 }
 
 func Test_select_package_when_xor_between_packages_and_larger_package_is_selected(t *testing.T) {
@@ -264,13 +260,12 @@ func Test_select_package_when_xor_between_packages_and_larger_package_is_selecte
 		[]weights.XORWithPreference{xorWithPreferred},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageB"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item3"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, solution["packageA"])
+	assert.Equal(t, 0, solution["packageB"])
+	assert.Equal(t, 1, solution["item1"])
+	assert.Equal(t, 1, solution["item2"])
+	assert.Equal(t, 0, solution["item3"])
 }
 
 func Test_select_package_when_xor_between_packages(t *testing.T) {
@@ -326,13 +321,12 @@ func Test_select_package_when_xor_between_packages(t *testing.T) {
 		[]weights.XORWithPreference{xorWithPreferred},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageB"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 0, solution["packageA"])
+	assert.Equal(t, 1, solution["packageB"])
+	assert.Equal(t, 1, solution["item1"])
+	assert.Equal(t, 1, solution["item2"])
+	assert.Equal(t, 1, solution["item3"])
 }
 
 func Test_upgrade_package_when_xor_between_multiple_packages_case1(t *testing.T) {
@@ -363,15 +357,14 @@ func Test_upgrade_package_when_xor_between_multiple_packages_case1(t *testing.T)
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageB"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageC"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item3"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item4"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, solution["packageA"])
+	assert.Equal(t, 0, solution["packageB"])
+	assert.Equal(t, 0, solution["packageC"])
+	assert.Equal(t, 1, solution["item1"])
+	assert.Equal(t, 1, solution["item2"])
+	assert.Equal(t, 0, solution["item3"])
+	assert.Equal(t, 0, solution["item4"])
 }
 
 func Test_upgrade_package_when_xor_between_multiple_packages_case2(t *testing.T) {
@@ -405,15 +398,14 @@ func Test_upgrade_package_when_xor_between_multiple_packages_case2(t *testing.T)
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageB"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageC"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item4"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 0, solution["packageA"])
+	assert.Equal(t, 1, solution["packageB"])
+	assert.Equal(t, 0, solution["packageC"])
+	assert.Equal(t, 1, solution["item1"])
+	assert.Equal(t, 1, solution["item2"])
+	assert.Equal(t, 1, solution["item3"])
+	assert.Equal(t, 0, solution["item4"])
 }
 
 func Test_upgrade_package_when_xor_between_multiple_packages_case3(t *testing.T) {
@@ -446,15 +438,14 @@ func Test_upgrade_package_when_xor_between_multiple_packages_case3(t *testing.T)
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageB"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageC"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item4"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 0, solution["packageA"])
+	assert.Equal(t, 0, solution["packageB"])
+	assert.Equal(t, 1, solution["packageC"])
+	assert.Equal(t, 1, solution["item1"])
+	assert.Equal(t, 1, solution["item2"])
+	assert.Equal(t, 1, solution["item3"])
+	assert.Equal(t, 1, solution["item4"])
 }
 
 func Test_upgrade_package_when_xor_between_multiple_packages_case4(t *testing.T) {
@@ -487,15 +478,14 @@ func Test_upgrade_package_when_xor_between_multiple_packages_case4(t *testing.T)
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageB"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageC"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item4"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 0, solution["packageA"])
+	assert.Equal(t, 0, solution["packageB"])
+	assert.Equal(t, 1, solution["packageC"])
+	assert.Equal(t, 1, solution["item1"])
+	assert.Equal(t, 1, solution["item2"])
+	assert.Equal(t, 1, solution["item3"])
+	assert.Equal(t, 1, solution["item4"])
 }
 
 func Test_downgrade_package_when_xor_between_multiple_packages_case1(t *testing.T) {
@@ -526,15 +516,14 @@ func Test_downgrade_package_when_xor_between_multiple_packages_case1(t *testing.
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageB"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageC"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item3"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item4"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, solution["packageA"])
+	assert.Equal(t, 0, solution["packageB"])
+	assert.Equal(t, 0, solution["packageC"])
+	assert.Equal(t, 1, solution["item1"])
+	assert.Equal(t, 1, solution["item2"])
+	assert.Equal(t, 0, solution["item3"])
+	assert.Equal(t, 0, solution["item4"])
 }
 
 func Test_downgrade_package_when_xor_between_multiple_packages_case2(t *testing.T) {
@@ -565,15 +554,14 @@ func Test_downgrade_package_when_xor_between_multiple_packages_case2(t *testing.
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageB"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageC"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item3"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item4"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, solution["packageA"])
+	assert.Equal(t, 0, solution["packageB"])
+	assert.Equal(t, 0, solution["packageC"])
+	assert.Equal(t, 1, solution["item1"])
+	assert.Equal(t, 1, solution["item2"])
+	assert.Equal(t, 0, solution["item3"])
+	assert.Equal(t, 0, solution["item4"])
 }
 
 func Test_downgrade_package_when_xor_between_multiple_packages_case3(t *testing.T) {
@@ -605,15 +593,14 @@ func Test_downgrade_package_when_xor_between_multiple_packages_case3(t *testing.
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageB"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageC"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item4"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 0, solution["packageA"])
+	assert.Equal(t, 1, solution["packageB"])
+	assert.Equal(t, 0, solution["packageC"])
+	assert.Equal(t, 1, solution["item1"])
+	assert.Equal(t, 1, solution["item2"])
+	assert.Equal(t, 1, solution["item3"])
+	assert.Equal(t, 0, solution["item4"])
 }
 
 func Test_downgrade_package_when_xor_between_multiple_packages_case4(t *testing.T) {
@@ -636,15 +623,14 @@ func Test_downgrade_package_when_xor_between_multiple_packages_case4(t *testing.
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageB"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageC"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item3"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item4"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, solution["packageA"])
+	assert.Equal(t, 0, solution["packageB"])
+	assert.Equal(t, 0, solution["packageC"])
+	assert.Equal(t, 1, solution["item1"])
+	assert.Equal(t, 1, solution["item2"])
+	assert.Equal(t, 0, solution["item3"])
+	assert.Equal(t, 0, solution["item4"])
 }
 
 func change_package_when_xor_between_multiple_packages_setup() (*pldag.Model, weights.XORWithPreference) {
@@ -728,14 +714,13 @@ func Test_default_component_in_package_when_part_in_multiple_xors(t *testing.T) 
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["itemX"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["itemY"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["itemM"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["itemN"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["itemO"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, solution["packageA"])
+	assert.Equal(t, 1, solution["itemX"])
+	assert.Equal(t, 1, solution["itemY"])
+	assert.Equal(t, 0, solution["itemM"])
+	assert.Equal(t, 1, solution["itemN"])
+	assert.Equal(t, 0, solution["itemO"])
 }
 
 func Test_select_component_with_indirect_package_requirement(t *testing.T) {
@@ -776,14 +761,13 @@ func Test_select_component_with_indirect_package_requirement(t *testing.T) {
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
 	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, nil)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageE"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageF"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, solution["packageA"])
+	assert.Equal(t, 1, solution["packageE"])
+	assert.Equal(t, 1, solution["packageF"])
+	assert.Equal(t, 1, solution["item1"])
+	assert.Equal(t, 1, solution["item2"])
+	assert.Equal(t, 1, solution["item3"])
 }
 
 func Test_select_single_xor_component_when_another_xor_pair_is_preferred(t *testing.T) {
@@ -816,12 +800,11 @@ func Test_select_single_xor_component_when_another_xor_pair_is_preferred(t *test
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item3"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, solution["packageA"])
+	assert.Equal(t, 1, solution["item1"])
+	assert.Equal(t, 0, solution["item2"])
+	assert.Equal(t, 0, solution["item3"])
 }
 
 func Test_select_xor_pair_when_xor_pair_is_preferred(t *testing.T) {
@@ -859,12 +842,11 @@ func Test_select_xor_pair_when_xor_pair_is_preferred(t *testing.T) {
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, solution["packageA"])
+	assert.Equal(t, 0, solution["item1"])
+	assert.Equal(t, 1, solution["item2"])
+	assert.Equal(t, 1, solution["item3"])
 }
 
 func Test_deselect_package_when_xor_pair_is_preferred_over_single_xor_component(t *testing.T) {
@@ -912,12 +894,11 @@ func Test_deselect_package_when_xor_pair_is_preferred_over_single_xor_component(
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item3"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 0, solution["packageA"])
+	assert.Equal(t, 0, solution["item1"])
+	assert.Equal(t, 0, solution["item2"])
+	assert.Equal(t, 0, solution["item3"])
 }
 
 func Test_select_single_xor_component_when_xor_pair_is_already_selected(t *testing.T) {
@@ -962,12 +943,11 @@ func Test_select_single_xor_component_when_xor_pair_is_already_selected(t *testi
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item3"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, solution["packageA"])
+	assert.Equal(t, 1, solution["item1"])
+	assert.Equal(t, 0, solution["item2"])
+	assert.Equal(t, 0, solution["item3"])
 }
 
 func Test_select_only_package_selected_with_heavy_preferred_in_xor(t *testing.T) {
@@ -995,12 +975,11 @@ func Test_select_only_package_selected_with_heavy_preferred_in_xor(t *testing.T)
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, solution["packageA"])
+	assert.Equal(t, 0, solution["item1"])
+	assert.Equal(t, 1, solution["item2"])
+	assert.Equal(t, 1, solution["item3"])
 }
 
 func Test_select_one_component_in_xor_pair_when_single_xor_component_is_already_selected(t *testing.T) {
@@ -1036,12 +1015,11 @@ func Test_select_one_component_in_xor_pair_when_single_xor_component_is_already_
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, solution["packageA"])
+	assert.Equal(t, 0, solution["item1"])
+	assert.Equal(t, 1, solution["item2"])
+	assert.Equal(t, 1, solution["item3"])
 }
 
 func Test_select_all_components_selected(t *testing.T) {
@@ -1081,12 +1059,11 @@ func Test_select_all_components_selected(t *testing.T) {
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 1, resp.Solutions[0].Solution["item3"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 1, solution["packageA"])
+	assert.Equal(t, 0, solution["item1"])
+	assert.Equal(t, 1, solution["item2"])
+	assert.Equal(t, 1, solution["item3"])
 }
 
 func Test_select_nothing_in_optional_xor(t *testing.T) {
@@ -1109,12 +1086,11 @@ func Test_select_nothing_in_optional_xor(t *testing.T) {
 		[]weights.XORWithPreference{xorWithPreference},
 	)
 
-	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 1, len(resp.Solutions))
-	assert.Equal(t, 0, resp.Solutions[0].Solution["packageA"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item1"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item2"])
-	assert.Equal(t, 0, resp.Solutions[0].Solution["item3"])
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	assert.Equal(t, 0, solution["packageA"])
+	assert.Equal(t, 0, solution["item1"])
+	assert.Equal(t, 0, solution["item2"])
+	assert.Equal(t, 0, solution["item3"])
 }
 
 // TODO: Updated all tests with package selection when support for that is implemented.

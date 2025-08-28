@@ -8,7 +8,8 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/ourstudio-se/puan-sdk-go/pldag"
+	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
+	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
 )
 
 type Client struct {
@@ -28,40 +29,40 @@ func (c *Client) Solve(
 	polyhedron pldag.Polyhedron,
 	variables []string,
 	objective map[string]int,
-) (SolveResponse, error) {
+) (puan.Solution, error) {
 	request := newSolveRequest(polyhedron, variables, objective)
 
 	jsonData, err := json.Marshal(request)
 	if err != nil {
-		return SolveResponse{}, errors.Errorf("failed to marshal request: %s", err)
+		return puan.Solution{}, errors.Errorf("failed to marshal request: %s", err)
 	}
 
 	req, err := http.NewRequest(http.MethodPost, c.BaseURL+"/solve", bytes.NewBuffer(jsonData))
 	if err != nil {
-		return SolveResponse{}, errors.Errorf("failed to create request: %s", err)
+		return puan.Solution{}, errors.Errorf("failed to create request: %s", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.Do(req)
 	if err != nil {
-		return SolveResponse{}, errors.Errorf("failed to make request: %s", err)
+		return puan.Solution{}, errors.Errorf("failed to make request: %s", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return SolveResponse{},
+		return puan.Solution{},
 			errors.Errorf(
 				"request failed with status %d: %s", resp.StatusCode,
 				string(body),
 			)
 	}
 
-	var solveResp SolveResponse
+	var solveResp SolutionResponse
 	if err = json.NewDecoder(resp.Body).Decode(&solveResp); err != nil {
-		return SolveResponse{}, errors.Errorf("failed to decode response: %w", err)
+		return puan.Solution{}, errors.Errorf("failed to decode response: %w", err)
 	}
 
-	return solveResp, nil
+	return solveResp.getSolutionEntity()
 }

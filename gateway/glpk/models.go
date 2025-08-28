@@ -1,7 +1,7 @@
 package glpk
 
 import (
-	"github.com/ourstudio-se/puan-sdk-go/pldag"
+	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
 )
 
 func newSolveRequest(
@@ -72,7 +72,7 @@ type Variable struct {
 
 type Objective map[string]int
 
-type SolveResponse struct {
+type SolutionResponse struct {
 	Solutions []Solution `json:"solutions"`
 }
 
