@@ -1,3 +1,4 @@
+// nolint:lll
 package solve
 
 import (
@@ -13,7 +14,7 @@ import (
 const url = "http://127.0.0.1:9000"
 
 // TODO: Fix this test
-//func Test_package_variant_will_change_when_selecting_another_xor_component(t *testing.T) {
+// func Test_package_variant_will_change_when_selecting_another_xor_component(t *testing.T) {
 //	/*
 //		Given package (a) -> (and(item1,item2,item3), xor(item4,item5)), reversed package rules
 //		(and(item1,item2,item3,item4) -> (a), and(item1,item2,item3,item5) -> (a)) and with preferred
@@ -60,7 +61,11 @@ const url = "http://127.0.0.1:9000"
 //		},
 //	}
 //	selectionsIDs := selections.ExtractActiveSelectionIDS()
-//	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+//	objective := weights.CalculateObjective(
+//		model.PrimitiveVariables(),
+//		selectionsIDs,
+//		[]weights.XORWithPreference{xorWithPreference},
+//	)
 //	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 //	assert.Equal(t, 1, len(resp.Solutions))
 //	assert.Equal(t, 1, resp.Solutions[0].Solution["packageA"])
@@ -106,7 +111,11 @@ func Test_select_exactly_one_constrainted_component_with_additional_requirements
 	}
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -185,7 +194,11 @@ func Test_select_same_selected_exactly_one_constrainted_component(t *testing.T) 
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
 
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreferred})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreferred},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -222,7 +235,13 @@ func Test_select_package_when_xor_between_packages_and_larger_package_is_selecte
 		PreferredID: preferred,
 	}
 
-	root, _ := model.SetAnd(exactlyOnePackage, packageARequiredItems, packageBRequiredItems, itemsInAllPackages, reversedPackageB)
+	root, _ := model.SetAnd(
+		exactlyOnePackage,
+		packageARequiredItems,
+		packageBRequiredItems,
+		itemsInAllPackages,
+		reversedPackageB,
+	)
 	_ = model.Assume(root)
 
 	polyhedron := model.GeneratePolyhedron()
@@ -239,7 +258,11 @@ func Test_select_package_when_xor_between_packages_and_larger_package_is_selecte
 	}
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreferred})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreferred},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -278,7 +301,13 @@ func Test_select_package_when_xor_between_packages(t *testing.T) {
 		PreferredID: preferred,
 	}
 
-	root, _ := model.SetAnd(exactlyOnePackage, packageARequiredItems, packageBRequiredItems, itemsInAllPackages, reversedPackageB)
+	root, _ := model.SetAnd(
+		exactlyOnePackage,
+		packageARequiredItems,
+		packageBRequiredItems,
+		itemsInAllPackages,
+		reversedPackageB,
+	)
 	_ = model.Assume(root)
 
 	polyhedron := model.GeneratePolyhedron()
@@ -291,7 +320,11 @@ func Test_select_package_when_xor_between_packages(t *testing.T) {
 	}
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreferred})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreferred},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -324,7 +357,11 @@ func Test_upgrade_package_when_xor_between_multiple_packages_case1(t *testing.T)
 	}
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -362,7 +399,11 @@ func Test_upgrade_package_when_xor_between_multiple_packages_case2(t *testing.T)
 	}
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -399,7 +440,11 @@ func Test_upgrade_package_when_xor_between_multiple_packages_case3(t *testing.T)
 		},
 	}
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -436,7 +481,11 @@ func Test_upgrade_package_when_xor_between_multiple_packages_case4(t *testing.T)
 		},
 	}
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -471,7 +520,11 @@ func Test_downgrade_package_when_xor_between_multiple_packages_case1(t *testing.
 		},
 	}
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -506,7 +559,11 @@ func Test_downgrade_package_when_xor_between_multiple_packages_case2(t *testing.
 		},
 	}
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -542,7 +599,11 @@ func Test_downgrade_package_when_xor_between_multiple_packages_case3(t *testing.
 	}
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -569,7 +630,11 @@ func Test_downgrade_package_when_xor_between_multiple_packages_case4(t *testing.
 	selections := weights.Selections{}
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -608,7 +673,15 @@ func change_package_when_xor_between_multiple_packages_setup() (*pldag.Model, we
 		PreferredID: preferred,
 	}
 
-	root, _ := model.SetAnd(exactlyOnePackage, packageARequiredItems, packageBRequiredItems, packageCRequiredItems, itemsInAllPackages, itemsInPackageBOrC, reversedPackageC)
+	root, _ := model.SetAnd(
+		exactlyOnePackage,
+		packageARequiredItems,
+		packageBRequiredItems,
+		packageCRequiredItems,
+		itemsInAllPackages,
+		itemsInPackageBOrC,
+		reversedPackageC,
+	)
 	_ = model.Assume(root)
 
 	return model, xorWithPreference
@@ -649,7 +722,11 @@ func Test_default_component_in_package_when_part_in_multiple_xors(t *testing.T) 
 	selections := weights.Selections{}
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -678,7 +755,12 @@ func Test_select_component_with_indirect_package_requirement(t *testing.T) {
 
 	reversedPackageA, _ := model.SetImply(includedItemsInA, "packageA")
 
-	root, _ := model.SetAnd(packageERequiresF, packageFRequiresA, packageARequiresItems, reversedPackageA)
+	root, _ := model.SetAnd(
+		packageERequiresF,
+		packageFRequiresA,
+		packageARequiresItems,
+		reversedPackageA,
+	)
 	_ = model.Assume(root)
 
 	selections := weights.Selections{
@@ -728,7 +810,11 @@ func Test_select_single_xor_component_when_another_xor_pair_is_preferred(t *test
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -767,7 +853,11 @@ func Test_select_xor_pair_when_xor_pair_is_preferred(t *testing.T) {
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -816,7 +906,11 @@ func Test_deselect_package_when_xor_pair_is_preferred_over_single_xor_component(
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -834,7 +928,8 @@ func Test_select_single_xor_component_when_xor_pair_is_already_selected(t *testi
 
 	model, xorWithPreference := select_single_xor_component_when_another_xor_pair_is_preferred_setup()
 
-	selections := weights.Selections{ // TODO: How should packages be handled as selections as unit or sequential?
+	// TODO: How should packages be handled as selections as unit or sequential?
+	selections := weights.Selections{
 		{
 			ID:     "packageA",
 			Action: weights.ADD,
@@ -861,7 +956,11 @@ func Test_select_single_xor_component_when_xor_pair_is_already_selected(t *testi
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -890,7 +989,11 @@ func Test_select_only_package_selected_with_heavy_preferred_in_xor(t *testing.T)
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -927,7 +1030,11 @@ func Test_select_one_component_in_xor_pair_when_single_xor_component_is_already_
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -968,7 +1075,11 @@ func Test_select_all_components_selected(t *testing.T) {
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -992,7 +1103,11 @@ func Test_select_nothing_in_optional_xor(t *testing.T) {
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []weights.XORWithPreference{xorWithPreference})
+	objective := weights.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]weights.XORWithPreference{xorWithPreference},
+	)
 
 	resp, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, len(resp.Solutions))
@@ -1027,7 +1142,14 @@ func select_single_xor_component_when_another_xor_pair_is_preferred_setup() (*pl
 		PreferredID: packageVariantOne,
 	}
 
-	root, _ := model.SetAnd(packageA, packageExactlyOneOfItem1Item2, packageExactlyOneOfItem1Item3, reversePackageVariantOne, reversePackageVariantTwo) // TODO: ska man kunna ta item1 med a,item2,item3?
+	root, _ := model.SetAnd(
+		packageA,
+		packageExactlyOneOfItem1Item2,
+		packageExactlyOneOfItem1Item3,
+		reversePackageVariantOne,
+		reversePackageVariantTwo,
+	)
+	// TODO: ska man kunna ta item1 med a,item2,item3?
 	_ = model.Assume(root)
 
 	return model, xorWithPreference
