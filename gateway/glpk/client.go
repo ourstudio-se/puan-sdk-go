@@ -3,7 +3,6 @@ package glpk
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -44,7 +43,7 @@ func (c *Client) Solve(
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := c.Client.Do(req)
+	resp, err := c.Do(req)
 	if err != nil {
 		return SolveResponse{}, errors.Errorf("failed to make request: %s", err)
 	}
@@ -52,7 +51,11 @@ func (c *Client) Solve(
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return SolveResponse{}, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(body))
+		return SolveResponse{},
+			errors.Errorf(
+				"request failed with status %d: %s", resp.StatusCode,
+				string(body),
+			)
 	}
 
 	var solveResp SolveResponse

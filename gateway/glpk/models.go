@@ -1,34 +1,14 @@
 package glpk
 
 import (
-	"bytes"
-	"encoding/json"
-	"net/http"
-
-	"github.com/go-errors/errors"
-
 	"github.com/ourstudio-se/puan-sdk-go/pldag"
 )
 
-func (c *Client) newSolveRequestHTTP(polyhedron pldag.Polyhedron, variables []string, objective ...Objective) (*http.Request, error) {
-	request := newSolveRequest(polyhedron, variables, objective...)
-
-	jsonData, err := json.Marshal(request)
-	if err != nil {
-		return nil, errors.Errorf("failed to marshal request: %s", err)
-	}
-
-	req, err := http.NewRequest(http.MethodPost, c.BaseURL+"/solve", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return nil, errors.Errorf("failed to create request: %s", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	return req, nil
-}
-
-func newSolveRequest(polyhedron pldag.Polyhedron, variables []string, objective ...Objective) *SolveRequest {
+func newSolveRequest(
+	polyhedron pldag.Polyhedron,
+	variables []string,
+	objective ...Objective,
+) *SolveRequest {
 	sparseMatrix := polyhedron.SparseMatrix()
 	b := polyhedron.B()
 

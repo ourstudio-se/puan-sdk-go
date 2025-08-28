@@ -135,7 +135,7 @@ type (
 
 func (m *Model) PrimitiveVariables() []string {
 	constraintIDs := make([]string, len(m.constraints))
-	for i, _ := range m.constraints {
+	for i := range m.constraints {
 		constraintIDs[i] = m.constraints[i].id
 	}
 
