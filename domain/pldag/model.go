@@ -18,9 +18,26 @@ type Polyhedron struct {
 }
 
 type SparseMatrix struct {
-	Row    []int
-	Column []int
-	Value  []int
+	rows    []int
+	columns []int
+	values  []int
+	shape   Shape
+}
+
+func (s SparseMatrix) Rows() []int {
+	return s.rows
+}
+
+func (s SparseMatrix) Columns() []int {
+	return s.columns
+}
+
+func (s SparseMatrix) Values() []int {
+	return s.values
+}
+
+func (s SparseMatrix) Shape() Shape {
+	return s.shape
 }
 
 func (p Polyhedron) SparseMatrix() SparseMatrix {
@@ -39,9 +56,10 @@ func (p Polyhedron) SparseMatrix() SparseMatrix {
 	}
 
 	return SparseMatrix{
-		Row:    row,
-		Column: column,
-		Value:  value,
+		rows:    row,
+		columns: column,
+		values:  value,
+		shape:   p.shape(),
 	}
 }
 
@@ -57,7 +75,7 @@ func (s Shape) NrOfColumns() int {
 	return s.columns
 }
 
-func (p Polyhedron) Shape() Shape {
+func (p Polyhedron) shape() Shape {
 	if len(p.aMatrix) == 0 {
 		return Shape{}
 	}

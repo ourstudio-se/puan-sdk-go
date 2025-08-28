@@ -30,23 +30,16 @@ func (c *Client) Solve(
 	variables []string,
 	objective map[string]int,
 ) (puan.Solution, error) {
-	request := newSolveRequest(polyhedron, variables, objective)
+	payload := newRequestPayload(polyhedron, variables, objective)
 
-	jsonData, err := json.Marshal(request)
+	request, err := c.newRequest(payload)
 	if err != nil {
-		return puan.Solution{}, errors.Errorf("failed to marshal request: %s", err)
+		return puan.Solution{}, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, c.BaseURL+"/solve", bytes.NewBuffer(jsonData))
+	resp, err := c.Do(request)
 	if err != nil {
-		return puan.Solution{}, errors.Errorf("failed to create request: %s", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.Do(req)
-	if err != nil {
-		return puan.Solution{}, errors.Errorf("failed to make request: %s", err)
+		return puan.Solution{}, errors.Wrap(err, 0)
 	}
 	defer resp.Body.Close()
 
@@ -54,15 +47,54 @@ func (c *Client) Solve(
 		body, _ := io.ReadAll(resp.Body)
 		return puan.Solution{},
 			errors.Errorf(
-				"request failed with status %d: %s", resp.StatusCode,
+				"body failed with status %d: %s", resp.StatusCode,
 				string(body),
 			)
 	}
 
 	var solveResp SolutionResponse
 	if err = json.NewDecoder(resp.Body).Decode(&solveResp); err != nil {
-		return puan.Solution{}, errors.Errorf("failed to decode response: %w", err)
+		return puan.Solution{}, errors.Wrap(err, 0)
 	}
 
 	return solveResp.getSolutionEntity()
+}
+
+func newRequestPayload(
+	polyhedron pldag.Polyhedron,
+	variableIDs []string,
+	objective Objective,
+) SolveRequest {
+	A := toSparseMatrix(polyhedron.SparseMatrix())
+	b := polyhedron.B()
+	variables := toBooleanVariables(variableIDs)
+	objectives := []Objective{objective}
+
+	request := SolveRequest{
+		Polyhedron: Polyhedron{
+			A:         A,
+			B:         b,
+			Variables: variables,
+		},
+		Objectives: objectives,
+		Direction:  "maximize",
+	}
+
+	return request
+}
+
+func (c *Client) newRequest(body SolveRequest) (*http.Request, error) {
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, errors.Wrap(err, 0)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, c.BaseURL+"/solve", bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, errors.Wrap(err, 0)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	return req, nil
 }

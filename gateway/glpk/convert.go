@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-errors/errors"
 
+	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
 )
 
@@ -45,4 +46,28 @@ func (solution SolutionResponse) validate() error {
 func (solution SolutionResponse) asEntity() puan.Solution {
 	entity := puan.Solution(solution.Solutions[0].Solution)
 	return entity
+}
+
+func toSparseMatrix(entity pldag.SparseMatrix) SparseMatrix {
+	return SparseMatrix{
+		Rows: entity.Rows(),
+		Cols: entity.Columns(),
+		Vals: entity.Values(),
+		Shape: Shape{
+			Nrows: entity.Shape().NrOfRows(),
+			Ncols: entity.Shape().NrOfColumns(),
+		},
+	}
+}
+
+func toBooleanVariables(variableIDs []string) []Variable {
+	var variables []Variable
+	for _, v := range variableIDs {
+		variables = append(variables, Variable{
+			ID:    v,
+			Bound: [2]int{0, 1},
+		})
+	}
+
+	return variables
 }

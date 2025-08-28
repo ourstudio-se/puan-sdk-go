@@ -1,47 +1,5 @@
 package glpk
 
-import (
-	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
-)
-
-func newSolveRequest(
-	polyhedron pldag.Polyhedron,
-	variables []string,
-	objective ...Objective,
-) *SolveRequest {
-	sparseMatrix := polyhedron.SparseMatrix()
-	b := polyhedron.B()
-
-	var tmpVariables []Variable
-	for _, v := range variables {
-		tmpVariables = append(tmpVariables, Variable{
-			ID:    v,
-			Bound: [2]int{0, 1},
-		})
-	}
-
-	request := &SolveRequest{
-		Polyhedron: Polyhedron{
-			A: SparseMatrix{
-				Rows: sparseMatrix.Row,
-				Cols: sparseMatrix.Column,
-				Vals: sparseMatrix.Value,
-				Shape: Shape{
-					Nrows: polyhedron.Shape().NrOfColumns(),
-					Ncols: polyhedron.Shape().NrOfRows(),
-				},
-			},
-			B:         b,
-			Variables: tmpVariables,
-		},
-
-		Objectives: append([]Objective{}, objective...),
-		Direction:  "maximize",
-	}
-
-	return request
-}
-
 type SolveRequest struct {
 	Polyhedron Polyhedron  `json:"polyhedron"`
 	Objectives []Objective `json:"objectives"`

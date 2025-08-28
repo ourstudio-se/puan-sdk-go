@@ -86,7 +86,7 @@ func Test_coefficientValues_calculateMaxAbsInnerBound(t *testing.T) {
 			want: 0,
 		},
 		{
-			name: "nil Value",
+			name: "nil values",
 			c:    nil,
 			want: 0,
 		},
@@ -446,7 +446,7 @@ func assertEqual(
 			}
 		}
 		if !found {
-			t.Errorf("Expected Row %v not found in actual matrix", row)
+			t.Errorf("Expected rows %v not found in actual matrix", row)
 		}
 	}
 
@@ -575,7 +575,7 @@ func TestPolyhedron_Shape(t *testing.T) {
 			p := Polyhedron{
 				aMatrix: tt.aMatrix,
 			}
-			assert.Equalf(t, tt.want, p.Shape(), "Shape()")
+			assert.Equalf(t, tt.want, p.shape(), "shape()")
 		})
 	}
 }
@@ -592,9 +592,10 @@ func TestPolyhedron_SparseMatrix(t *testing.T) {
 				{1, 1},
 			},
 			want: SparseMatrix{
-				Row:    []int{0, 0},
-				Column: []int{0, 1},
-				Value:  []int{1, 1},
+				rows:    []int{0, 0},
+				columns: []int{0, 1},
+				values:  []int{1, 1},
+				shape:   Shape{1, 2},
 			},
 		},
 		{
@@ -604,9 +605,10 @@ func TestPolyhedron_SparseMatrix(t *testing.T) {
 				{1, 1, 0},
 			},
 			want: SparseMatrix{
-				Row:    []int{0, 0, 0, 1, 1},
-				Column: []int{0, 1, 2, 0, 1},
-				Value:  []int{1, 1, 2, 1, 1},
+				rows:    []int{0, 0, 0, 1, 1},
+				columns: []int{0, 1, 2, 0, 1},
+				values:  []int{1, 1, 2, 1, 1},
+				shape:   Shape{2, 3},
 			},
 		},
 	}
