@@ -377,7 +377,14 @@ func Test_newConstraintID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, newConstraintID(tt.coefficients, tt.bias), "newConstraintID(%v, %v)", tt.coefficients, tt.bias)
+			assert.Equalf(
+				t,
+				tt.want,
+				newConstraintID(tt.coefficients, tt.bias),
+				"newConstraintID(%v, %v)",
+				tt.coefficients,
+				tt.bias,
+			)
 		})
 	}
 }
@@ -420,7 +427,13 @@ func TestModel_GeneratePolyhedron(t *testing.T) {
 	assertEqual(t, expectedMatrix, lp.aMatrix, expectedVector, lp.bVector)
 }
 
-func assertEqual(t *testing.T, expectedMatrix, actualMatrix [][]int, expectedVector, actualVector []int) {
+func assertEqual(
+	t *testing.T,
+	expectedMatrix,
+	actualMatrix [][]int,
+	expectedVector,
+	actualVector []int,
+) {
 	sortedActualMatrix := [][]int{}
 	sortedActualVector := []int{}
 	for _, row := range expectedMatrix {

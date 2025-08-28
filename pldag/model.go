@@ -147,7 +147,7 @@ func (m *Model) PrimitiveVariables() []string {
 func (c AuxiliaryConstraints) coefficientIDs() []string {
 	idMap := make(map[string]any)
 	for _, constraint := range c {
-		for coefficientID, _ := range constraint.coefficients {
+		for coefficientID := range constraint.coefficients {
 			idMap[coefficientID] = nil
 		}
 	}
@@ -291,7 +291,9 @@ func (m *Model) GeneratePolyhedron() Polyhedron {
 	var bVector []int
 
 	constraintsWithSupport := m.toAuxiliaryConstraintsWithSupport()
-	constraintsInMatrix := append(constraintsWithSupport, m.assumeConstraints...)
+	var constraintsInMatrix AuxiliaryConstraints
+	constraintsInMatrix = append(constraintsInMatrix, constraintsWithSupport...)
+	constraintsInMatrix = append(constraintsInMatrix, m.assumeConstraints...)
 	for _, c := range constraintsInMatrix {
 		row := c.asMatrixRow(m.variables)
 		bias := int(c.bias)
@@ -349,7 +351,6 @@ func (c Constraint) newConstraintImpliesSupport() AuxiliaryConstraint {
 		coefficients: newCoefficients,
 		bias:         negatedBias,
 	}
-
 }
 
 func (c Constraint) newSupportImpliesConstraint() AuxiliaryConstraint {
@@ -489,9 +490,9 @@ func newConstraintID(coefficients coefficientValues, bias Bias) string {
 	h := sha1.New()
 	for _, key := range keys {
 		h.Write([]byte(key))
-		h.Write([]byte(fmt.Sprintf("%d", coefficients[key])))
+		fmt.Fprintf(h, "%d", coefficients[key])
 	}
-	h.Write([]byte(fmt.Sprintf("%d", bias)))
+	fmt.Fprintf(h, "%d", bias)
 
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
