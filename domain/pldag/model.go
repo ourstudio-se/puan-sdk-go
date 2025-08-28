@@ -203,7 +203,6 @@ func New() *Model {
 
 func (m *Model) SetPrimitives(primitives ...string) {
 	m.variables = append(m.variables, primitives...)
-	// m.primitive ...
 }
 
 func (m *Model) SetAnd(variables ...string) (string, error) {
