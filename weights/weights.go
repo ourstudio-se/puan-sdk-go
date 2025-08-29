@@ -103,34 +103,34 @@ func Create(variables, selectedIDs, preferredIDs []string) Weights {
 	return weights
 }
 
-func (w *Weights) setPreferredWeights(preferredIDs []string) {
+func (w Weights) setPreferredWeights(preferredIDs []string) {
 	for _, preferredID := range preferredIDs {
-		(*w)[preferredID] = 0
+		(w)[preferredID] = 0
 	}
 
 	negativeSum := w.calculateSumOfNonSelectedWeights()
 	positiveSum := w.calculateSumOfSelectedWeights()
 
 	for _, preferredID := range preferredIDs {
-		(*w)[preferredID] = negativeSum + positiveSum + 1
+		(w)[preferredID] = negativeSum + positiveSum + 1
 	}
 }
 
-func (w *Weights) setSelectedWeights(selectedIDs []string) {
+func (w Weights) setSelectedWeights(selectedIDs []string) {
 	for _, selectedID := range selectedIDs {
-		(*w)[selectedID] = 0
+		(w)[selectedID] = 0
 	}
 
 	for _, selectedID := range selectedIDs {
 		negativeSum := w.calculateSumOfNonSelectedWeights()
 		positiveSum := w.calculateSumOfSelectedWeights()
-		(*w)[selectedID] = negativeSum + positiveSum + 1
+		(w)[selectedID] = negativeSum + positiveSum + 1
 	}
 }
 
-func (w *Weights) calculateSumOfSelectedWeights() int {
+func (w Weights) calculateSumOfSelectedWeights() int {
 	positiveSum := 0
-	for _, weight := range *w {
+	for _, weight := range w {
 		if weight > 0 {
 			positiveSum += weight
 		}
@@ -139,9 +139,9 @@ func (w *Weights) calculateSumOfSelectedWeights() int {
 	return positiveSum
 }
 
-func (w *Weights) calculateSumOfNonSelectedWeights() int {
+func (w Weights) calculateSumOfNonSelectedWeights() int {
 	negativeSum := 0
-	for _, weight := range *w {
+	for _, weight := range w {
 		if weight < 0 {
 			negativeSum += -weight
 		}

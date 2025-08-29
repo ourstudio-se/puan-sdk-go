@@ -202,6 +202,6 @@ func Test_Weights_Concat(t *testing.T) {
 		"z": 3,
 	}
 
-	w1.Concat(w2)
-	assert.Equal(t, want, w1)
+	actual := w1.Concat(w2)
+	assert.Equal(t, want, actual)
 }

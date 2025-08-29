@@ -34,17 +34,20 @@ func CalculateObjective(
 		Concat(xorWeights).
 		Concat(preferenceWeights)
 
-	return *weights
+	return weights
 }
 
-func (w *Weights) Concat(weights Weights) *Weights {
-	maps.Copy(*w, weights)
-	return w
+func (w Weights) Concat(weightsToConcat Weights) Weights {
+	weights := make(Weights)
+	maps.Copy(weights, w)
+	maps.Copy(weights, weightsToConcat)
+
+	return weights
 }
 
-func (w *Weights) sum() int {
+func (w Weights) sum() int {
 	sum := 0
-	for _, weight := range *w {
+	for _, weight := range w {
 		sum += weight
 	}
 
