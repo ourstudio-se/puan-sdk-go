@@ -1,4 +1,4 @@
-package weights
+package puan
 
 import (
 	"maps"
@@ -7,6 +7,8 @@ import (
 )
 
 const NOT_SELECTED_WEIGHT = -2
+
+type Weights map[string]int
 
 type XORWithPreference struct {
 	XORID       string

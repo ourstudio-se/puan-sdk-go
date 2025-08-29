@@ -9,7 +9,6 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
 	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
-	"github.com/ourstudio-se/puan-sdk-go/weights"
 )
 
 const url = "http://127.0.0.1:9000"
@@ -61,7 +60,7 @@ const url = "http://127.0.0.1:9000"
 //			Action: weights.ADD,
 //		},
 //	}
-//	selectionsIDs := selections.ExtractActiveSelectionIDS()
+//	selectionsIDs := selections.GetImpactingSelectionIDS()
 //	objective := weights.CalculateObjective(
 //		model.PrimitiveVariables(),
 //		selectionsIDs,
@@ -88,7 +87,7 @@ func Test_select_exactly_one_constrainted_component_with_additional_requirements
 	packageB, _ := model.SetEquivalent("packageB", "item1")
 
 	preferred, _ := model.SetAnd(exactlyOnePackage, "packageA")
-	xorWithPreference := weights.XORWithPreference{
+	xorWithPreference := puan.XORWithPreference{
 		XORID:       exactlyOnePackage,
 		PreferredID: preferred,
 	}
@@ -99,22 +98,22 @@ func Test_select_exactly_one_constrainted_component_with_additional_requirements
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageA",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "packageB",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 	}
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -147,19 +146,19 @@ func Test_select_same_not_constrainted_selected_component(t *testing.T) {
 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageB",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "packageB",
-			Action: weights.REMOVE,
+			Action: puan.REMOVE,
 		},
 	}
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, nil)
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, nil)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 0, solution["packageA"])
@@ -177,7 +176,7 @@ func Test_select_same_selected_exactly_one_constrainted_component(t *testing.T) 
 
 	exactlyOnePackage, _ := model.SetXor("packageA", "packageB", "packageC")
 	preferred, _ := model.SetAnd("packageA", exactlyOnePackage)
-	xorWithPreferred := weights.XORWithPreference{
+	xorWithPreferred := puan.XORWithPreference{
 		XORID:       exactlyOnePackage,
 		PreferredID: preferred,
 	}
@@ -187,23 +186,23 @@ func Test_select_same_selected_exactly_one_constrainted_component(t *testing.T) 
 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageB",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "packageB",
-			Action: weights.REMOVE,
+			Action: puan.REMOVE,
 		},
 	}
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
+	selectionsIDs := selections.GetImpactingSelectionIDS()
 
-	objective := weights.CalculateObjective(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreferred},
+		[]puan.XORWithPreference{xorWithPreferred},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -235,7 +234,7 @@ func Test_select_package_when_xor_between_packages_and_larger_package_is_selecte
 	reversedPackageB, _ := model.SetImply(includedItemsInB, "packageB")
 
 	preferred, _ := model.SetAnd("packageA", exactlyOnePackage)
-	xorWithPreferred := weights.XORWithPreference{
+	xorWithPreferred := puan.XORWithPreference{
 		XORID:       exactlyOnePackage,
 		PreferredID: preferred,
 	}
@@ -251,22 +250,22 @@ func Test_select_package_when_xor_between_packages_and_larger_package_is_selecte
 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageB",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "packageA",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 	}
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreferred},
+		[]puan.XORWithPreference{xorWithPreferred},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -300,7 +299,7 @@ func Test_select_package_when_xor_between_packages(t *testing.T) {
 	reversedPackageB, _ := model.SetImply(includedItemsInB, "packageB")
 
 	preferred, _ := model.SetAnd("packageA", exactlyOnePackage)
-	xorWithPreferred := weights.XORWithPreference{
+	xorWithPreferred := puan.XORWithPreference{
 		XORID:       exactlyOnePackage,
 		PreferredID: preferred,
 	}
@@ -316,18 +315,18 @@ func Test_select_package_when_xor_between_packages(t *testing.T) {
 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageB",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 	}
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreferred},
+		[]puan.XORWithPreference{xorWithPreferred},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -352,18 +351,18 @@ func Test_upgrade_package_when_xor_between_multiple_packages_case1(t *testing.T)
 	client := glpk.NewClient(url)
 
 	// Case 1: No preselected packages, select package A
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageA",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 	}
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -389,22 +388,22 @@ func Test_upgrade_package_when_xor_between_multiple_packages_case2(t *testing.T)
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageA",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "packageB",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 	}
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -430,21 +429,21 @@ func Test_upgrade_package_when_xor_between_multiple_packages_case3(t *testing.T)
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageA",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "packageC",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 	}
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -470,21 +469,21 @@ func Test_upgrade_package_when_xor_between_multiple_packages_case4(t *testing.T)
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageB",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "packageC",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 	}
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -508,21 +507,21 @@ func Test_downgrade_package_when_xor_between_multiple_packages_case1(t *testing.
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageC",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "packageA",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 	}
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -546,21 +545,21 @@ func Test_downgrade_package_when_xor_between_multiple_packages_case2(t *testing.
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageB",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "packageA",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 	}
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -584,22 +583,22 @@ func Test_downgrade_package_when_xor_between_multiple_packages_case3(t *testing.
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageC",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "packageB",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 	}
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -623,13 +622,13 @@ func Test_downgrade_package_when_xor_between_multiple_packages_case4(t *testing.
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selections := weights.Selections{}
+	selections := puan.Selections{}
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -642,7 +641,7 @@ func Test_downgrade_package_when_xor_between_multiple_packages_case4(t *testing.
 	assert.Equal(t, 0, solution["item4"])
 }
 
-func change_package_when_xor_between_multiple_packages_setup() (*pldag.Model, weights.XORWithPreference) {
+func change_package_when_xor_between_multiple_packages_setup() (*pldag.Model, puan.XORWithPreference) {
 	model := pldag.New()
 	model.SetPrimitives("packageA", "packageB", "packageC", "item1", "item2", "item3", "item4")
 
@@ -663,7 +662,7 @@ func change_package_when_xor_between_multiple_packages_setup() (*pldag.Model, we
 	reversedPackageC, _ := model.SetImply(includedItemsInC, "packageC")
 
 	preferred, _ := model.SetAnd("packageA", exactlyOnePackage)
-	xorWithPreference := weights.XORWithPreference{
+	xorWithPreference := puan.XORWithPreference{
 		XORID:       exactlyOnePackage,
 		PreferredID: preferred,
 	}
@@ -703,7 +702,7 @@ func Test_default_component_in_package_when_part_in_multiple_xors(t *testing.T) 
 	reversedPackageVariantOne, _ := model.SetImply(includedItemsInVariantOne, "packageA")
 	reversedPackageVariantTwo, _ := model.SetImply(includedItemsInVariantTwo, "packageA")
 
-	xorWithPreference := weights.XORWithPreference{
+	xorWithPreference := puan.XORWithPreference{
 		XORID:       exactlyOnePackage,
 		PreferredID: packageVariantOne,
 	}
@@ -714,13 +713,13 @@ func Test_default_component_in_package_when_part_in_multiple_xors(t *testing.T) 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selections := weights.Selections{}
+	selections := puan.Selections{}
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -757,18 +756,18 @@ func Test_select_component_with_indirect_package_requirement(t *testing.T) {
 	)
 	_ = model.Assume(root)
 
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageE",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 	}
 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, nil)
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, nil)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
 	assert.Equal(t, 1, solution["packageA"])
@@ -788,25 +787,25 @@ func Test_select_single_xor_component_when_another_xor_pair_is_preferred(t *test
 
 	model, xorWithPreference := select_single_xor_component_when_another_xor_pair_is_preferred_setup()
 
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageA",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "item1",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 	}
 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -826,29 +825,29 @@ func Test_select_xor_pair_when_xor_pair_is_preferred(t *testing.T) {
 
 	model, xorWithPreference := select_single_xor_component_when_another_xor_pair_is_preferred_setup()
 
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageA",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "item2",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "item3",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 	}
 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -866,41 +865,41 @@ func Test_deselect_package_when_xor_pair_is_preferred_over_single_xor_component(
 
 	model, xorWithPreference := select_single_xor_component_when_another_xor_pair_is_preferred_setup()
 
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageA",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "item2",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "item3",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "packageA",
-			Action: weights.REMOVE,
+			Action: puan.REMOVE,
 		},
 		{
 			ID:     "item2",
-			Action: weights.REMOVE,
+			Action: puan.REMOVE,
 		},
 		{
 			ID:     "item3",
-			Action: weights.REMOVE,
+			Action: puan.REMOVE,
 		},
 	}
 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -919,37 +918,37 @@ func Test_select_single_xor_component_when_xor_pair_is_already_selected(t *testi
 	model, xorWithPreference := select_single_xor_component_when_another_xor_pair_is_preferred_setup()
 
 	// TODO: How should packages be handled as selections as unit or sequential?
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageA",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "item2",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "item3",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "packageA",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "item1",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 	}
 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -967,21 +966,21 @@ func Test_select_only_package_selected_with_heavy_preferred_in_xor(t *testing.T)
 
 	model, xorWithPreference := select_single_xor_component_when_another_xor_pair_is_preferred_setup()
 
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageA",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 	}
 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -999,29 +998,29 @@ func Test_select_one_component_in_xor_pair_when_single_xor_component_is_already_
 
 	model, xorWithPreference := select_single_xor_component_when_another_xor_pair_is_preferred_setup()
 
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageA",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "item1",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "item2",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 	}
 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -1039,33 +1038,33 @@ func Test_select_all_components_selected(t *testing.T) {
 
 	model, xorWithPreference := select_single_xor_component_when_another_xor_pair_is_preferred_setup()
 
-	selections := weights.Selections{
+	selections := puan.Selections{
 		{
 			ID:     "packageA",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "item3",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "item1",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 		{
 			ID:     "item2",
-			Action: weights.ADD,
+			Action: puan.ADD,
 		},
 	}
 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -1083,16 +1082,16 @@ func Test_select_nothing_in_optional_xor(t *testing.T) {
 
 	model, xorWithPreference := select_single_xor_component_when_another_xor_pair_is_preferred_setup()
 
-	selections := weights.Selections{}
+	selections := puan.Selections{}
 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
-	selectionsIDs := selections.ExtractActiveSelectionIDS()
-	objective := weights.CalculateObjective(
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]weights.XORWithPreference{xorWithPreference},
+		[]puan.XORWithPreference{xorWithPreference},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -1103,7 +1102,7 @@ func Test_select_nothing_in_optional_xor(t *testing.T) {
 }
 
 // TODO: Updated all tests with package selection when support for that is implemented.
-func select_single_xor_component_when_another_xor_pair_is_preferred_setup() (*pldag.Model, weights.XORWithPreference) {
+func select_single_xor_component_when_another_xor_pair_is_preferred_setup() (*pldag.Model, puan.XORWithPreference) {
 	model := pldag.New()
 	model.SetPrimitives("packageA", "item1", "item2", "item3")
 
@@ -1122,7 +1121,7 @@ func select_single_xor_component_when_another_xor_pair_is_preferred_setup() (*pl
 	reversePackageVariantOne, _ := model.SetImply(includedItemsInVariantOne, "packageA")
 	reversePackageVariantTwo, _ := model.SetImply("item1", "packageA")
 
-	xorWithPreference := weights.XORWithPreference{
+	xorWithPreference := puan.XORWithPreference{
 		XORID:       exactlyOneVariant,
 		PreferredID: packageVariantOne,
 	}
