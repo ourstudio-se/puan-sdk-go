@@ -32,11 +32,15 @@ func CalculateObjective2(
 		xorWithPreference,
 		weightsOfNonSelectedPrimitivesAndXORVariants,
 	)
-	nonSelectedAndXORVariantsWeights := weightsOfNonSelectedPrimitivesAndXORVariants.Concat(nonPreferredWeights)
+	nonSelectedAndXORVariantsWeights := weightsOfNonSelectedPrimitivesAndXORVariants.Concat(
+		nonPreferredWeights,
+	)
 
-	selectedWeights := calculateSelectedWeights2(nonSelectedAndXORVariantsWeights, selectedPrimitives)
+	selectedWeights := calculateSelectedWeights2(selectedPrimitives, nonSelectedAndXORVariantsWeights)
 
-	return nonSelectedAndXORVariantsWeights
+	weights := nonSelectedAndXORVariantsWeights.Concat(selectedWeights)
+
+	return weights
 }
 
 func getWeightsOfNonSelectedPrimitivesAndXORVariants(
@@ -83,5 +87,5 @@ func calculateSelectedWeights2(
 	selectedPrimitives []string,
 	nonSelectedAndXORVariantsWeights Weights,
 ) Weights {
-	// TODO
+	panic("not implemented")
 }
