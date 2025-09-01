@@ -8,11 +8,93 @@ import (
 	"slices"
 
 	"github.com/go-errors/errors"
+
+	"github.com/ourstudio-se/puan-sdk-go/utils"
 )
 
 type Polyhedron struct {
 	aMatrix [][]int
 	bVector []int
+}
+
+type SparseMatrix struct {
+	rows    []int
+	columns []int
+	values  []int
+	shape   Shape
+}
+
+func (s SparseMatrix) Rows() []int {
+	return s.rows
+}
+
+func (s SparseMatrix) Columns() []int {
+	return s.columns
+}
+
+func (s SparseMatrix) Values() []int {
+	return s.values
+}
+
+func (s SparseMatrix) Shape() Shape {
+	return s.shape
+}
+
+func (p Polyhedron) SparseMatrix() SparseMatrix {
+	var row []int
+	var column []int
+	var value []int
+
+	for rowIndex := range p.aMatrix {
+		for columIndex := range p.aMatrix[rowIndex] {
+			if p.aMatrix[rowIndex][columIndex] != 0 {
+				row = append(row, rowIndex)
+				column = append(column, columIndex)
+				value = append(value, p.aMatrix[rowIndex][columIndex])
+			}
+		}
+	}
+
+	return NewSparseMatrix(row, column, value, p.shape())
+}
+
+func NewSparseMatrix(rows, columns, values []int, shape Shape) SparseMatrix {
+	return SparseMatrix{
+		rows:    rows,
+		columns: columns,
+		values:  values,
+		shape:   shape,
+	}
+}
+
+type Shape struct {
+	nrOfRows, nrOfColumns int
+}
+
+func NewShape(rows, columns int) Shape {
+	return Shape{
+		nrOfRows:    rows,
+		nrOfColumns: columns,
+	}
+}
+
+func (s Shape) NrOfRows() int {
+	return s.nrOfRows
+}
+
+func (s Shape) NrOfColumns() int {
+	return s.nrOfColumns
+}
+
+func (p Polyhedron) shape() Shape {
+	if len(p.aMatrix) == 0 {
+		return Shape{}
+	}
+
+	nrOfRows := len(p.aMatrix)
+	nrOfColumns := len(p.aMatrix[0])
+
+	return NewShape(nrOfRows, nrOfColumns)
 }
 
 func (p Polyhedron) A() [][]int {
@@ -80,6 +162,17 @@ type (
 	AuxiliaryConstraints []AuxiliaryConstraint
 )
 
+func (m *Model) PrimitiveVariables() []string {
+	constraintIDs := make([]string, len(m.constraints))
+	for i := range m.constraints {
+		constraintIDs[i] = m.constraints[i].id
+	}
+
+	primitiveIDs := utils.Without(m.variables, constraintIDs)
+
+	return primitiveIDs
+}
+
 func (c AuxiliaryConstraints) coefficientIDs() []string {
 	idMap := make(map[string]any)
 	for _, constraint := range c {
@@ -94,6 +187,10 @@ func (c AuxiliaryConstraints) coefficientIDs() []string {
 	}
 
 	return ids
+}
+
+func (m *Model) Variables() []string {
+	return m.variables
 }
 
 func New() *Model {
@@ -157,6 +254,23 @@ func (m *Model) SetXor(variables ...string) (string, error) {
 	return m.SetAnd([]string{atLeastID, atMostID}...)
 }
 
+func (m *Model) SetOneOrNone(variables ...string) (string, error) {
+	return m.setAtMost(variables, 1)
+}
+
+func (m *Model) SetEquivalent(variableOne, variableTwo string) (string, error) {
+	andID, err := m.SetAnd(variableOne, variableTwo)
+	if err != nil {
+		return "", err
+	}
+	notID, err := m.SetNot(variableOne, variableTwo)
+	if err != nil {
+		return "", err
+	}
+
+	return m.SetOr(andID, notID)
+}
+
 func (m *Model) Assume(variables ...string) error {
 	err := m.validateAssumedVariables(variables...)
 	if err != nil {
@@ -215,7 +329,14 @@ func (m *Model) GeneratePolyhedron() Polyhedron {
 		bVector = append(bVector, bias)
 	}
 
-	return Polyhedron{aMatrix, bVector}
+	return NewPolyhedron(aMatrix, bVector)
+}
+
+func NewPolyhedron(aMatrix [][]int, bVector []int) Polyhedron {
+	return Polyhedron{
+		aMatrix: aMatrix,
+		bVector: bVector,
+	}
 }
 
 func (m *Model) toAuxiliaryConstraintsWithSupport() AuxiliaryConstraints {
@@ -306,6 +427,10 @@ func (m *Model) setAtMost(variables []string, amount int) (string, error) {
 }
 
 func newAtMostConstraint(variables []string, amount int) (Constraint, error) {
+	if utils.ContainsDuplicates(variables) {
+		return Constraint{}, errors.New("duplicated variables")
+	}
+
 	if amount > len(variables) {
 		return Constraint{}, errors.New("amount cannot be greater than number of variables")
 	}
@@ -327,6 +452,10 @@ func newAtMostConstraint(variables []string, amount int) (Constraint, error) {
 }
 
 func newAtLeastConstraint(variables []string, amount int) (Constraint, error) {
+	if utils.ContainsDuplicates(variables) {
+		return Constraint{}, errors.New("duplicated variables")
+	}
+
 	if amount > len(variables) {
 		return Constraint{}, errors.New("amount cannot be greater than number of variables")
 	}

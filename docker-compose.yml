@@ -1,0 +1,6 @@
+services:
+  glpk-api:
+    image: znittzel/rust-glpk-api:latest
+    ports:
+      - "9000:9000"
+    restart: unless-stopped

@@ -86,7 +86,7 @@ func Test_coefficientValues_calculateMaxAbsInnerBound(t *testing.T) {
 			want: 0,
 		},
 		{
-			name: "nil value",
+			name: "nil values",
 			c:    nil,
 			want: 0,
 		},
@@ -194,6 +194,13 @@ func Test_newAtLeastConstraint(t *testing.T) {
 			want:      Constraint{},
 			wantErr:   true,
 		},
+		{
+			name:      "duplicated variables should return error",
+			variables: []string{"a", "a"},
+			amount:    2,
+			want:      Constraint{},
+			wantErr:   true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -280,6 +287,13 @@ func Test_newAtMostConstraint(t *testing.T) {
 			name:      "negative amount should return error",
 			variables: nil,
 			amount:    -1,
+			want:      Constraint{},
+			wantErr:   true,
+		},
+		{
+			name:      "duplicated variables should return error",
+			variables: []string{"a", "a"},
+			amount:    2,
 			want:      Constraint{},
 			wantErr:   true,
 		},
@@ -432,7 +446,7 @@ func assertEqual(
 			}
 		}
 		if !found {
-			t.Errorf("Expected row %v not found in actual matrix", row)
+			t.Errorf("Expected nrOfRows %v not found in actual matrix", row)
 		}
 	}
 
@@ -523,6 +537,87 @@ func TestModel_newAssumedConstraint(t *testing.T) {
 			m := &Model{}
 			constraint := m.newAssumedConstraint(tt.variables...)
 			assert.Equal(t, tt.want, constraint, "Constraint should match")
+		})
+	}
+}
+
+func TestPolyhedron_Shape(t *testing.T) {
+	tests := []struct {
+		name    string
+		aMatrix [][]int
+		want    Shape
+	}{
+		{
+			name: "valid polyhedron",
+			aMatrix: [][]int{
+				{1, 1},
+			},
+			want: Shape{1, 2},
+		},
+		{
+			name:    "nil polyhedron",
+			aMatrix: nil,
+			want:    Shape{},
+		},
+		{
+			name:    "empty polyhedron",
+			aMatrix: [][]int{},
+			want:    Shape{},
+		},
+		{
+			name:    "empty polyhedron",
+			aMatrix: [][]int{{}, {}},
+			want:    Shape{2, 0},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := Polyhedron{
+				aMatrix: tt.aMatrix,
+			}
+			assert.Equalf(t, tt.want, p.shape(), "shape()")
+		})
+	}
+}
+
+func TestPolyhedron_SparseMatrix(t *testing.T) {
+	tests := []struct {
+		name    string
+		aMatrix [][]int
+		want    SparseMatrix
+	}{
+		{
+			name: "valid polyhedron",
+			aMatrix: [][]int{
+				{1, 1},
+			},
+			want: SparseMatrix{
+				rows:    []int{0, 0},
+				columns: []int{0, 1},
+				values:  []int{1, 1},
+				shape:   Shape{1, 2},
+			},
+		},
+		{
+			name: "valid polyhedron",
+			aMatrix: [][]int{
+				{1, 1, 2},
+				{1, 1, 0},
+			},
+			want: SparseMatrix{
+				rows:    []int{0, 0, 0, 1, 1},
+				columns: []int{0, 1, 2, 0, 1},
+				values:  []int{1, 1, 2, 1, 1},
+				shape:   Shape{2, 3},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := Polyhedron{
+				aMatrix: tt.aMatrix,
+			}
+			assert.Equalf(t, tt.want, p.SparseMatrix(), "SparseMatrix()")
 		})
 	}
 }
