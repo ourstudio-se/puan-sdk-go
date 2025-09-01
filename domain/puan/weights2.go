@@ -8,10 +8,10 @@ type XORWithPreference2 struct {
 }
 
 func (xorWithPreference XORWithPreference2) getNotPreferredIDs() []string {
-	notPreferredIDs := make([]string, len(xorWithPreference.IDs)-1)
-	for i, id := range xorWithPreference.IDs {
+	var notPreferredIDs []string
+	for _, id := range xorWithPreference.IDs {
 		if id != xorWithPreference.PreferredID {
-			notPreferredIDs[i] = id
+			notPreferredIDs = append(notPreferredIDs, id)
 		}
 	}
 	return notPreferredIDs
@@ -23,6 +23,11 @@ func CalculateObjective2(
 	xorWithPreference []XORWithPreference2,
 ) Weights {
 	notSelectedPrimitives := utils.Without(primitives, selectedPrimitives)
+
+	notSelectedPrimitivesWeights := make(Weights)
+	for _, xor := range notSelectedPrimitives {
+		notSelectedPrimitivesWeights[xor] = -1
+	}
 
 	weightsOfNonSelectedPrimitivesAndXORVariants := getWeightsOfNonSelectedPrimitivesAndXORVariants(
 		notSelectedPrimitives,
@@ -36,7 +41,12 @@ func CalculateObjective2(
 		nonPreferredWeights,
 	)
 
-	selectedWeights := calculateSelectedWeights2(selectedPrimitives, nonSelectedAndXORVariantsWeights)
+	selectedWeights := calculateSelectedWeights2(
+		selectedPrimitives,
+		xorWithPreference,
+		nonSelectedAndXORVariantsWeights,
+		notSelectedPrimitivesWeights,
+	)
 
 	weights := nonSelectedAndXORVariantsWeights.Concat(selectedWeights)
 
@@ -47,7 +57,7 @@ func getWeightsOfNonSelectedPrimitivesAndXORVariants(
 	notSelectedPrimitives []string,
 	xorWithPreferences []XORWithPreference2,
 ) Weights {
-	var variantWeights Weights
+	variantWeights := make(Weights)
 
 	for _, xorWithPreference := range xorWithPreferences {
 		for _, id := range xorWithPreference.IDs {
@@ -55,7 +65,7 @@ func getWeightsOfNonSelectedPrimitivesAndXORVariants(
 		}
 	}
 
-	var primitivesWeights Weights
+	primitivesWeights := make(Weights)
 	for _, xor := range notSelectedPrimitives {
 		primitivesWeights[xor] = -1
 	}
@@ -85,7 +95,28 @@ func calculateNonPreferredWeights(
 
 func calculateSelectedWeights2(
 	selectedPrimitives []string,
+	xorWithPreference []XORWithPreference2,
 	nonSelectedAndXORVariantsWeights Weights,
+	notSelectedPrimitivesWeights Weights,
 ) Weights {
-	panic("not implemented")
+	selectedWeights := make(Weights)
+
+	sumOfNonPreferredWeightInXORs := 0
+	for _, xorWithPreference := range xorWithPreference {
+		notPreferredIDs := xorWithPreference.getNotPreferredIDs()
+		firstNonPreferredID := notPreferredIDs[0]
+		sumOfNonPreferredWeightInXORs += nonSelectedAndXORVariantsWeights[firstNonPreferredID]
+	}
+
+	sumOfNonSelectedAndXORVariantsWeights := notSelectedPrimitivesWeights.sum() +
+		sumOfNonPreferredWeightInXORs
+
+	previousSelectionWeightSum := sumOfNonSelectedAndXORVariantsWeights * -1
+	for _, selectedPrimitive := range selectedPrimitives {
+		weight := previousSelectionWeightSum + 1
+		selectedWeights[selectedPrimitive] = weight
+		previousSelectionWeightSum += weight
+	}
+
+	return selectedWeights
 }

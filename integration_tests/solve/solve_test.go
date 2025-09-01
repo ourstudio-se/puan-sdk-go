@@ -77,7 +77,7 @@ const url = "http://127.0.0.1:9000"
 
 func Test_select_exactly_one_constrainted_component_with_additional_requirements(t *testing.T) {
 	/*
-		Exactly one of (a), (b) or (c) must be select. (b) requires another
+		Exactly one of (a), (b) or (c) must be select. (a) is preferred. (b) requires another
 		variable x. Now, (a) is preselected and we select (b). We expect (b,item1) as result.
 	*/
 
