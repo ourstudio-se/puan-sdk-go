@@ -11,12 +11,11 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
 )
 
-func Test_select_exactly_one_constrainted_component_with_additional_requirements_new_algorithms(t *testing.T) {
-	/*
-		Exactly one of (a), (b) or (c) must be select. (a) is preferred. (b) requires another
-		variable x. Now, (a) is preselected and we select (b). We expect (b,item1) as result.
-	*/
-
+// Test_exactlyOnePackage_selectPreferredThenNotPreferred_shouldReturnNotPreferred_newAlgorithm
+// Ref: test_select_exactly_one_constrainted_component_with_additional_requirements
+// Description: Exactly one of package A, B or C must be selected. A is preferred. B requires another
+// variable itemX. Now, A is preselected and we select B. We expect (B, itemX) as result.
+func Test_exactlyOnePackage_selectPreferredThenNotPreferred_shouldReturnNotPreferred_newAlgorithm(t *testing.T) {
 	model := pldag.New()
 	model.SetPrimitives("packageA", "packageB", "packageC", "item1")
 	packageA, _ := model.SetAnd("packageA")
@@ -70,12 +69,11 @@ func Test_select_exactly_one_constrainted_component_with_additional_requirements
 	)
 }
 
-func Test_select_same_not_constrainted_selected_component_new_algorithms(t *testing.T) {
-	/*
-		(a) requires (b). (b) has been preselected and we select (b)
-		again. We now expect the empty set as the result.
-	*/
-
+// Test_packageImpliesAnotherPackage_selectedAndDeselect_shouldReturnCheapestSolution_newAlgorithm
+// Ref: test_select_same_not_constrainted_selected_component
+// Description: package A requires B. B has been preselected and is then removed.
+// We now expect the empty set as the result.
+func Test_packageImpliesAnotherPackage_selectedAndDeselect_shouldReturnCheapestSolution_newAlgorithm(t *testing.T) {
 	model := pldag.New()
 	model.SetPrimitives("packageA", "packageB")
 
@@ -98,8 +96,14 @@ func Test_select_same_not_constrainted_selected_component_new_algorithms(t *test
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
 	objective := puan.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, nil)
-
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
-	assert.Equal(t, 0, solution["packageA"])
-	assert.Equal(t, 0, solution["packageB"])
+	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"packageA": 0,
+			"packageB": 0,
+		},
+		primitiveSolution,
+	)
 }
