@@ -32,3 +32,17 @@ func Test_Without_nilInput_shouldReturnEmptySlice(t *testing.T) {
 
 	assert.Equal(t, want, actual)
 }
+
+func Test_ContainsDuplicates_shouldReturnTrue(t *testing.T) {
+	slice := []string{"a", "b", "c", "a"}
+	actual := ContainsDuplicates(slice)
+
+	assert.Equal(t, true, actual)
+}
+
+func Test_ContainsDuplicates_shouldReturnFalse(t *testing.T) {
+	slice := []string{"a", "b", "c"}
+	actual := ContainsDuplicates(slice)
+
+	assert.Equal(t, false, actual)
+}

@@ -16,3 +16,15 @@ func Without[T comparable](sliceA []T, sliceB []T) []T {
 
 	return result
 }
+
+func ContainsDuplicates[T comparable](elements []T) bool {
+	seen := make(map[T]any)
+	for _, e := range elements {
+		if _, ok := seen[e]; ok {
+			return true
+		}
+		seen[e] = nil
+	}
+
+	return false
+}

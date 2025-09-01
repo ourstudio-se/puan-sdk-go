@@ -427,7 +427,7 @@ func (m *Model) setAtMost(variables []string, amount int) (string, error) {
 }
 
 func newAtMostConstraint(variables []string, amount int) (Constraint, error) {
-	if containsDuplicates(variables) {
+	if utils.ContainsDuplicates(variables) {
 		return Constraint{}, errors.New("duplicated variables")
 	}
 
@@ -452,7 +452,7 @@ func newAtMostConstraint(variables []string, amount int) (Constraint, error) {
 }
 
 func newAtLeastConstraint(variables []string, amount int) (Constraint, error) {
-	if containsDuplicates(variables) {
+	if utils.ContainsDuplicates(variables) {
 		return Constraint{}, errors.New("duplicated variables")
 	}
 
@@ -474,18 +474,6 @@ func newAtLeastConstraint(variables []string, amount int) (Constraint, error) {
 	constraint := newConstraint(coefficients, bias)
 
 	return constraint, nil
-}
-
-func containsDuplicates[T comparable](elements []T) bool {
-	seen := make(map[T]any)
-	for _, e := range elements {
-		if _, ok := seen[e]; ok {
-			return true
-		}
-		seen[e] = nil
-	}
-
-	return false
 }
 
 func newConstraint(coefficients coefficientValues, bias Bias) Constraint {
