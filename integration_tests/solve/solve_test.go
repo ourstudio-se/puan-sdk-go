@@ -44,7 +44,7 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred_shouldReturnNotPrefe
 	}
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(
+	objective := puan.CalculateObjective3(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		[]string{invertedPreferred},
@@ -90,7 +90,7 @@ func Test_packageImpliesAnotherPackage_selectedAndDeselect_shouldReturnCheapestS
 	}
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, nil)
+	objective := puan.CalculateObjective3(model.PrimitiveVariables(), selectionsIDs, nil)
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
 
 	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
@@ -134,7 +134,7 @@ func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldReturnPreferred(
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
 
-	objective := puan.CalculateObjective(
+	objective := puan.CalculateObjective3(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		[]string{invertedPreferred},
@@ -184,7 +184,7 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldReturnPreferred(t *testing.T
 	selections := puan.Selections{}
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(
+	objective := puan.CalculateObjective3(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		[]string{invertedPreferred},
@@ -241,7 +241,7 @@ func Test_implicationChain_shouldReturnAllAsTrue(t *testing.T) {
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, nil)
+	objective := puan.CalculateObjective3(model.PrimitiveVariables(), selectionsIDs, nil)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
 	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
