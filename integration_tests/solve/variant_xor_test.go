@@ -16,7 +16,7 @@ import (
 // Description: Package A has two variants: (A, itemX) and (A, itemY, itemZ) with the latter
 // being preferred. We select (A, itemX) and expect the result configuration (A, itemX)
 func Test_exactlyOneVariant_selectNotPreferred_shouldReturnSelected(t *testing.T) {
-	model, xorWithPreference := exactlyOnePackageVariantWithXORBetweenItems()
+	model, invertedPreferred := exactlyOnePackageVariantWithXORBetweenItems()
 
 	selections := puan.Selections{
 		{
@@ -36,7 +36,7 @@ func Test_exactlyOneVariant_selectNotPreferred_shouldReturnSelected(t *testing.T
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -59,7 +59,7 @@ func Test_exactlyOneVariant_selectNotPreferred_shouldReturnSelected(t *testing.T
 // being preferred. We select (A, itemY, itemZ) and expect the result configuration
 // (A, itemY, itemZ). This test is just to make sure that there is no weird behavior.
 func Test_exactlyOneVariant_selectPreferred_shouldReturnPreferred(t *testing.T) {
-	model, xorWithPreference := exactlyOnePackageVariantWithXORBetweenItems()
+	model, invertedPreferred := exactlyOnePackageVariantWithXORBetweenItems()
 
 	selections := puan.Selections{
 		{
@@ -83,7 +83,7 @@ func Test_exactlyOneVariant_selectPreferred_shouldReturnPreferred(t *testing.T) 
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -106,7 +106,7 @@ func Test_exactlyOneVariant_selectPreferred_shouldReturnPreferred(t *testing.T) 
 // package A -> xor(itemX, itemZ). (itemY, itemZ) is preferred oved itemX.
 // If (A, itemY, itemZ) is already selected, check that we will remove package A when deselecting A.
 func Test_exactlyOneVariant_deselecting_shouldReturnCheapestSolution(t *testing.T) {
-	model, xorWithPreference := exactlyOnePackageVariantWithXORBetweenItems()
+	model, invertedPreferred := exactlyOnePackageVariantWithXORBetweenItems()
 
 	selections := puan.Selections{
 		{
@@ -142,7 +142,7 @@ func Test_exactlyOneVariant_deselecting_shouldReturnCheapestSolution(t *testing.
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -164,7 +164,7 @@ func Test_exactlyOneVariant_deselecting_shouldReturnCheapestSolution(t *testing.
 // Description: Given rules package A -> xor(itemX, itemY), package A -> xor(itemX, itemZ). (itemY, itemZ) is preferred oved itemX.
 // If (A, itemY, itemZ) is already selected, check that we will select (A, itemX) variant when selecting itemX
 func Test_exactlyOneVariant_selectItemXAfterPreferred_shouldReturnVariantWithItemX(t *testing.T) {
-	model, xorWithPreference := exactlyOnePackageVariantWithXORBetweenItems()
+	model, invertedPreferred := exactlyOnePackageVariantWithXORBetweenItems()
 
 	selections := puan.Selections{
 		{
@@ -196,7 +196,7 @@ func Test_exactlyOneVariant_selectItemXAfterPreferred_shouldReturnVariantWithIte
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -218,7 +218,7 @@ func Test_exactlyOneVariant_selectItemXAfterPreferred_shouldReturnVariantWithIte
 // Description: Given rules package A -> xor(itemX, itemY), package A -> xor(itemX, itemZ). (itemY, itemZ) is preferred oved itemX.
 // If package A is selected, check that we get the preferred variant.
 func Test_exactlyOneVariant_onlySelectedPackage_shouldReturnPreferredVariant(t *testing.T) {
-	model, xorWithPreference := exactlyOnePackageVariantWithXORBetweenItems()
+	model, invertedPreferred := exactlyOnePackageVariantWithXORBetweenItems()
 
 	selections := puan.Selections{
 		{
@@ -234,7 +234,7 @@ func Test_exactlyOneVariant_onlySelectedPackage_shouldReturnPreferredVariant(t *
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -256,7 +256,7 @@ func Test_exactlyOneVariant_onlySelectedPackage_shouldReturnPreferredVariant(t *
 // Description: Given rules package A -> xor(itemX, itemY), package A -> xor(itemX, itemZ). (itemY, itemZ) is preferred oved itemX.
 // If package A and itemX are selected, check that we will get (A, itemY, itemZ) config when selecting item2 (or item3).
 func Test_exactlyOneVariant_selectPreferredItemAfterNotPreferredItem_shouldReturnPreferredVariant(t *testing.T) {
-	model, xorWithPreference := exactlyOnePackageVariantWithXORBetweenItems()
+	model, invertedPreferred := exactlyOnePackageVariantWithXORBetweenItems()
 
 	selections := puan.Selections{
 		{
@@ -280,7 +280,7 @@ func Test_exactlyOneVariant_selectPreferredItemAfterNotPreferredItem_shouldRetur
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -302,7 +302,7 @@ func Test_exactlyOneVariant_selectPreferredItemAfterNotPreferredItem_shouldRetur
 // Description: Given rules package A -> xor(itemX, itemY), package A -> xor(itemX, itemZ). (itemY, itemZ) is preferred oved itemX.
 // If everything is selected with itemY last, check that we will get (A, itemY, itemZ).
 func Test_exactlyOneVariant_selectEverythingWithPreferredItemLast_shouldReturnPreferredVariant(t *testing.T) {
-	model, xorWithPreference := exactlyOnePackageVariantWithXORBetweenItems()
+	model, invertedPreferred := exactlyOnePackageVariantWithXORBetweenItems()
 
 	selections := puan.Selections{
 		{
@@ -330,7 +330,7 @@ func Test_exactlyOneVariant_selectEverythingWithPreferredItemLast_shouldReturnPr
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -352,7 +352,7 @@ func Test_exactlyOneVariant_selectEverythingWithPreferredItemLast_shouldReturnPr
 // Description: Given rules package A -> xor(itemX, itemY), package A -> xor(itemX, itemZ). (itemY, itemZ) is preferred oved itemX.
 // If nothing is selected, check that we get the cheapest solution.
 func Test_exactlyOneVariant_nothingIsSelected_shouldReturnCheapestSolution(t *testing.T) {
-	model, xorWithPreference := exactlyOnePackageVariantWithXORBetweenItems()
+	model, invertedPreferred := exactlyOnePackageVariantWithXORBetweenItems()
 
 	selections := puan.Selections{}
 
@@ -363,7 +363,7 @@ func Test_exactlyOneVariant_nothingIsSelected_shouldReturnCheapestSolution(t *te
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -380,7 +380,7 @@ func Test_exactlyOneVariant_nothingIsSelected_shouldReturnCheapestSolution(t *te
 	)
 }
 
-func exactlyOnePackageVariantWithXORBetweenItems() (*pldag.Model, puan.XORWithPreference) {
+func exactlyOnePackageVariantWithXORBetweenItems() (*pldag.Model, []string) {
 	model := pldag.New()
 	model.SetPrimitives("packageA", "itemX", "itemY", "itemZ")
 
@@ -399,11 +399,6 @@ func exactlyOnePackageVariantWithXORBetweenItems() (*pldag.Model, puan.XORWithPr
 	reversePackageVariantOne, _ := model.SetImply(includedItemsInVariantOne, "packageA")
 	reversePackageVariantTwo, _ := model.SetImply("itemX", "packageA")
 
-	xorWithPreference := puan.XORWithPreference{
-		XORID:       exactlyOneVariant,
-		PreferredID: packageVariantOne,
-	}
-
 	root, _ := model.SetAnd(
 		packageA,
 		packageExactlyOneOfItem1Item2,
@@ -414,5 +409,8 @@ func exactlyOnePackageVariantWithXORBetweenItems() (*pldag.Model, puan.XORWithPr
 
 	_ = model.Assume(root)
 
-	return model, xorWithPreference
+	negatedPreferred, _ := model.SetNot(packageVariantOne)
+	invertedPreferred, _ := model.SetAnd("packageA", negatedPreferred)
+
+	return model, []string{invertedPreferred}
 }

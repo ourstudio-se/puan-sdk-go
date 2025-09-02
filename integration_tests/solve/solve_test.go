@@ -11,26 +11,23 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
 )
 
-const url = "http://127.0.0.1:9000"
-
 // Test_exactlyOnePackage_selectPreferredThenNotPreferred_shouldReturnNotPreferred
 // Ref: test_select_exactly_one_constrainted_component_with_additional_requirements
 // Description: Exactly one of package A, B or C must be selected. A is preferred. B requires another
 // variable itemX. Now, A is preselected and we select B. We expect (B, itemX) as result.
+
+const url = "http://127.0.0.1:9000"
+
 func Test_exactlyOnePackage_selectPreferredThenNotPreferred_shouldReturnNotPreferred(t *testing.T) {
 	model := pldag.New()
 	model.SetPrimitives("packageA", "packageB", "packageC", "itemX")
 	exactlyOnePackage, _ := model.SetXor("packageA", "packageB", "packageC")
 	packageB, _ := model.SetEquivalent("packageB", "itemX")
 
-	preferred, _ := model.SetAnd(exactlyOnePackage, "packageA")
-	xorWithPreference := puan.XORWithPreference{
-		XORID:       exactlyOnePackage,
-		PreferredID: preferred,
-	}
-
 	root, _ := model.SetAnd(exactlyOnePackage, packageB)
 	_ = model.Assume(root)
+
+	invertedPreferred, _ := model.SetNot("packageA")
 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
@@ -50,7 +47,7 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred_shouldReturnNotPrefe
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		[]string{invertedPreferred},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -116,14 +113,11 @@ func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldReturnPreferred(
 	model.SetPrimitives("packageA", "packageB", "packageC")
 
 	exactlyOnePackage, _ := model.SetXor("packageA", "packageB", "packageC")
-	preferred, _ := model.SetAnd("packageA", exactlyOnePackage)
-	xorWithPreferred := puan.XORWithPreference{
-		XORID:       exactlyOnePackage,
-		PreferredID: preferred,
-	}
 
 	root, _ := model.SetAnd(exactlyOnePackage)
 	_ = model.Assume(root)
+
+	invertedPreferred, _ := model.SetNot("packageA")
 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
@@ -143,7 +137,7 @@ func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldReturnPreferred(
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreferred},
+		[]string{invertedPreferred},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -179,13 +173,10 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldReturnPreferred(t *testing.T
 	reversedPackageVariantOne, _ := model.SetImply(includedItemsInVariantOne, "packageA")
 	reversedPackageVariantTwo, _ := model.SetImply(includedItemsInVariantTwo, "packageA")
 
-	xorWithPreference := puan.XORWithPreference{
-		XORID:       exactlyOnePackage,
-		PreferredID: packageVariantOne,
-	}
-
 	root, _ := model.SetAnd(exactlyOnePackage, reversedPackageVariantOne, reversedPackageVariantTwo)
 	_ = model.Assume(root)
+
+	invertedPreferred, _ := model.SetNot(packageVariantOne)
 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
@@ -196,7 +187,7 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldReturnPreferred(t *testing.T
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		[]string{invertedPreferred},
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)

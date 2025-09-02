@@ -10,36 +10,7 @@ const NOT_SELECTED_WEIGHT = -2
 
 type Weights map[string]int
 
-type XORWithPreference struct {
-	XORID       string
-	PreferredID string
-}
-
-func CalculateObjective(
-	primitives,
-	selectedPrimitives []string,
-	xorWithPreference []XORWithPreference,
-) Weights {
-	notSelectedPrimitives := utils.Without(primitives, selectedPrimitives)
-	notSelectedWeights := calculatedNotSelectedWeights(notSelectedPrimitives)
-	notSelectedSum := notSelectedWeights.sum()
-	xorWeights, preferenceWeights := calculatePreferredWeights(xorWithPreference, notSelectedSum)
-	sumOfPreferredWeights := preferenceWeights.sum()
-	selectedWeights := calculateSelectedWeights(
-		selectedPrimitives,
-		notSelectedSum,
-		sumOfPreferredWeights,
-	)
-
-	weights := notSelectedWeights.
-		Concat(selectedWeights).
-		Concat(xorWeights).
-		Concat(preferenceWeights)
-
-	return weights
-}
-
-func (w Weights) Concat(weightsToConcat Weights) Weights {
+func (w Weights) concat(weightsToConcat Weights) Weights {
 	weights := make(Weights)
 	maps.Copy(weights, w)
 	maps.Copy(weights, weightsToConcat)
@@ -56,21 +27,27 @@ func (w Weights) sum() int {
 	return sum
 }
 
-func calculateSelectedWeights(
-	selectedPrimitives []string,
-	notSelectedSum,
-	preferredWeightsSum int,
+func CalculateObjective(
+	primitives,
+	selectedPrimitives,
+	preferredIDs []string,
 ) Weights {
-	selectedWeights := make(Weights)
-	worstCase := -notSelectedSum + preferredWeightsSum
-	previousSelectionWeightSum := worstCase
-	for _, selectedPrimitive := range selectedPrimitives {
-		weight := previousSelectionWeightSum + 1
-		selectedWeights[selectedPrimitive] = weight
-		previousSelectionWeightSum += weight
-	}
+	notSelectedPrimitives := utils.Without(primitives, selectedPrimitives)
+	notSelectedWeights := calculatedNotSelectedWeights(notSelectedPrimitives)
+	notSelectedSum := notSelectedWeights.sum()
+	preferenceWeights := calculatePreferredWeights(preferredIDs, notSelectedSum)
+	sumOfPreferredWeights := preferenceWeights.sum()
+	selectedWeights := calculateSelectedWeights(
+		selectedPrimitives,
+		notSelectedSum,
+		sumOfPreferredWeights,
+	)
 
-	return selectedWeights
+	weights := notSelectedWeights.
+		concat(selectedWeights).
+		concat(preferenceWeights)
+
+	return weights
 }
 
 func calculatedNotSelectedWeights(primitives []string) Weights {
@@ -83,20 +60,35 @@ func calculatedNotSelectedWeights(primitives []string) Weights {
 }
 
 func calculatePreferredWeights(
-	xorWithPreference []XORWithPreference,
+	preferredIDs []string,
 	notSelectedSum int,
-) (Weights, Weights) {
-	xorWeights := make(Weights)
-	preferenceWeights := make(Weights)
+) Weights {
+	preferredWeights := make(Weights)
 
 	if notSelectedSum == 0 {
-		return xorWeights, preferenceWeights
+		return preferredWeights
 	}
 
-	for _, xor := range xorWithPreference {
-		preferenceWeights[xor.PreferredID] = -notSelectedSum - 1
-		xorWeights[xor.XORID] = notSelectedSum - NOT_SELECTED_WEIGHT
+	for _, preferredID := range preferredIDs {
+		preferredWeights[preferredID] = notSelectedSum + 1
 	}
 
-	return xorWeights, preferenceWeights
+	return preferredWeights
+}
+
+func calculateSelectedWeights(
+	selectedPrimitives []string,
+	notSelectedSum,
+	preferredWeightsSum int,
+) Weights {
+	selectedWeights := make(Weights)
+	worstCase := -(notSelectedSum + preferredWeightsSum)
+	previousSelectionWeightSum := worstCase
+	for _, selectedPrimitive := range selectedPrimitives {
+		weight := previousSelectionWeightSum + 1
+		selectedWeights[selectedPrimitive] = weight
+		previousSelectionWeightSum += weight
+	}
+
+	return selectedWeights
 }

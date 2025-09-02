@@ -17,7 +17,7 @@ import (
 // C is larger than B, and B is larger than A.
 // Selected package is only A.
 func Test_exactlyOnePackage_upgrade_case1(t *testing.T) {
-	model, xorWithPreference := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
+	model, invertedPreferred := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
@@ -32,7 +32,7 @@ func Test_exactlyOnePackage_upgrade_case1(t *testing.T) {
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -58,7 +58,7 @@ func Test_exactlyOnePackage_upgrade_case1(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is A, then B.
 func Test_exactlyOnePackage_upgrade_case2(t *testing.T) {
-	model, xorWithPreference := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
+	model, invertedPreferred := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
@@ -77,7 +77,7 @@ func Test_exactlyOnePackage_upgrade_case2(t *testing.T) {
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -103,7 +103,7 @@ func Test_exactlyOnePackage_upgrade_case2(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is A, then C.
 func Test_exactlyOnePackage_upgrade_case3(t *testing.T) {
-	model, xorWithPreference := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
+	model, invertedPreferred := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
@@ -121,7 +121,7 @@ func Test_exactlyOnePackage_upgrade_case3(t *testing.T) {
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -147,7 +147,7 @@ func Test_exactlyOnePackage_upgrade_case3(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is B, then C.
 func Test_exactlyOnePackage_upgrade_case4(t *testing.T) {
-	model, xorWithPreference := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
+	model, invertedPreferred := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
@@ -165,7 +165,7 @@ func Test_exactlyOnePackage_upgrade_case4(t *testing.T) {
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -191,7 +191,7 @@ func Test_exactlyOnePackage_upgrade_case4(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is C, then A.
 func Test_exactlyOnePackage_downgrade_case1(t *testing.T) {
-	model, xorWithPreference := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
+	model, invertedPreferred := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
@@ -209,7 +209,7 @@ func Test_exactlyOnePackage_downgrade_case1(t *testing.T) {
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -235,7 +235,7 @@ func Test_exactlyOnePackage_downgrade_case1(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is B, then A.
 func Test_exactlyOnePackage_downgrade_case2(t *testing.T) {
-	model, xorWithPreference := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
+	model, invertedPreferred := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
@@ -253,7 +253,7 @@ func Test_exactlyOnePackage_downgrade_case2(t *testing.T) {
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -279,7 +279,7 @@ func Test_exactlyOnePackage_downgrade_case2(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is C, then B.
 func Test_exactlyOnePackage_downgrade_case3(t *testing.T) {
-	model, xorWithPreference := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
+	model, invertedPreferred := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
@@ -298,7 +298,7 @@ func Test_exactlyOnePackage_downgrade_case3(t *testing.T) {
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -324,7 +324,7 @@ func Test_exactlyOnePackage_downgrade_case3(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Nothing is selected, expect the preferred package.
 func Test_exactlyOnePackage_downgrade_case4(t *testing.T) {
-	model, xorWithPreference := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
+	model, invertedPreferred := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 
@@ -334,7 +334,7 @@ func Test_exactlyOnePackage_downgrade_case4(t *testing.T) {
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreference},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -354,7 +354,7 @@ func Test_exactlyOnePackage_downgrade_case4(t *testing.T) {
 	)
 }
 
-func exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest() (*pldag.Model, puan.XORWithPreference) {
+func exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest() (*pldag.Model, []string) {
 	model := pldag.New()
 	model.SetPrimitives("packageA", "packageB", "packageC", "itemX", "itemY", "itemZ", "itemK")
 
@@ -374,11 +374,7 @@ func exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest() (*pldag.Model, p
 	itemsInPackageBOrC, _ := model.SetImply(includedItemsInB, packageBOrC)
 	reversedPackageC, _ := model.SetImply(includedItemsInC, "packageC")
 
-	preferred, _ := model.SetAnd("packageA", exactlyOnePackage)
-	xorWithPreference := puan.XORWithPreference{
-		XORID:       exactlyOnePackage,
-		PreferredID: preferred,
-	}
+	invertedPreferred, _ := model.SetNot("packageA")
 
 	root, _ := model.SetAnd(
 		exactlyOnePackage,
@@ -391,5 +387,5 @@ func exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest() (*pldag.Model, p
 	)
 	_ = model.Assume(root)
 
-	return model, xorWithPreference
+	return model, []string{invertedPreferred}
 }
