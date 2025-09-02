@@ -11,13 +11,12 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
 )
 
+const url = "http://127.0.0.1:9000"
+
 // Test_exactlyOnePackage_selectPreferredThenNotPreferred_shouldReturnNotPreferred
 // Ref: test_select_exactly_one_constrainted_component_with_additional_requirements
 // Description: Exactly one of package A, B or C must be selected. A is preferred. B requires another
 // variable itemX. Now, A is preselected and we select B. We expect (B, itemX) as result.
-
-const url = "http://127.0.0.1:9000"
-
 func Test_exactlyOnePackage_selectPreferredThenNotPreferred_shouldReturnNotPreferred(t *testing.T) {
 	model := pldag.New()
 	model.SetPrimitives("packageA", "packageB", "packageC", "itemX")
@@ -254,6 +253,74 @@ func Test_implicationChain_shouldReturnAllAsTrue(t *testing.T) {
 			"itemX":    1,
 			"itemY":    1,
 			"itemZ":    1,
+		},
+		primitiveSolution,
+	)
+}
+
+// Test_variantsWithXORBetweenTwoItems_selectedPreferredXOR_shouldReturnPreferred
+// Ref: test_package_variant_will_change_when_selecting_another_xor_component
+// Description: Given package A -> and(itemX, itemY, itemZ), xor(itemN,itemM)), reversed package rules
+// and(itemX, itemY, itemZ, itemN) -> A, and(itemX, itemY, itemZ, itemM) -> A) and with preferred
+// on variant (A,itemN), we test that if variant (A, itemX, itemY, itemZ, itemM) is preselected,
+// and we select single variable itemN, then we will change into the other
+// package variant (A, itemX, itemY, itemZ, itemN) (and not select single itemN)
+// Note: package A is mandatory according to rule set.
+func Test_variantsWithXORBetweenTwoItems_selectedPreferredXOR_shouldReturnPreferred(t *testing.T) {
+	model := pldag.New()
+	model.SetPrimitives("packageA", "itemX", "itemY", "itemZ", "itemN", "itemM")
+
+	sharedItems, _ := model.SetAnd("itemX", "itemY", "itemZ")
+	packageRequiresItems, _ := model.SetImply("packageA", sharedItems)
+
+	exactlyOneOfTheItems, _ := model.SetXor("itemN", "itemM")
+	variants, _ := model.SetImply("packageA", exactlyOneOfTheItems)
+
+	negatedPreferred, _ := model.SetNot("itemN")
+	invertedPreferred, _ := model.SetAnd("packageA", negatedPreferred)
+
+	includedItemsInVariantOne, _ := model.SetAnd("itemX", "itemY", "itemZ", "itemN")
+	includedItemsInVariantTwo, _ := model.SetAnd("itemX", "itemY", "itemZ", "itemM")
+
+	reversedPackageVariantOne, _ := model.SetImply(includedItemsInVariantOne, "packageA")
+	reversedPackageVariantTwo, _ := model.SetImply(includedItemsInVariantTwo, "packageA")
+
+	root, _ := model.SetAnd("packageA", packageRequiresItems, variants, reversedPackageVariantOne, reversedPackageVariantTwo)
+
+	_ = model.Assume(root)
+
+	selections := puan.Selections{
+		{
+			ID:     "packageA",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "itemM",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "itemN",
+			Action: puan.ADD,
+		},
+	}
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []string{invertedPreferred})
+
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"packageA": 1,
+			"itemX":    1,
+			"itemY":    1,
+			"itemZ":    1,
+			"itemN":    1,
+			"itemM":    0,
 		},
 		primitiveSolution,
 	)

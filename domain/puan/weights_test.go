@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_Weights_concat(t *testing.T) {
+func Test_concat_noSharedVariables(t *testing.T) {
 	w1 := Weights{
 		"x": 1,
 		"y": 2,
@@ -20,6 +20,25 @@ func Test_Weights_concat(t *testing.T) {
 		"x": 1,
 		"y": 2,
 		"z": 3,
+	}
+
+	actual := w1.concat(w2)
+	assert.Equal(t, expected, actual)
+}
+
+func Test_concat_withSharedVariables(t *testing.T) {
+	w1 := Weights{
+		"x": 1,
+		"y": 2,
+	}
+
+	w2 := Weights{
+		"x": 3,
+	}
+
+	expected := Weights{
+		"x": 3,
+		"y": 2,
 	}
 
 	actual := w1.concat(w2)
@@ -50,7 +69,7 @@ func Test_calculatedNotSelectedWeights_shouldReturnWeights(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func Test_calculatedNotSelectedWeights_shouldReturnEmptyWeights(t *testing.T) {
+func Test_calculatedNotSelectedWeights_givenNoVariables_shouldReturnEmptyWeights(t *testing.T) {
 	var notSelectedVariables []string
 	actual := calculatedNotSelectedWeights(notSelectedVariables)
 	expected := Weights{}
@@ -72,7 +91,7 @@ func Test_calculatePreferredWeights_shouldReturnPreferredWeights(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func Test_calculatePreferredWeights_shouldReturnEmptyWeights(t *testing.T) {
+func Test_calculatePreferredWeights_givenNoPreferredIDs_shouldReturnEmptyWeights(t *testing.T) {
 	notSelectedSum := 0
 	actual := calculatePreferredWeights(nil, notSelectedSum)
 	expected := Weights{}
