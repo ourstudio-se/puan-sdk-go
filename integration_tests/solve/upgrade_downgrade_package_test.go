@@ -29,7 +29,7 @@ func Test_exactlyOnePackage_upgrade_case1(t *testing.T) {
 	}
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,
@@ -74,7 +74,7 @@ func Test_exactlyOnePackage_upgrade_case2(t *testing.T) {
 	}
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,
@@ -118,7 +118,7 @@ func Test_exactlyOnePackage_upgrade_case3(t *testing.T) {
 		},
 	}
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,
@@ -162,7 +162,7 @@ func Test_exactlyOnePackage_upgrade_case4(t *testing.T) {
 		},
 	}
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,
@@ -206,7 +206,7 @@ func Test_exactlyOnePackage_downgrade_case1(t *testing.T) {
 		},
 	}
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,
@@ -250,7 +250,7 @@ func Test_exactlyOnePackage_downgrade_case2(t *testing.T) {
 		},
 	}
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,
@@ -295,7 +295,7 @@ func Test_exactlyOnePackage_downgrade_case3(t *testing.T) {
 	}
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,
@@ -331,7 +331,7 @@ func Test_exactlyOnePackage_downgrade_case4(t *testing.T) {
 	selections := puan.Selections{}
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,

@@ -33,7 +33,7 @@ func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldReturnPreferre
 	}
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,
@@ -72,7 +72,7 @@ func Test_exactlyOnePackage_selectNotPreferred_shouldReturnNotPreferred(t *testi
 	}
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,
