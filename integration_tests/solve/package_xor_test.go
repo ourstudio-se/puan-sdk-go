@@ -18,7 +18,7 @@ import (
 // B has been preselected and we select A. We know expect
 // A to be selected without nothing left from B.
 func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldReturnPreferred(t *testing.T) {
-	model, xorWithPreferred := exactlyOnePackageOfTwoAvailableWithLargerNotPreferred()
+	model, invertedPreferred := exactlyOnePackageOfTwoAvailableWithLargerNotPreferred()
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 	selections := puan.Selections{
@@ -33,10 +33,10 @@ func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldReturnPreferre
 	}
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(
+	objective := puan.CalculateObjective3(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreferred},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -61,7 +61,7 @@ func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldReturnPreferre
 // of A and B must be selected, but with A as preferred.
 // With nothing being preselected, we select B and expect to get B.
 func Test_exactlyOnePackage_selectNotPreferred_shouldReturnNotPreferred(t *testing.T) {
-	model, xorWithPreferred := exactlyOnePackageOfTwoAvailableWithLargerNotPreferred()
+	model, invertedPreferred := exactlyOnePackageOfTwoAvailableWithLargerNotPreferred()
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
 	selections := puan.Selections{
@@ -72,10 +72,10 @@ func Test_exactlyOnePackage_selectNotPreferred_shouldReturnNotPreferred(t *testi
 	}
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(
+	objective := puan.CalculateObjective3(
 		model.PrimitiveVariables(),
 		selectionsIDs,
-		[]puan.XORWithPreference{xorWithPreferred},
+		invertedPreferred,
 	)
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
@@ -93,7 +93,7 @@ func Test_exactlyOnePackage_selectNotPreferred_shouldReturnNotPreferred(t *testi
 	)
 }
 
-func exactlyOnePackageOfTwoAvailableWithLargerNotPreferred() (*pldag.Model, puan.XORWithPreference) {
+func exactlyOnePackageOfTwoAvailableWithLargerNotPreferred() (*pldag.Model, []string) {
 	model := pldag.New()
 	model.SetPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 
@@ -109,11 +109,7 @@ func exactlyOnePackageOfTwoAvailableWithLargerNotPreferred() (*pldag.Model, puan
 	itemsInAllPackages, _ := model.SetImply(includedItemsInA, anyOfThePackages)
 	reversedPackageB, _ := model.SetImply(includedItemsInB, "packageB")
 
-	preferred, _ := model.SetAnd("packageA", exactlyOnePackage)
-	xorWithPreferred := puan.XORWithPreference{
-		XORID:       exactlyOnePackage,
-		PreferredID: preferred,
-	}
+	invertedPreferred, _ := model.SetNot("packageA")
 
 	root, _ := model.SetAnd(
 		exactlyOnePackage,
@@ -124,5 +120,5 @@ func exactlyOnePackageOfTwoAvailableWithLargerNotPreferred() (*pldag.Model, puan
 	)
 	_ = model.Assume(root)
 
-	return model, xorWithPreferred
+	return model, []string{invertedPreferred}
 }
