@@ -326,79 +326,29 @@ func Test_variantsWithXORBetweenTwoItems_selectedPreferredXOR_shouldReturnPrefer
 	)
 }
 
-// Test_RENAME_ME
-// Ref: test_will_change_package_variant_when_package_is_preselected_with_component_requiring_package
+// Test_multiplePackagesWithXOR_shouldReturnSelected
+// Ref: test_deselect_exactly_one_constrainted_variables_from_sequence
 // Description: Following rules are applied (with preferreds on the left xor-component)
-// itemA -> packageX
-// itemA -> itemB
-// itemA -> ~itemC
-// itemA -> ~itemD
-// itemC -> ~itemA
-// itemB -> xor(itemC, itemA)
-// packageX -> xor(itemC, itemA)
-// packageX -> xor(itemD, itemB)
-// Our case is that itemA is already selected, which indirectly will add
-// package X with its preferred components itemC and itemD
-// Then we select (X, itemC, itemD) and we expect itemA to be replaced
-func Test_RENAME_ME(t *testing.T) {
+// xor(packageA, packageB, packageC, packageD, packageE)
+// We have already selected packageA and now we select some random variable again.
+// We expect the random variable to be the only one in configuration
+func Test_multiplePackagesWithXOR_shouldReturnSelected(t *testing.T) {
 	model := pldag.New()
-	model.SetPrimitives("itemA", "itemB", "itemC", "itemD", "packageX")
+	model.SetPrimitives("packageA", "packageB", "packageC", "packageD", "packageE")
+	exactlyOnePackage, _ := model.SetXor("packageA", "packageB", "packageC", "packageD", "packageE")
 
-	reversedItemA, _ := model.SetImply("itemA", "packageX")
-
-	exactlyOneOfItemCAndA, _ := model.SetXor("itemC", "itemA")
-	exactlyOneOfItemCAndAInX, _ := model.SetImply("packageX", exactlyOneOfItemCAndA)
-
-	exactlyOneOfItemDAndB, _ := model.SetXor("itemD", "itemB")
-	exactlyOneOfItemDAndBInX, _ := model.SetImply("packageX", exactlyOneOfItemDAndB)
-
-	notItemC, _ := model.SetNot("itemC")
-	itemAForbidsItemC, _ := model.SetImply("itemA", notItemC)
-
-	//notItemA, _ := model.SetNot("itemA")
-	//itemCForbidsItemA, _ := model.SetImply("itemC", notItemA)
-
-	exactlyOneOfItemCAndAWithB, _ := model.SetImply("itemB", exactlyOneOfItemCAndA)
-
-	itemARequiresItemB, _ := model.SetImply("itemA", "itemB")
-
-	notItemD, _ := model.SetNot("itemD")
-	itemAForbidsItemD, _ := model.SetImply("itemA", notItemD)
-
-	root, err := model.SetAnd(
-		reversedItemA,
-		exactlyOneOfItemCAndAInX,
-		exactlyOneOfItemDAndBInX,
-		itemAForbidsItemC,
-		exactlyOneOfItemCAndAWithB,
-		itemARequiresItemB,
-		itemAForbidsItemD,
-	)
-
-	if err != nil {
-		panic(err)
-	}
-
+	root, _ := model.SetAnd(exactlyOnePackage)
 	_ = model.Assume(root)
 
-	invertedPreferredItemCInX, _ := model.SetAnd("packageX", notItemC)
-	invertedPreferredItemDInX, _ := model.SetAnd("packageX", notItemD)
+	invertedPreferred, _ := model.SetNot("packageA")
 
 	selections := puan.Selections{
 		{
-			ID:     "itemA",
+			ID:     "packageA",
 			Action: puan.ADD,
 		},
 		{
-			ID:     "packageX",
-			Action: puan.ADD,
-		},
-		{
-			ID:     "itemC",
-			Action: puan.ADD,
-		},
-		{
-			ID:     "itemD",
+			ID:     "packageB",
 			Action: puan.ADD,
 		},
 	}
@@ -407,19 +357,303 @@ func Test_RENAME_ME(t *testing.T) {
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []string{invertedPreferredItemCInX, invertedPreferredItemDInX})
+	objective := puan.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []string{invertedPreferred})
+
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
 	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
-			"packageX": 1,
-			"itemA":    0,
-			"itemB":    0,
-			"itemC":    1,
-			"itemD":    1,
+			"packageA": 0,
+			"packageB": 1,
+			"packageC": 0,
+			"packageD": 0,
+			"packageE": 0,
 		},
 		primitiveSolution,
 	)
+}
 
+// Test_optionalPackageWithLightPreferred_selectNotPreferred_shouldReturnNotPreferred
+// Ref: test_will_delete_package_variant_from_pre_selected_actions_when_conflicting
+// Description: Given rules package A -> xor(itemX, itemY), package A -> xor(itemX, itemZ). itemX is preferred oved (itemY, itemZ).
+func Test_optionalPackageWithLightPreferred_selectNotPreferred_shouldReturnNotPreferred(t *testing.T) {
+	model := pldag.New()
+	model.SetPrimitives("packageA", "itemX", "itemY", "itemZ")
+
+	xorItemXItemY, _ := model.SetXor("itemX", "itemY")
+	xorItemXItemZ, _ := model.SetXor("itemX", "itemZ")
+
+	packageExactlyOneOfItem1Item2, _ := model.SetImply("packageA", xorItemXItemY)
+	packageExactlyOneOfItem1Item3, _ := model.SetImply("packageA", xorItemXItemZ)
+
+	reversePackageVariantOne, _ := model.SetImply("itemX", "packageA")
+	includedItemsInVariantTwo, _ := model.SetAnd("itemY", "itemZ")
+	reversePackageVariantTwo, _ := model.SetImply(includedItemsInVariantTwo, "packageA")
+
+	root, _ := model.SetAnd(
+		packageExactlyOneOfItem1Item2,
+		packageExactlyOneOfItem1Item3,
+		reversePackageVariantOne,
+		reversePackageVariantTwo,
+	)
+
+	_ = model.Assume(root)
+
+	negatedPreferred, _ := model.SetNot("itemX")
+	invertedPreferred, _ := model.SetAnd("packageA", negatedPreferred)
+
+	selections := puan.Selections{
+		{
+			ID:     "packageA",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "itemX",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "packageA",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "itemY",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "itemZ",
+			Action: puan.ADD,
+		},
+	}
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		[]string{invertedPreferred},
+	)
+
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"packageA": 1,
+			"itemX":    0,
+			"itemY":    1,
+			"itemZ":    1,
+		},
+		primitiveSolution,
+	)
+}
+
+// Test_twoPackagesWithSharedItems_selectLargestPackage_shouldReturnSelectedPackage
+// Ref: test_will_delete_package_from_selected_actions_when_adding_upgrading_package
+// Description: Following rules are applied (with preferreds on the left xor-component)
+// packageA -> (itemX, itemY)
+// packageB -> (itemX, itemY, itemZ)
+// packageA -> -packageB
+// packageB -> -packageA
+// (itemX, itemY) -> or(packageA, packageB)
+// (itemX, itemY, itemX) -> packageB
+// We have already selected packageA and now we select packageB. We expect packageB to be selected
+// and packageA deleted from pre selected actions
+// TODO: No preferred in ruleset from python tests.
+func Test_twoPackagesWithSharedItems_selectLargestPackage_shouldReturnSelectedPackage(t *testing.T) {
+	model := pldag.New()
+	model.SetPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
+
+	includedItemsInA, _ := model.SetAnd("itemX", "itemY")
+	includedItemsInB, _ := model.SetAnd("itemX", "itemY", "itemZ")
+
+	packageARequiresItems, _ := model.SetImply("packageA", includedItemsInA)
+	packageBRequiresItems, _ := model.SetImply("packageB", includedItemsInB)
+
+	notPackageB, _ := model.SetNot("packageB")
+	packageAForbidsB, _ := model.SetImply("packageA", notPackageB) // Law of implication
+
+	packageAOrB, _ := model.SetOr("packageA", "packageB")
+	reversedPackageAOrB, _ := model.SetImply(includedItemsInA, packageAOrB)
+	reversedPackageB, _ := model.SetImply(includedItemsInB, "packageB")
+
+	root, _ := model.SetAnd(
+		packageARequiresItems,
+		packageBRequiresItems,
+		packageAForbidsB,
+		reversedPackageAOrB,
+		reversedPackageB,
+	)
+
+	_ = model.Assume(root)
+
+	selections := puan.Selections{
+		{
+			ID:     "packageA",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "packageB",
+			Action: puan.ADD,
+		},
+	}
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		nil,
+	)
+
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"packageA": 0,
+			"packageB": 1,
+			"itemX":    1,
+			"itemY":    1,
+			"itemZ":    1,
+		},
+		primitiveSolution,
+	)
+}
+
+// Test_ignoreNotExistingVariable_shouldReturnValidSelection
+// Ref: test_will_ignore_pre_selected_actions_not_existing_in_action_space
+// Description: Following rules are applied (with preferreds on the left xor-component)
+// packageA -> (itemX, itemY)
+// We give pre selected action ['itemZ'] (which is not in action space) and
+// expects solution to ignore it
+// TODO: No preferred in ruleset from python tests.
+// TODO: notExistingID gets weight
+func Test_ignoreNotExistingVariable_shouldReturnValidSelection(t *testing.T) {
+	model := pldag.New()
+	model.SetPrimitives("packageA", "itemX", "itemY")
+
+	includedItemsInA, _ := model.SetAnd("itemX", "itemY")
+	packageARequiresItems, _ := model.SetEquivalent("packageA", includedItemsInA)
+
+	root, _ := model.SetAnd(
+		packageARequiresItems,
+	)
+
+	_ = model.Assume(root)
+
+	selections := puan.Selections{
+		{
+			ID:     "notExistingID",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "packageA",
+			Action: puan.ADD,
+		},
+	}
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(
+		model.PrimitiveVariables(),
+		selectionsIDs,
+		nil,
+	)
+
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"packageA": 1,
+			"itemX":    1,
+			"itemY":    1,
+		},
+		primitiveSolution,
+	)
+}
+
+// TODO: This test is skipped for now, since it is not possible to construct atm.
+func Test_variable_will_be_removed_after_chosen_with_many_variables_in_selected(t *testing.T) {
+	/*
+		This is a quite special case, since it yet cannot be constructed
+		using polytope builder. We need a free-selectable variable x that
+		later are selected among y and z. When we then select x again,
+		we expect it to be removed
+	*/
+	t.Skip()
+}
+
+// Test_notPreferCombinationsWithRequires_exclusively
+// Ref: test_will_not_prefer_preferred_combinations_for_requires_exclusivelies
+// Description: Let
+// packageZ -> xor(itemX, itemY) (pref itemX)
+// packageZ -> itemM & itemN & itemO
+// packageA -> itemB
+// We preselect packageA and selects itemX.
+// We do not expect packageZ to be selected
+// TODO: faling test, investigate further.
+func Test_notPreferCombinationsWithRequires_exclusively(t *testing.T) {
+	model := pldag.New()
+	model.SetPrimitives("packageA", "packageZ", "itemB", "itemX", "itemY", "itemM", "itemN", "itemO")
+
+	exactlyOneIfItemXAndY, _ := model.SetXor("itemX", "itemY")
+	packageZRequiresExactlyOneOfItemXOrY, _ := model.SetImply("packageZ", exactlyOneIfItemXAndY)
+
+	requiredItemsInZ, _ := model.SetAnd("itemM", "itemN", "itemO")
+	packageZRequiresItems, _ := model.SetImply("packageZ", requiredItemsInZ)
+
+	packageARequiresItemB, _ := model.SetImply("packageA", "itemB")
+
+	root, _ := model.SetAnd(
+		packageZRequiresExactlyOneOfItemXOrY,
+		packageZRequiresItems,
+		packageARequiresItemB,
+	)
+
+	_ = model.Assume(root)
+
+	invertedPreferredZ, _ := model.SetNot("packageZ")
+	invertedPreferredX, _ := model.SetNot("itemX")
+
+	selections := puan.Selections{
+		{
+			ID:     "packageA",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "itemX",
+			Action: puan.ADD,
+		},
+	}
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []string{invertedPreferredZ, invertedPreferredX})
+
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"packageA": 1,
+			"packageZ": 0,
+			"itemB":    1,
+			"itemX":    1,
+			"itemY":    0,
+			"itemM":    0,
+			"itemN":    0,
+			"itemO":    0,
+		},
+		primitiveSolution,
+	)
 }
