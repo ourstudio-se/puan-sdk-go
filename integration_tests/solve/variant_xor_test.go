@@ -33,7 +33,7 @@ func Test_exactlyOneVariant_selectNotPreferred_shouldReturnSelected(t *testing.T
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,
@@ -80,7 +80,7 @@ func Test_exactlyOneVariant_selectPreferred_shouldReturnPreferred(t *testing.T) 
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,
@@ -139,7 +139,7 @@ func Test_exactlyOneVariant_deselecting_shouldReturnCheapestSolution(t *testing.
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,
@@ -193,7 +193,7 @@ func Test_exactlyOneVariant_selectItemXAfterPreferred_shouldReturnVariantWithIte
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,
@@ -231,7 +231,7 @@ func Test_exactlyOneVariant_onlySelectedPackage_shouldReturnPreferredVariant(t *
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,
@@ -277,7 +277,7 @@ func Test_exactlyOneVariant_selectPreferredItemAfterNotPreferredItem_shouldRetur
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,
@@ -327,7 +327,7 @@ func Test_exactlyOneVariant_selectEverythingWithPreferredItemLast_shouldReturnPr
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,
@@ -360,7 +360,7 @@ func Test_exactlyOneVariant_nothingIsSelected_shouldReturnCheapestSolution(t *te
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective3(
+	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
 		selectionsIDs,
 		invertedPreferred,
