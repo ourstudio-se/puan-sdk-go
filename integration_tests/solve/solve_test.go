@@ -325,3 +325,101 @@ func Test_variantsWithXORBetweenTwoItems_selectedPreferredXOR_shouldReturnPrefer
 		primitiveSolution,
 	)
 }
+
+// Test_RENAME_ME
+// Ref: test_will_change_package_variant_when_package_is_preselected_with_component_requiring_package
+// Description: Following rules are applied (with preferreds on the left xor-component)
+// itemA -> packageX
+// itemA -> itemB
+// itemA -> ~itemC
+// itemA -> ~itemD
+// itemC -> ~itemA
+// itemB -> xor(itemC, itemA)
+// packageX -> xor(itemC, itemA)
+// packageX -> xor(itemD, itemB)
+// Our case is that itemA is already selected, which indirectly will add
+// package X with its preferred components itemC and itemD
+// Then we select (X, itemC, itemD) and we expect itemA to be replaced
+func Test_RENAME_ME(t *testing.T) {
+	model := pldag.New()
+	model.SetPrimitives("itemA", "itemB", "itemC", "itemD", "packageX")
+
+	reversedItemA, _ := model.SetImply("itemA", "packageX")
+
+	exactlyOneOfItemCAndA, _ := model.SetXor("itemC", "itemA")
+	exactlyOneOfItemCAndAInX, _ := model.SetImply("packageX", exactlyOneOfItemCAndA)
+
+	exactlyOneOfItemDAndB, _ := model.SetXor("itemD", "itemB")
+	exactlyOneOfItemDAndBInX, _ := model.SetImply("packageX", exactlyOneOfItemDAndB)
+
+	notItemC, _ := model.SetNot("itemC")
+	itemAForbidsItemC, _ := model.SetImply("itemA", notItemC)
+
+	//notItemA, _ := model.SetNot("itemA")
+	//itemCForbidsItemA, _ := model.SetImply("itemC", notItemA)
+
+	exactlyOneOfItemCAndAWithB, _ := model.SetImply("itemB", exactlyOneOfItemCAndA)
+
+	itemARequiresItemB, _ := model.SetImply("itemA", "itemB")
+
+	notItemD, _ := model.SetNot("itemD")
+	itemAForbidsItemD, _ := model.SetImply("itemA", notItemD)
+
+	root, err := model.SetAnd(
+		reversedItemA,
+		exactlyOneOfItemCAndAInX,
+		exactlyOneOfItemDAndBInX,
+		itemAForbidsItemC,
+		exactlyOneOfItemCAndAWithB,
+		itemARequiresItemB,
+		itemAForbidsItemD,
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	_ = model.Assume(root)
+
+	invertedPreferredItemCInX, _ := model.SetAnd("packageX", notItemC)
+	invertedPreferredItemDInX, _ := model.SetAnd("packageX", notItemD)
+
+	selections := puan.Selections{
+		{
+			ID:     "itemA",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "packageX",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "itemC",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "itemD",
+			Action: puan.ADD,
+		},
+	}
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []string{invertedPreferredItemCInX, invertedPreferredItemDInX})
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"packageX": 1,
+			"itemA":    0,
+			"itemB":    0,
+			"itemC":    1,
+			"itemD":    1,
+		},
+		primitiveSolution,
+	)
+
+}
