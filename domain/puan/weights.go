@@ -69,8 +69,9 @@ func calculatePreferredWeights(
 		return preferredWeights
 	}
 
+	weight := notSelectedSum + 1
 	for _, preferredID := range preferredIDs {
-		preferredWeights[preferredID] = notSelectedSum + 1
+		preferredWeights[preferredID] = weight
 	}
 
 	return preferredWeights
@@ -82,12 +83,12 @@ func calculateSelectedWeights(
 	preferredWeightsSum int,
 ) Weights {
 	selectedWeights := make(Weights)
-	worstCase := -(notSelectedSum + preferredWeightsSum)
-	previousSelectionWeightSum := worstCase
+	selectionThreshold := -(notSelectedSum + preferredWeightsSum)
+	selectionWeightSum := selectionThreshold
 	for _, selectedPrimitive := range selectedPrimitives {
-		weight := previousSelectionWeightSum + 1
+		weight := selectionWeightSum + 1
 		selectedWeights[selectedPrimitive] = weight
-		previousSelectionWeightSum += weight
+		selectionWeightSum += weight
 	}
 
 	return selectedWeights
