@@ -330,8 +330,8 @@ func Test_variantsWithXORBetweenTwoItems_selectedPreferredXOR_shouldReturnPrefer
 // Ref: test_deselect_exactly_one_constrainted_variables_from_sequence
 // Description: Following rules are applied (with preferreds on the left xor-component)
 // xor(packageA, packageB, packageC, packageD, packageE)
-// We have already selected packageA and now we select some random variable again.
-// We expect the random variable to be the only one in configuration
+// We have already selected packageA and now we select packageB.
+// We expect packageB to be the only one in configuration
 func Test_multiplePackagesWithXOR_shouldReturnSelected(t *testing.T) {
 	model := pldag.New()
 	model.SetPrimitives("packageA", "packageB", "packageC", "packageD", "packageE")
