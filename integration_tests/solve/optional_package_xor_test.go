@@ -157,8 +157,9 @@ func optionalPackageWithItemsWithXORsAndForbids() (*pldag.Model, []string) {
 
 	_ = model.Assume(root)
 
-	invertedPreferredItemCInX, _ := model.SetAnd("packageX", notItemC)
-	invertedPreferredItemDInX, _ := model.SetAnd("packageX", notItemD)
+	preferredVariant, _ := model.SetAnd("itemC", "itemD")
+	notPreferredVariant, _ := model.SetNot(preferredVariant)
+	invertedPreferred, _ := model.SetAnd("packageX", notPreferredVariant)
 
-	return model, []string{invertedPreferredItemCInX, invertedPreferredItemDInX}
+	return model, []string{invertedPreferred}
 }
