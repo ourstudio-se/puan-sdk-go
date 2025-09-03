@@ -138,10 +138,6 @@ func optionalPackageWithItemsWithXORsAndForbids() (*pldag.Model, []string) {
 	notItemC, _ := model.SetNot("itemC")
 	itemAForbidsItemC, _ := model.SetImply("itemA", notItemC)
 
-	// TODO: Law of implication, gives same id. Should error be returned for duplicated variables?
-	// notItemA, _ := model.SetNot("itemA")
-	// itemCForbidsItemA, _ := model.SetImply("itemC", notItemA)
-
 	exactlyOneOfItemCAndAWithB, _ := model.SetImply("itemB", exactlyOneOfItemCAndA)
 
 	itemARequiresItemB, _ := model.SetImply("itemA", "itemB")
