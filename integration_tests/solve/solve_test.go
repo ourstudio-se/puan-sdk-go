@@ -377,6 +377,7 @@ func Test_multiplePackagesWithXOR_shouldReturnSelected(t *testing.T) {
 // Test_optionalPackageWithLightPreferred_selectNotPreferred_shouldReturnNotPreferred
 // Ref: test_will_delete_package_variant_from_pre_selected_actions_when_conflicting
 // Description: Given rules package A -> xor(itemX, itemY), package A -> xor(itemX, itemZ). itemX is preferred oved (itemY, itemZ).
+// We first select the preferred package variant and the change to the not preferred variant.
 func Test_optionalPackageWithLightPreferred_selectNotPreferred_shouldReturnNotPreferred(t *testing.T) {
 	model := pldag.New()
 	model.SetPrimitives("packageA", "itemX", "itemY", "itemZ")
@@ -530,8 +531,6 @@ func Test_twoPackagesWithSharedItems_selectLargestPackage_shouldReturnSelectedPa
 // packageA -> (itemX, itemY)
 // We give pre selected action ['itemZ'] (which is not in action space) and
 // expects solution to ignore it
-// TODO: No preferred in ruleset from python tests.
-// TODO: notExistingID gets weight
 func Test_ignoreNotExistingVariable_shouldReturnValidSelection(t *testing.T) {
 	model := pldag.New()
 	model.SetPrimitives("packageA", "itemX", "itemY")
@@ -558,7 +557,7 @@ func Test_ignoreNotExistingVariable_shouldReturnValidSelection(t *testing.T) {
 
 	polyhedron := model.GeneratePolyhedron()
 	client := glpk.NewClient(url)
-
+	model.Variables()
 	selectionsIDs := selections.GetImpactingSelectionIDS()
 	objective := puan.CalculateObjective(
 		model.PrimitiveVariables(),
