@@ -599,7 +599,6 @@ func Test_variable_will_be_removed_after_chosen_with_many_variables_in_selected(
 // packageA -> itemB
 // We preselect packageA and selects itemX.
 // We do not expect packageZ to be selected
-// TODO: faling test, investigate further.
 func Test_notPreferCombinationsWithRequires_exclusively(t *testing.T) {
 	model := pldag.New()
 	model.SetPrimitives("packageA", "packageZ", "itemB", "itemX", "itemY", "itemM", "itemN", "itemO")
@@ -620,8 +619,8 @@ func Test_notPreferCombinationsWithRequires_exclusively(t *testing.T) {
 
 	_ = model.Assume(root)
 
-	invertedPreferredZ, _ := model.SetNot("packageZ")
-	invertedPreferredX, _ := model.SetNot("itemX")
+	negatedPreferred, _ := model.SetNot("itemX")
+	invertedPreferred, _ := model.SetAnd("packageZ", negatedPreferred)
 
 	selections := puan.Selections{
 		{
@@ -638,7 +637,7 @@ func Test_notPreferCombinationsWithRequires_exclusively(t *testing.T) {
 	client := glpk.NewClient(url)
 
 	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []string{invertedPreferredZ, invertedPreferredX})
+	objective := puan.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, []string{invertedPreferred})
 
 	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
 	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
@@ -653,6 +652,133 @@ func Test_notPreferCombinationsWithRequires_exclusively(t *testing.T) {
 			"itemM":    0,
 			"itemN":    0,
 			"itemO":    0,
+		},
+		primitiveSolution,
+	)
+}
+
+// Test_selectPackageAfterItemSelection_shouldReturnPackage
+// Ref: test_will_select_package_when_variant_component_in_selections
+// Description: Let
+// packageP -> xor(itemX, itemY)
+// packageA -> itemB
+// We preselect itemX and selects itemB.
+// We expect (packageP, itemY) and packageA to be selected
+func Test_selectPackageAfterItemSelection_shouldReturnPackage(t *testing.T) {
+	model := pldag.New()
+	model.SetPrimitives("packageA", "packageP", "itemB", "itemX", "itemY")
+
+	exactlyOneOfItemXAndY, _ := model.SetXor("itemX", "itemY")
+	packagePRequiresExactlyOneOfItemXOrY, _ := model.SetImply("packageP", exactlyOneOfItemXAndY)
+
+	packageARequiresItemB, _ := model.SetImply("packageA", "itemB")
+
+	root, _ := model.SetAnd(
+		packagePRequiresExactlyOneOfItemXOrY,
+		packageARequiresItemB,
+	)
+
+	_ = model.Assume(root)
+	selections := puan.Selections{
+		{
+			ID:     "itemB",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "itemX",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "packageP",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "itemY",
+			Action: puan.ADD,
+		},
+	}
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, nil)
+
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"packageA": 0,
+			"packageP": 1,
+			"itemB":    1,
+			"itemX":    0,
+			"itemY":    1,
+		},
+		primitiveSolution,
+	)
+}
+
+// Test_changeVariant_shouldReturnSelected
+// Ref: test_select_package_variant_x_when_package_variant_y_is_selected
+// Description: Let
+// packageP -> itemX xor itemY
+// packageP -> itemA & itemB & itemC
+// we preselect (packageP, itemX) and select (packageP, itemY). We
+// expects (packageP, itemX) to be removed from
+// selected variants.
+func Test_changeVariant_shouldReturnSelected(t *testing.T) {
+	model := pldag.New()
+	model.SetPrimitives("packageP", "itemX", "itemY", "itemA", "itemB", "itemC")
+
+	includedItemsInPackage, _ := model.SetAnd("itemA", "itemB", "itemC")
+	packageRequiresItems, _ := model.SetEquivalent("packageP", includedItemsInPackage)
+
+	exactlyOneOfItemXAndY, _ := model.SetXor("itemX", "itemY")
+	packageRequiresExactlyOneOfItemXOrY, _ := model.SetImply("packageP", exactlyOneOfItemXAndY)
+
+	root, _ := model.SetAnd(
+		packageRequiresItems,
+		packageRequiresExactlyOneOfItemXOrY,
+	)
+
+	_ = model.Assume(root)
+	selections := puan.Selections{
+		{
+			ID:     "packageP",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "itemY",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "packageP",
+			Action: puan.ADD,
+		},
+		{
+			ID:     "itemX",
+			Action: puan.ADD,
+		},
+	}
+
+	polyhedron := model.GeneratePolyhedron()
+	client := glpk.NewClient(url)
+
+	selectionsIDs := selections.GetImpactingSelectionIDS()
+	objective := puan.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, nil)
+
+	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
+	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"packageP": 1,
+			"itemX":    1,
+			"itemY":    0,
+			"itemA":    1,
+			"itemB":    1,
+			"itemC":    1,
 		},
 		primitiveSolution,
 	)
