@@ -461,7 +461,6 @@ func Test_optionalPackageWithLightPreferred_selectNotPreferred_shouldReturnNotPr
 // (itemX, itemY, itemX) -> packageB
 // We have already selected packageA and now we select packageB. We expect packageB to be selected
 // and packageA deleted from pre selected actions
-// TODO: No preferred in ruleset from python tests.
 func Test_twoPackagesWithSharedItems_selectLargestPackage_shouldReturnSelectedPackage(t *testing.T) {
 	model := pldag.New()
 	model.SetPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
