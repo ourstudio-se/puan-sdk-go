@@ -1,119 +1,235 @@
 package puan
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/ourstudio-se/puan-sdk-go/utils"
 )
 
-func TestSelections_extractSelectionsIDs(t *testing.T) {
-	tests := []struct {
-		name string
-		s    Selections
-		want []string
-	}{
+func Test_removeRedundantSelections_givenRedundantSelections_shouldReturnUniqueSelections(t *testing.T) {
+	y := "y"
+	selections := Selections{
 		{
-			"empty selections",
-			Selections{},
-			[]string{},
+			id:             "x",
+			subSelectionID: &y,
+			action:         ADD,
 		},
 		{
-			"one selection",
-			Selections{{
-				ID:     "x",
-				Action: ADD,
-			}},
-			[]string{"x"},
-		},
-		{
-			"two selections",
-			Selections{
-				{
-					ID:     "x",
-					Action: ADD,
-				},
-				{
-					ID:     "y",
-					Action: ADD,
-				},
-			},
-			[]string{"x", "y"},
+			id:             "x",
+			subSelectionID: &y,
+			action:         ADD,
 		},
 	}
-	for _, tt := range tests {
+
+	actual := selections.removeRedundantSelections()
+	expected := Selections{
+		{
+			id:             "x",
+			subSelectionID: &y,
+			action:         ADD,
+		},
+	}
+
+	assert.Equal(t, expected, actual)
+}
+
+func Test_removeRedundantSelections_givenItemsWithOthersAndSingle_shouldReturnBothSelections(t *testing.T) {
+	y := "y"
+	selections := Selections{
+		{
+			id:             "x",
+			subSelectionID: &y,
+			action:         ADD,
+		},
+		{
+			id:     "x",
+			action: ADD,
+		},
+	}
+
+	actual := selections.removeRedundantSelections()
+	expected := Selections{
+		{
+			id:             "x",
+			subSelectionID: &y,
+			action:         ADD,
+		},
+		{
+			id:     "x",
+			action: ADD,
+		},
+	}
+
+	assert.Equal(t, expected, actual)
+}
+
+func Test_removeRedundantSelections_givenSelectionsWithSameIDsInDifferentOrder_shouldReturnOneSelections(t *testing.T) {
+	x := "x"
+	y := "y"
+	selections := Selections{
+		{
+			id:             "x",
+			subSelectionID: &y,
+			action:         ADD,
+		},
+		{
+			id:             "y",
+			subSelectionID: &x,
+			action:         ADD,
+		},
+	}
+
+	actual := selections.removeRedundantSelections()
+	expected := Selections{
+		{
+			id:             "y",
+			subSelectionID: &x,
+			action:         ADD,
+		},
+	}
+
+	assert.Equal(t, expected, actual)
+}
+
+func Test_removeRedundantSelections_givenRemoveSelection_shouldReturnEmptySelection(t *testing.T) {
+	selections := Selections{
+		{
+			id:     "x",
+			action: REMOVE,
+		},
+	}
+
+	actual := selections.removeRedundantSelections()
+	expected := Selections{}
+
+	assert.Equal(t, expected, actual)
+}
+
+func Test_removeRedundantSelections_givenEmptySelection_shouldReturnEmptySelection(t *testing.T) {
+	selections := Selections{}
+
+	actual := selections.removeRedundantSelections()
+	expected := Selections{}
+
+	assert.Equal(t, expected, actual)
+}
+
+func Test_removeRedundantSelections(t *testing.T) {
+	theories := []struct {
+		name       string
+		selections Selections
+		expected   Selections
+	}{
+		{
+			name: "subselection than only id remove selection",
+			selections: Selections{
+				{
+					id:             "x",
+					subSelectionID: utils.Pointer("y"),
+					action:         ADD,
+				},
+				{
+					id:     "x",
+					action: REMOVE,
+				},
+			},
+			expected: Selections{},
+		},
+		{
+			name: "subselection two different ids",
+			selections: Selections{
+				{
+					id:             "a",
+					subSelectionID: utils.Pointer("x"),
+					action:         ADD,
+				},
+				{
+					id:             "a",
+					subSelectionID: utils.Pointer("y"),
+					action:         ADD,
+				},
+			},
+			expected: Selections{
+				{
+					id:             "a",
+					subSelectionID: utils.Pointer("x"),
+					action:         ADD,
+				},
+				{
+					id:             "a",
+					subSelectionID: utils.Pointer("y"),
+					action:         ADD,
+				},
+			},
+		},
+		{
+			name: "subselection than only id selection",
+			selections: Selections{
+				{
+					id:             "x",
+					subSelectionID: utils.Pointer("y"),
+					action:         ADD,
+				},
+				{
+					id:     "x",
+					action: ADD,
+				},
+			},
+			expected: Selections{
+				{
+					id:     "x",
+					action: ADD,
+				},
+			},
+		},
+		{
+			name: "only id selection then subselection",
+			selections: Selections{
+				{
+					id:     "x",
+					action: ADD,
+				},
+				{
+					id:             "x",
+					subSelectionID: utils.Pointer("y"),
+					action:         ADD,
+				},
+			},
+			expected: Selections{
+				{
+					id:     "x",
+					action: ADD,
+				},
+				{
+					id:             "x",
+					subSelectionID: utils.Pointer("y"),
+					action:         ADD,
+				},
+			},
+		},
+	}
+
+	for _, tt := range theories {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.s.ids(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ids() = %v, want %v", got, tt.want)
-			}
+			actual := tt.selections.removeRedundantSelections()
+			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }
 
-func TestSelections_extractActiveSelections(t *testing.T) {
-	tests := []struct {
-		name       string
-		selections Selections
-		want       Selections
-	}{
-		{
-			"with select and unselected selections",
-			Selections{
-				{
-					ID:     "x",
-					Action: ADD,
-				},
-				{
-					ID:     "y",
-					Action: ADD,
-				},
-				{
-					ID:     "x",
-					Action: REMOVE,
-				},
-			},
-			Selections{
-				{
-					ID:     "y",
-					Action: ADD,
-				},
-			},
-		},
-		{
-			"no redundant selections",
-			Selections{
-				{
-					ID:     "x",
-					Action: ADD,
-				},
-				{
-					ID:     "y",
-					Action: ADD,
-				},
-				{
-					ID:     "z",
-					Action: ADD,
-				},
-			},
-			Selections{
-				{
-					ID:     "x",
-					Action: ADD,
-				},
-				{
-					ID:     "y",
-					Action: ADD,
-				},
-				{
-					ID:     "z",
-					Action: ADD,
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.selections.removeRedundantSelections(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("removeRedundantSelections() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+func Test_createOrderIndependentID_givenUnsortedIDs_shouldReturnSortedStringID(t *testing.T) {
+	y := "y"
+	actual := createOrderIndependentID("x", &y)
+	expected := "x,y"
+
+	assert.Equal(t, expected, actual)
+}
+
+func Test_createOrderIndependentID_givenSingleID_shouldReturnSameID(t *testing.T) {
+	actual := createOrderIndependentID("z", nil)
+	expected := "z"
+
+	assert.Equal(t, expected, actual)
 }

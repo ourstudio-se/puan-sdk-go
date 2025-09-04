@@ -1,46 +1,76 @@
 package puan
 
+import (
+	"sort"
+	"strings"
+
+	"github.com/ourstudio-se/puan-sdk-go/utils"
+)
+
 const ADD Action = "ADD"
 const REMOVE Action = "REMOVE"
 
 type Action string
 
 type Selection struct {
-	ID     string
-	Action Action
+	id             string
+	subSelectionID *string
+	action         Action
 }
+
 type Selections []Selection
 
-func (s Selections) GetImpactingSelectionIDS() []string {
-	selections := s.removeRedundantSelections()
-	ids := selections.ids()
+func NewSelection(action Action, id string, subSelectionID *string) Selection {
+	return Selection{
+		id:             id,
+		subSelectionID: subSelectionID,
+		action:         action,
+	}
+}
 
-	return ids
+func (s Selection) ID() string {
+	return s.id
+}
+
+func (s Selections) getImpactingSelections() Selections {
+	selections := s.removeRedundantSelections()
+
+	return selections
 }
 
 func (s Selections) removeRedundantSelections() Selections {
-	lastActions := make(map[string]Action)
-	for _, selection := range s {
-		lastActions[selection.ID] = selection.Action
-	}
+	reversedSelections := utils.Reverse(s)
+	seen := make(map[string][]*string)
+	reversedImpactingSelections := Selections{}
 
-	activeSelections := Selections{}
-	for _, selection := range s {
-		if action, ok := lastActions[selection.ID]; ok {
-			if action == ADD {
-				activeSelections = append(activeSelections, selection)
+	for _, selection := range reversedSelections {
+		if _, ok := seen[selection.id]; ok {
+			if utils.Contains(seen[selection.id], selection.subSelectionID) {
+				continue
 			}
+			if utils.Contains(seen[selection.id], nil) {
+				continue
+			}
+		}
+
+		seen[selection.id] = append(seen[selection.id], selection.subSelectionID)
+		if selection.action == ADD {
+			reversedImpactingSelections = append(reversedImpactingSelections, selection)
 		}
 	}
 
-	return activeSelections
+	impactingSelections := utils.Reverse(reversedImpactingSelections)
+
+	return impactingSelections
 }
 
-func (s Selections) ids() []string {
-	ids := make([]string, len(s))
-	for i, selection := range s {
-		ids[i] = selection.ID
+func createOrderIndependentID(id string, subSelectionID *string) string {
+	var sorted []string
+	sorted = append(sorted, id)
+	if subSelectionID != nil {
+		sorted = append(sorted, *subSelectionID)
 	}
+	sort.Strings(sorted)
 
-	return ids
+	return strings.Join(sorted, ",")
 }

@@ -11,31 +11,31 @@ import (
 func Test_coefficientValues_negate(t *testing.T) {
 	tests := []struct {
 		name string
-		c    coefficientValues
-		want coefficientValues
+		c    CoefficientValues
+		want CoefficientValues
 	}{
 		{
 			name: "should negate all values",
-			c: coefficientValues{
+			c: CoefficientValues{
 				"a": 1,
 				"b": 2,
 				"c": 3,
 			},
-			want: coefficientValues{
+			want: CoefficientValues{
 				"a": -1,
 				"b": -2,
 				"c": -3,
 			},
 		},
 		{
-			name: "empty coefficientValues should return empty",
-			c:    coefficientValues{},
-			want: coefficientValues{},
+			name: "empty CoefficientValues should return empty",
+			c:    CoefficientValues{},
+			want: CoefficientValues{},
 		},
 		{
-			name: "nil coefficientValues should return empty",
+			name: "nil CoefficientValues should return empty",
 			c:    nil,
-			want: coefficientValues{},
+			want: CoefficientValues{},
 		},
 	}
 	for _, tt := range tests {
@@ -50,12 +50,12 @@ func Test_coefficientValues_negate(t *testing.T) {
 func Test_coefficientValues_calculateMaxAbsInnerBound(t *testing.T) {
 	tests := []struct {
 		name string
-		c    coefficientValues
+		c    CoefficientValues
 		want int
 	}{
 		{
 			name: "given only positive values",
-			c: coefficientValues{
+			c: CoefficientValues{
 				"a": 1,
 				"b": 2,
 				"c": 3,
@@ -64,7 +64,7 @@ func Test_coefficientValues_calculateMaxAbsInnerBound(t *testing.T) {
 		},
 		{
 			name: "given only negative values",
-			c: coefficientValues{
+			c: CoefficientValues{
 				"a": -1,
 				"b": -2,
 				"c": -3,
@@ -73,7 +73,7 @@ func Test_coefficientValues_calculateMaxAbsInnerBound(t *testing.T) {
 		},
 		{
 			name: "given mixed signed values",
-			c: coefficientValues{
+			c: CoefficientValues{
 				"a": -1,
 				"b": 2,
 				"c": -3,
@@ -82,7 +82,7 @@ func Test_coefficientValues_calculateMaxAbsInnerBound(t *testing.T) {
 		},
 		{
 			name: "empty values",
-			c:    coefficientValues{},
+			c:    CoefficientValues{},
 			want: 0,
 		},
 		{
@@ -135,7 +135,7 @@ func Test_newAtLeastConstraint(t *testing.T) {
 			amount:    2,
 			want: Constraint{
 				id: "id",
-				coefficients: coefficientValues{
+				coefficients: CoefficientValues{
 					"a": -1,
 					"b": -1,
 					"c": -1,
@@ -157,7 +157,7 @@ func Test_newAtLeastConstraint(t *testing.T) {
 			amount:    2,
 			want: Constraint{
 				id: "id",
-				coefficients: coefficientValues{
+				coefficients: CoefficientValues{
 					"a": -1,
 					"b": -1,
 				},
@@ -171,7 +171,7 @@ func Test_newAtLeastConstraint(t *testing.T) {
 			amount:    0,
 			want: Constraint{
 				id:           "id",
-				coefficients: coefficientValues{},
+				coefficients: CoefficientValues{},
 				bias:         Bias(0),
 			},
 			wantErr: false,
@@ -182,7 +182,7 @@ func Test_newAtLeastConstraint(t *testing.T) {
 			amount:    0,
 			want: Constraint{
 				id:           "id",
-				coefficients: coefficientValues{},
+				coefficients: CoefficientValues{},
 				bias:         Bias(0),
 			},
 			wantErr: false,
@@ -204,12 +204,12 @@ func Test_newAtLeastConstraint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newAtLeastConstraint(tt.variables, tt.amount)
+			got, err := NewAtLeastConstraint(tt.variables, tt.amount)
 			if tt.wantErr && err == nil {
-				t.Errorf("newAtLeastConstraint() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("NewAtLeastConstraint() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !tt.wantErr && err != nil {
-				t.Errorf("newAtLeastConstraint() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("NewAtLeastConstraint() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			assert.Equal(t, tt.want.bias, got.bias, "Bias should match")
 			assert.Equal(t, tt.want.coefficients, got.coefficients, "Coefficients should match")
@@ -231,7 +231,7 @@ func Test_newAtMostConstraint(t *testing.T) {
 			amount:    2,
 			want: Constraint{
 				id: "id",
-				coefficients: coefficientValues{
+				coefficients: CoefficientValues{
 					"a": 1,
 					"b": 1,
 					"c": 1,
@@ -253,7 +253,7 @@ func Test_newAtMostConstraint(t *testing.T) {
 			amount:    2,
 			want: Constraint{
 				id: "id",
-				coefficients: coefficientValues{
+				coefficients: CoefficientValues{
 					"a": 1,
 					"b": 1,
 				},
@@ -267,7 +267,7 @@ func Test_newAtMostConstraint(t *testing.T) {
 			amount:    0,
 			want: Constraint{
 				id:           "id",
-				coefficients: coefficientValues{},
+				coefficients: CoefficientValues{},
 				bias:         Bias(0),
 			},
 			wantErr: false,
@@ -278,7 +278,7 @@ func Test_newAtMostConstraint(t *testing.T) {
 			amount:    0,
 			want: Constraint{
 				id:           "id",
-				coefficients: coefficientValues{},
+				coefficients: CoefficientValues{},
 				bias:         Bias(0),
 			},
 			wantErr: false,
@@ -316,13 +316,13 @@ func Test_newAtMostConstraint(t *testing.T) {
 func Test_newConstraintID(t *testing.T) {
 	tests := []struct {
 		name         string
-		coefficients coefficientValues
+		coefficients CoefficientValues
 		bias         Bias
 		want         string
 	}{
 		{
 			name: "should create id",
-			coefficients: coefficientValues{
+			coefficients: CoefficientValues{
 				"a": 1,
 				"b": 2,
 				"c": 3,
@@ -332,7 +332,7 @@ func Test_newConstraintID(t *testing.T) {
 		},
 		{
 			name: "should create id",
-			coefficients: coefficientValues{
+			coefficients: CoefficientValues{
 				"c": 3,
 				"b": 2,
 				"a": 1,
@@ -342,7 +342,7 @@ func Test_newConstraintID(t *testing.T) {
 		},
 		{
 			name: "should create id",
-			coefficients: coefficientValues{
+			coefficients: CoefficientValues{
 				"x": 3,
 				"y": 2,
 				"z": 10,
@@ -353,7 +353,7 @@ func Test_newConstraintID(t *testing.T) {
 		},
 		{
 			name: "should create id",
-			coefficients: coefficientValues{
+			coefficients: CoefficientValues{
 				"z": 10,
 				"x": 3,
 				"a": 5,
@@ -364,7 +364,7 @@ func Test_newConstraintID(t *testing.T) {
 		},
 		{
 			name:         "empty coefficients should create id",
-			coefficients: coefficientValues{},
+			coefficients: CoefficientValues{},
 			bias:         0,
 			want:         "b6589fc6ab0dc82cf12099d1c2d40ab994e8410c",
 		},
@@ -473,7 +473,7 @@ func TestValidateAssumedVariables(t *testing.T) {
 			name: "invalid assumed variable again",
 			existingAssumedConstraints: AuxiliaryConstraints{
 				{
-					coefficients: coefficientValues{
+					coefficients: CoefficientValues{
 						"a": 1,
 						"b": 1,
 					},
@@ -524,7 +524,7 @@ func TestModel_newAssumedConstraint(t *testing.T) {
 			name:      "valid constraint",
 			variables: []string{"a", "b"},
 			want: AuxiliaryConstraint{
-				coefficients: coefficientValues{
+				coefficients: CoefficientValues{
 					"a": -1,
 					"b": -1,
 				},
@@ -537,87 +537,6 @@ func TestModel_newAssumedConstraint(t *testing.T) {
 			m := &Model{}
 			constraint := m.newAssumedConstraint(tt.variables...)
 			assert.Equal(t, tt.want, constraint, "Constraint should match")
-		})
-	}
-}
-
-func TestPolyhedron_Shape(t *testing.T) {
-	tests := []struct {
-		name    string
-		aMatrix [][]int
-		want    Shape
-	}{
-		{
-			name: "valid polyhedron",
-			aMatrix: [][]int{
-				{1, 1},
-			},
-			want: Shape{1, 2},
-		},
-		{
-			name:    "nil polyhedron",
-			aMatrix: nil,
-			want:    Shape{},
-		},
-		{
-			name:    "empty polyhedron",
-			aMatrix: [][]int{},
-			want:    Shape{},
-		},
-		{
-			name:    "empty polyhedron",
-			aMatrix: [][]int{{}, {}},
-			want:    Shape{2, 0},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := Polyhedron{
-				aMatrix: tt.aMatrix,
-			}
-			assert.Equalf(t, tt.want, p.shape(), "shape()")
-		})
-	}
-}
-
-func TestPolyhedron_SparseMatrix(t *testing.T) {
-	tests := []struct {
-		name    string
-		aMatrix [][]int
-		want    SparseMatrix
-	}{
-		{
-			name: "valid polyhedron",
-			aMatrix: [][]int{
-				{1, 1},
-			},
-			want: SparseMatrix{
-				rows:    []int{0, 0},
-				columns: []int{0, 1},
-				values:  []int{1, 1},
-				shape:   Shape{1, 2},
-			},
-		},
-		{
-			name: "valid polyhedron",
-			aMatrix: [][]int{
-				{1, 1, 2},
-				{1, 1, 0},
-			},
-			want: SparseMatrix{
-				rows:    []int{0, 0, 0, 1, 1},
-				columns: []int{0, 1, 2, 0, 1},
-				values:  []int{1, 1, 2, 1, 1},
-				shape:   Shape{2, 3},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := Polyhedron{
-				aMatrix: tt.aMatrix,
-			}
-			assert.Equalf(t, tt.want, p.SparseMatrix(), "SparseMatrix()")
 		})
 	}
 }

@@ -2,32 +2,38 @@ package main
 
 import (
 	"fmt"
-	"log"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
+	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
 	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
 )
 
 func main() {
-	model := pldag.New()
-	model.SetPrimitives([]string{"x", "y"}...)
-	_, err := model.SetAnd([]string{"x", "y"}...)
+	creator := puan.NewRuleSetCreator()
+	creator.PLDAG().SetPrimitives([]string{"a", "x", "y"}...)
+	creator.PLDAG().Assume()
+
+	ruleSet := creator.Create()
+	x := "x"
+
+	selections := puan.Selections{
+		puan.NewSelection(puan.ADD, "a", &x),
+	}
+
+	selectedIDs, err := ruleSet.CalculateSelectedIDs(selections)
 	if err != nil {
 		panic(err)
 	}
 
-	variables := model.Variables()
-	polyhedron := model.GeneratePolyhedron()
-
-	tmpObjective := glpk.Objective{}
-	for _, v := range variables {
-		tmpObjective[v] = 1
-	}
+	objective := puan.CalculateObjective(
+		ruleSet.PrimitiveVariables(),
+		selectedIDs,
+		nil,
+	)
 
 	client := glpk.NewClient("http://127.0.0.1:9000")
-	solution, err := client.Solve(polyhedron, model.Variables(), tmpObjective)
+	solution, err := client.Solve(ruleSet.Polyhedron(), ruleSet.Variables(), objective)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	fmt.Println("solution: ", solution)

@@ -12,108 +12,15 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/utils"
 )
 
-type Polyhedron struct {
-	aMatrix [][]int
-	bVector []int
-}
-
-type SparseMatrix struct {
-	rows    []int
-	columns []int
-	values  []int
-	shape   Shape
-}
-
-func (s SparseMatrix) Rows() []int {
-	return s.rows
-}
-
-func (s SparseMatrix) Columns() []int {
-	return s.columns
-}
-
-func (s SparseMatrix) Values() []int {
-	return s.values
-}
-
-func (s SparseMatrix) Shape() Shape {
-	return s.shape
-}
-
-func (p Polyhedron) SparseMatrix() SparseMatrix {
-	var row []int
-	var column []int
-	var value []int
-
-	for rowIndex := range p.aMatrix {
-		for columIndex := range p.aMatrix[rowIndex] {
-			if p.aMatrix[rowIndex][columIndex] != 0 {
-				row = append(row, rowIndex)
-				column = append(column, columIndex)
-				value = append(value, p.aMatrix[rowIndex][columIndex])
-			}
-		}
-	}
-
-	return NewSparseMatrix(row, column, value, p.shape())
-}
-
-func NewSparseMatrix(rows, columns, values []int, shape Shape) SparseMatrix {
-	return SparseMatrix{
-		rows:    rows,
-		columns: columns,
-		values:  values,
-		shape:   shape,
-	}
-}
-
-type Shape struct {
-	nrOfRows, nrOfColumns int
-}
-
-func NewShape(rows, columns int) Shape {
-	return Shape{
-		nrOfRows:    rows,
-		nrOfColumns: columns,
-	}
-}
-
-func (s Shape) NrOfRows() int {
-	return s.nrOfRows
-}
-
-func (s Shape) NrOfColumns() int {
-	return s.nrOfColumns
-}
-
-func (p Polyhedron) shape() Shape {
-	if len(p.aMatrix) == 0 {
-		return Shape{}
-	}
-
-	nrOfRows := len(p.aMatrix)
-	nrOfColumns := len(p.aMatrix[0])
-
-	return NewShape(nrOfRows, nrOfColumns)
-}
-
-func (p Polyhedron) A() [][]int {
-	return p.aMatrix
-}
-
-func (p Polyhedron) B() []int {
-	return p.bVector
-}
-
 type Bias int
 
 func (b Bias) negate() Bias {
 	return -b - 1
 }
 
-type coefficientValues map[string]int
+type CoefficientValues map[string]int
 
-func (c coefficientValues) negate() coefficientValues {
+func (c CoefficientValues) negate() CoefficientValues {
 	negated := make(map[string]int, len(c))
 	for key, value := range c {
 		negated[key] = -value
@@ -122,7 +29,7 @@ func (c coefficientValues) negate() coefficientValues {
 	return negated
 }
 
-func (c coefficientValues) calculateMaxAbsInnerBound() int {
+func (c CoefficientValues) calculateMaxAbsInnerBound() int {
 	sumNegatives, sumPositives := 0, 0
 	for _, value := range c {
 		if value < 0 {
@@ -149,18 +56,38 @@ type (
 
 	Constraint struct {
 		id           string
-		coefficients coefficientValues
+		coefficients CoefficientValues
 		bias         Bias
 	}
 
 	AuxiliaryConstraint struct {
-		coefficients coefficientValues
+		coefficients CoefficientValues
 		bias         Bias
 	}
 
 	Constraints          []Constraint
 	AuxiliaryConstraints []AuxiliaryConstraint
 )
+
+func (c AuxiliaryConstraint) Coefficients() CoefficientValues {
+	return c.coefficients
+}
+
+func (c AuxiliaryConstraint) Bias() Bias {
+	return c.bias
+}
+
+func (c Constraint) ID() string {
+	return c.id
+}
+
+func (c Constraint) Bias() Bias {
+	return c.bias
+}
+
+func (c Constraint) Coefficients() CoefficientValues {
+	return c.coefficients
+}
 
 func (m *Model) PrimitiveVariables() []string {
 	constraintIDs := make([]string, len(m.constraints))
@@ -284,7 +211,7 @@ func (m *Model) Assume(variables ...string) error {
 }
 
 func (m *Model) newAssumedConstraint(variables ...string) AuxiliaryConstraint {
-	coefficients := make(coefficientValues, len(variables))
+	coefficients := make(CoefficientValues, len(variables))
 	for _, id := range variables {
 		coefficients[id] = -1
 	}
@@ -332,17 +259,10 @@ func (m *Model) GeneratePolyhedron() Polyhedron {
 	return NewPolyhedron(aMatrix, bVector)
 }
 
-func NewPolyhedron(aMatrix [][]int, bVector []int) Polyhedron {
-	return Polyhedron{
-		aMatrix: aMatrix,
-		bVector: bVector,
-	}
-}
-
 func (m *Model) toAuxiliaryConstraintsWithSupport() AuxiliaryConstraints {
 	var constraints AuxiliaryConstraints
 	for _, c := range m.constraints {
-		supportImpliesConstraint, constraintImpliesSupport := c.toAuxiliaryConstraintsWithSupport()
+		supportImpliesConstraint, constraintImpliesSupport := c.ToAuxiliaryConstraintsWithSupport()
 		constraints = append(constraints, supportImpliesConstraint)
 		constraints = append(constraints, constraintImpliesSupport)
 	}
@@ -363,7 +283,7 @@ func (c AuxiliaryConstraint) asMatrixRow(variables []string) []int {
 	return row
 }
 
-func (c Constraint) toAuxiliaryConstraintsWithSupport() (AuxiliaryConstraint, AuxiliaryConstraint) {
+func (c Constraint) ToAuxiliaryConstraintsWithSupport() (AuxiliaryConstraint, AuxiliaryConstraint) {
 	supportImpliesConstraint := c.newSupportImpliesConstraint()
 	constraintImpliesSupport := c.newConstraintImpliesSupport()
 
@@ -375,7 +295,7 @@ func (c Constraint) newConstraintImpliesSupport() AuxiliaryConstraint {
 	innerBound := negatedCoefficients.calculateMaxAbsInnerBound()
 	negatedBias := c.bias.negate()
 
-	newCoefficients := make(coefficientValues, len(c.coefficients)+1)
+	newCoefficients := make(CoefficientValues, len(c.coefficients)+1)
 	for coefficientID, value := range negatedCoefficients {
 		newCoefficients[coefficientID] = value
 	}
@@ -392,7 +312,7 @@ func (c Constraint) newSupportImpliesConstraint() AuxiliaryConstraint {
 	innerBound := c.coefficients.calculateMaxAbsInnerBound()
 	bias := Bias(int(c.bias) + innerBound)
 
-	newCoefficients := make(coefficientValues, len(c.coefficients)+1)
+	newCoefficients := make(CoefficientValues, len(c.coefficients)+1)
 	for coefficientID, value := range c.coefficients {
 		newCoefficients[coefficientID] = value
 	}
@@ -406,7 +326,7 @@ func (c Constraint) newSupportImpliesConstraint() AuxiliaryConstraint {
 }
 
 func (m *Model) setAtLeast(variables []string, amount int) (string, error) {
-	constraint, err := newAtLeastConstraint(variables, amount)
+	constraint, err := NewAtLeastConstraint(variables, amount)
 	if err != nil {
 		return "", err
 	}
@@ -439,7 +359,7 @@ func newAtMostConstraint(variables []string, amount int) (Constraint, error) {
 		return Constraint{}, errors.New("amount cannot be negative")
 	}
 
-	coefficients := make(coefficientValues)
+	coefficients := make(CoefficientValues)
 	for _, v := range variables {
 		coefficients[v] = 1
 	}
@@ -451,7 +371,7 @@ func newAtMostConstraint(variables []string, amount int) (Constraint, error) {
 	return constraint, nil
 }
 
-func newAtLeastConstraint(variables []string, amount int) (Constraint, error) {
+func NewAtLeastConstraint(variables []string, amount int) (Constraint, error) {
 	if utils.ContainsDuplicates(variables) {
 		return Constraint{}, errors.New("duplicated variables")
 	}
@@ -464,7 +384,7 @@ func newAtLeastConstraint(variables []string, amount int) (Constraint, error) {
 		return Constraint{}, errors.New("amount cannot be negative")
 	}
 
-	coefficients := make(coefficientValues)
+	coefficients := make(CoefficientValues)
 	for _, v := range variables {
 		coefficients[v] = -1
 	}
@@ -476,7 +396,7 @@ func newAtLeastConstraint(variables []string, amount int) (Constraint, error) {
 	return constraint, nil
 }
 
-func newConstraint(coefficients coefficientValues, bias Bias) Constraint {
+func newConstraint(coefficients CoefficientValues, bias Bias) Constraint {
 	id := newConstraintID(coefficients, bias)
 	constraint := Constraint{
 		id:           id,
@@ -486,7 +406,7 @@ func newConstraint(coefficients coefficientValues, bias Bias) Constraint {
 	return constraint
 }
 
-func newAuxiliaryConstraint(coefficients coefficientValues, bias Bias) AuxiliaryConstraint {
+func newAuxiliaryConstraint(coefficients CoefficientValues, bias Bias) AuxiliaryConstraint {
 	constraint := AuxiliaryConstraint{
 		coefficients: coefficients,
 		bias:         bias,
@@ -507,7 +427,7 @@ func (m *Model) idAlreadyExists(id string) bool {
 	return slices.Contains(m.variables, id)
 }
 
-func newConstraintID(coefficients coefficientValues, bias Bias) string {
+func newConstraintID(coefficients CoefficientValues, bias Bias) string {
 	keys := slices.Sorted(maps.Keys(coefficients))
 
 	h := sha1.New()
