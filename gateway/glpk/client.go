@@ -25,7 +25,7 @@ func NewClient(baseURL string) *Client {
 }
 
 func (c *Client) Solve(
-	polyhedron pldag.Polyhedron,
+	polyhedron *pldag.Polyhedron,
 	variables []string,
 	objective map[string]int,
 ) (puan.Solution, error) {
@@ -60,7 +60,7 @@ func (c *Client) Solve(
 }
 
 func newRequestPayload(
-	polyhedron pldag.Polyhedron,
+	polyhedron *pldag.Polyhedron,
 	variableIDs []string,
 	objective Objective,
 ) SolveRequest {

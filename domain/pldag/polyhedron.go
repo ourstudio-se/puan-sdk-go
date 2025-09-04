@@ -5,8 +5,8 @@ type Polyhedron struct {
 	bVector []int
 }
 
-func NewPolyhedron(aMatrix [][]int, bVector []int) Polyhedron {
-	return Polyhedron{
+func NewPolyhedron(aMatrix [][]int, bVector []int) *Polyhedron {
+	return &Polyhedron{
 		aMatrix: aMatrix,
 		bVector: bVector,
 	}

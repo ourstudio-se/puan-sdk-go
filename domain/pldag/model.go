@@ -241,7 +241,7 @@ func (m *Model) validateAssumedVariables(assumedVariables ...string) error {
 	return nil
 }
 
-func (m *Model) GeneratePolyhedron() Polyhedron {
+func (m *Model) GeneratePolyhedron() *Polyhedron {
 	var aMatrix [][]int
 	var bVector []int
 

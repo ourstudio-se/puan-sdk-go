@@ -40,20 +40,24 @@ func (s Selections) getImpactingSelections() Selections {
 
 func (s Selections) removeRedundantSelections() Selections {
 	reversedSelections := utils.Reverse(s)
-	seen := make(map[string][]*string)
+	seen := make(map[string][]string)
 	reversedImpactingSelections := Selections{}
 
 	for _, selection := range reversedSelections {
-		if _, ok := seen[selection.id]; ok {
-			if utils.Contains(seen[selection.id], selection.subSelectionID) {
-				continue
-			}
-			if utils.Contains(seen[selection.id], nil) {
-				continue
-			}
+		if utils.Contains(seen[selection.id], "") {
+			continue
 		}
 
-		seen[selection.id] = append(seen[selection.id], selection.subSelectionID)
+		subSelectionID := ""
+		if selection.subSelectionID != nil {
+			subSelectionID = *selection.subSelectionID
+		}
+
+		if utils.Contains(seen[selection.id], subSelectionID) {
+			continue
+		}
+
+		seen[selection.id] = append(seen[selection.id], subSelectionID)
 		if selection.action == ADD {
 			reversedImpactingSelections = append(reversedImpactingSelections, selection)
 		}

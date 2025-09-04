@@ -11,7 +11,7 @@ type RuleSetCreator struct {
 }
 
 type RuleSet struct {
-	polyhedron         pldag.Polyhedron
+	polyhedron         *pldag.Polyhedron
 	primitiveVariables []string
 	variables          []string
 	preferredVariables []string
@@ -44,7 +44,7 @@ func (c RuleSetCreator) Create() *RuleSet {
 	}
 }
 
-func (r *RuleSet) Polyhedron() pldag.Polyhedron {
+func (r *RuleSet) Polyhedron() *pldag.Polyhedron {
 	return r.polyhedron
 }
 
@@ -58,6 +58,17 @@ func (r *RuleSet) Variables() []string {
 
 func (r *RuleSet) PreferredVariables() []string {
 	return r.preferredVariables
+}
+
+func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
+	selectedIDs, err := r.CalculateSelectedIDs(selections)
+	if err != nil {
+		return nil, err
+	}
+
+	objective := CalculateObjective(r.primitiveVariables, selectedIDs, r.preferredVariables)
+
+	return NewQuery(r.polyhedron, r.variables, objective), nil
 }
 
 func (r *RuleSet) CalculateSelectedIDs(selections Selections) ([]string, error) {

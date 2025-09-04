@@ -8,114 +8,6 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/utils"
 )
 
-func Test_removeRedundantSelections_givenRedundantSelections_shouldReturnUniqueSelections(t *testing.T) {
-	y := "y"
-	selections := Selections{
-		{
-			id:             "x",
-			subSelectionID: &y,
-			action:         ADD,
-		},
-		{
-			id:             "x",
-			subSelectionID: &y,
-			action:         ADD,
-		},
-	}
-
-	actual := selections.removeRedundantSelections()
-	expected := Selections{
-		{
-			id:             "x",
-			subSelectionID: &y,
-			action:         ADD,
-		},
-	}
-
-	assert.Equal(t, expected, actual)
-}
-
-func Test_removeRedundantSelections_givenItemsWithOthersAndSingle_shouldReturnBothSelections(t *testing.T) {
-	y := "y"
-	selections := Selections{
-		{
-			id:             "x",
-			subSelectionID: &y,
-			action:         ADD,
-		},
-		{
-			id:     "x",
-			action: ADD,
-		},
-	}
-
-	actual := selections.removeRedundantSelections()
-	expected := Selections{
-		{
-			id:             "x",
-			subSelectionID: &y,
-			action:         ADD,
-		},
-		{
-			id:     "x",
-			action: ADD,
-		},
-	}
-
-	assert.Equal(t, expected, actual)
-}
-
-func Test_removeRedundantSelections_givenSelectionsWithSameIDsInDifferentOrder_shouldReturnOneSelections(t *testing.T) {
-	x := "x"
-	y := "y"
-	selections := Selections{
-		{
-			id:             "x",
-			subSelectionID: &y,
-			action:         ADD,
-		},
-		{
-			id:             "y",
-			subSelectionID: &x,
-			action:         ADD,
-		},
-	}
-
-	actual := selections.removeRedundantSelections()
-	expected := Selections{
-		{
-			id:             "y",
-			subSelectionID: &x,
-			action:         ADD,
-		},
-	}
-
-	assert.Equal(t, expected, actual)
-}
-
-func Test_removeRedundantSelections_givenRemoveSelection_shouldReturnEmptySelection(t *testing.T) {
-	selections := Selections{
-		{
-			id:     "x",
-			action: REMOVE,
-		},
-	}
-
-	actual := selections.removeRedundantSelections()
-	expected := Selections{}
-
-	assert.Equal(t, expected, actual)
-}
-
-func Test_removeRedundantSelections_givenEmptySelection_shouldReturnEmptySelection(t *testing.T) {
-	selections := Selections{}
-
-	actual := selections.removeRedundantSelections()
-	expected := Selections{}
-
-	assert.Equal(t, expected, actual)
-}
-
 func Test_removeRedundantSelections(t *testing.T) {
 	theories := []struct {
 		name       string
@@ -207,6 +99,68 @@ func Test_removeRedundantSelections(t *testing.T) {
 					subSelectionID: utils.Pointer("y"),
 					action:         ADD,
 				},
+			},
+		},
+		{
+			name: "duplicate sub-selection",
+			selections: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			},
+			expected: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			},
+		},
+		{
+			name: "reversed sub-selections",
+			selections: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+				NewSelectionBuilder("y").WithSubSelectionID("x").Build(),
+			},
+			expected: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+				NewSelectionBuilder("y").WithSubSelectionID("x").Build(),
+			},
+		},
+		{
+			name: "Single remove",
+			selections: Selections{
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+			},
+			expected: Selections{},
+		},
+		{
+			name:       "Empty selections",
+			selections: Selections{},
+			expected:   Selections{},
+		},
+		{
+			name: "Add sub-selection, then remove it",
+			selections: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(ADD).Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(REMOVE).Build(),
+			},
+			expected: Selections{},
+		},
+		{
+			name: "Add sub-selection, then add another",
+			selections: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(ADD).Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("z").WithAction(ADD).Build(),
+			},
+			expected: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(ADD).Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("z").WithAction(ADD).Build(),
+			},
+		},
+		{
+			name: "Add sub-selection, then remove another sub-selection",
+			selections: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(ADD).Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("z").WithAction(REMOVE).Build(),
+			},
+			expected: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(ADD).Build(),
 			},
 		},
 	}
