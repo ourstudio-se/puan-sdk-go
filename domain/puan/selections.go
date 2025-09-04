@@ -1,9 +1,6 @@
 package puan
 
 import (
-	"sort"
-	"strings"
-
 	"github.com/ourstudio-se/puan-sdk-go/utils"
 )
 
@@ -39,42 +36,55 @@ func (s Selections) getImpactingSelections() Selections {
 }
 
 func (s Selections) removeRedundantSelections() Selections {
-	reversedSelections := utils.Reverse(s)
-	seen := make(map[string][]string)
-	reversedImpactingSelections := Selections{}
+	selectionsByPriority := utils.Reverse(s)
 
-	for _, selection := range reversedSelections {
-		if utils.Contains(seen[selection.id], "") {
+	impactingSelectionsByPriority := Selections{}
+	for _, selection := range selectionsByPriority {
+		if selection.isRedundant(impactingSelectionsByPriority) {
 			continue
 		}
 
-		subSelectionID := ""
-		if selection.subSelectionID != nil {
-			subSelectionID = *selection.subSelectionID
-		}
+		impactingSelectionsByPriority = append(impactingSelectionsByPriority, selection)
+	}
 
-		if utils.Contains(seen[selection.id], subSelectionID) {
-			continue
-		}
-
-		seen[selection.id] = append(seen[selection.id], subSelectionID)
+	addSelectionsByPriority := Selections{}
+	for _, selection := range impactingSelectionsByPriority {
 		if selection.action == ADD {
-			reversedImpactingSelections = append(reversedImpactingSelections, selection)
+			addSelectionsByPriority = append(addSelectionsByPriority, selection)
 		}
 	}
 
-	impactingSelections := utils.Reverse(reversedImpactingSelections)
+	impactingSelections := utils.Reverse(addSelectionsByPriority)
 
 	return impactingSelections
 }
 
-func createOrderIndependentID(id string, subSelectionID *string) string {
-	var sorted []string
-	sorted = append(sorted, id)
-	if subSelectionID != nil {
-		sorted = append(sorted, *subSelectionID)
+func (s Selection) isRedundant(existingSelections Selections) bool {
+	for _, existingSelection := range existingSelections {
+		if existingSelection.makesRedundant(s) {
+			return true
+		}
 	}
-	sort.Strings(sorted)
 
-	return strings.Join(sorted, ",")
+	return false
+}
+
+func (s Selection) makesRedundant(other Selection) bool {
+	if s.id != other.id {
+		return false
+	}
+
+	if s.subSelectionID == nil {
+		return true
+	}
+
+	if other.subSelectionID == nil {
+		return false
+	}
+
+	if *other.subSelectionID == *s.subSelectionID {
+		return true
+	}
+
+	return false
 }

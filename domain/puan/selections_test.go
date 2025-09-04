@@ -172,18 +172,3 @@ func Test_removeRedundantSelections(t *testing.T) {
 		})
 	}
 }
-
-func Test_createOrderIndependentID_givenUnsortedIDs_shouldReturnSortedStringID(t *testing.T) {
-	y := "y"
-	actual := createOrderIndependentID("x", &y)
-	expected := "x,y"
-
-	assert.Equal(t, expected, actual)
-}
-
-func Test_createOrderIndependentID_givenSingleID_shouldReturnSameID(t *testing.T) {
-	actual := createOrderIndependentID("z", nil)
-	expected := "z"
-
-	assert.Equal(t, expected, actual)
-}
