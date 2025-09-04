@@ -16,7 +16,7 @@ func main() {
 	x := "x"
 
 	selections := puan.Selections{
-		puan.NewSelection(puan.ADD, "a", &x),
+		puan.NewSelectionBuilder("a").WithSubSelectionID(x).Build(),
 	}
 
 	selectedIDs, err := ruleSet.CalculateSelectedIDs(selections)

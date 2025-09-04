@@ -20,7 +20,7 @@ type Selection struct {
 
 type Selections []Selection
 
-func NewSelection(action Action, id string, subSelectionID *string) Selection {
+func newSelection(action Action, id string, subSelectionID *string) Selection {
 	return Selection{
 		id:             id,
 		subSelectionID: subSelectionID,

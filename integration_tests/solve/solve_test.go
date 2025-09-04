@@ -32,8 +32,8 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred_shouldReturnNotPrefe
 	ruleSet := creator.Create()
 
 	selections := puan.Selections{
-		puan.NewSelection(puan.ADD, "packageA", nil),
-		puan.NewSelection(puan.ADD, "packageB", nil),
+		puan.NewSelectionBuilder("packageA").Build(),
+		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
 	selectionsIDs, _ := ruleSet.CalculateSelectedIDs(selections)
