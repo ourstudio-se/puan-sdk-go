@@ -86,3 +86,76 @@ func TestPolyhedron_SparseMatrix(t *testing.T) {
 		})
 	}
 }
+
+func Test_AddEmptyColumn_givenSingleRow(t *testing.T) {
+	theories := []struct {
+		name    string
+		aMatrix [][]int
+		want    [][]int
+	}{
+		{
+			name: "add to single row",
+			aMatrix: [][]int{
+				{1, 1},
+			},
+			want: [][]int{
+				{1, 1, 0},
+			},
+		},
+		{
+			name: "add to multiple rows",
+			aMatrix: [][]int{
+				{1, 1},
+				{2, 2},
+				{3, 3},
+			},
+			want: [][]int{
+				{1, 1, 0},
+				{2, 2, 0},
+				{3, 3, 0},
+			},
+		},
+		{
+			name:    "add to empty matrix",
+			aMatrix: [][]int{},
+			want:    [][]int{},
+		},
+	}
+
+	for _, tt := range theories {
+		t.Run(tt.name, func(t *testing.T) {
+			p := Polyhedron{
+				aMatrix: tt.aMatrix,
+			}
+			p.AddEmptyColumn()
+			assert.Equal(t, tt.want, p.aMatrix)
+		})
+	}
+}
+
+func Test_Extend_extendToExistingPolyhedron(t *testing.T) {
+	row := []int{0, 0, 1}
+	b := Bias(1)
+
+	polyhedron := Polyhedron{
+		aMatrix: [][]int{
+			{1, 1, 0},
+		},
+		bVector: []int{1},
+	}
+
+	polyhedron.Extend(row, b)
+	assert.Equal(t, [][]int{{1, 1, 0}, {0, 0, 1}}, polyhedron.aMatrix)
+	assert.Equal(t, []int{1, 1}, polyhedron.bVector)
+}
+
+func Test_Extend_extendToEmptyPolyhedron(t *testing.T) {
+	row := []int{0, 1}
+	b := Bias(1)
+
+	polyhedron := Polyhedron{}
+
+	polyhedron.Extend(row, b)
+	assert.Equal(t, [][]int{{0, 1}}, polyhedron.aMatrix)
+	assert.Equal(t, []int{1}, polyhedron.bVector)
+}
