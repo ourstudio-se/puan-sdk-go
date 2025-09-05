@@ -10,7 +10,9 @@ import (
 func main() {
 	creator := puan.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives([]string{"a", "x", "y"}...)
-	creator.PLDAG().Assume()
+	preferred, _ := creator.PLDAG().SetAnd("a", "y")
+	_ = creator.SetPreferreds(preferred)
+	creator.PLDAG().Assume(preferred)
 
 	ruleSet := creator.Create()
 	x := "x"
@@ -30,5 +32,10 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("solution: ", solution)
+	primitiveSolution, err := solution.Extract(ruleSet.PrimitiveVariables()...)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("primitiveSolution: ", primitiveSolution)
 }

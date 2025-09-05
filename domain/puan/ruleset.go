@@ -103,7 +103,11 @@ func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
 		return nil, err
 	}
 
-	objective := CalculateObjective(specification.ruleSet.primitiveVariables, selectedIDs, specification.ruleSet.preferredVariables)
+	objective := CalculateObjective(
+		specification.ruleSet.primitiveVariables,
+		selectedIDs,
+		specification.ruleSet.preferredVariables,
+	)
 
 	return NewQuery(specification.ruleSet.polyhedron, specification.ruleSet.variables, objective), nil
 }
@@ -129,7 +133,7 @@ func (r *RuleSet) CalculateSelectedIDs(selections Selections) ([]string, error) 
 	for _, selection := range impactingSelections {
 		hasSubselection := selection.subSelectionID != nil
 		if hasSubselection {
-			auxiliaryID, err := r.prepareCompositeSelection(selection.id, *selection.subSelectionID)
+			auxiliaryID, err := r.addCompositeSelectionConstraint(selection.id, *selection.subSelectionID)
 			if err != nil {
 				return nil, err
 			}
@@ -175,7 +179,7 @@ func (r *RuleSet) newQuerySpecification(selections Selections) (*querySpecificat
 	selectionIDLookUp := make(map[Selection]string)
 	for _, selection := range selections {
 		if selection.isComposite() {
-			id, err := ruleSet.prepareCompositeSelection(selection.id, *selection.subSelectionID)
+			id, err := ruleSet.addCompositeSelectionConstraint(selection.id, *selection.subSelectionID)
 			if err != nil {
 				return nil, err
 			}
@@ -192,41 +196,50 @@ func (r *RuleSet) newQuerySpecification(selections Selections) (*querySpecificat
 	}, nil
 }
 
-func (r *RuleSet) prepareCompositeSelection(id, subSelectionID string) (string, error) {
-	idIndex, err := utils.IndexOf(r.variables, id)
-	if err != nil {
-		return "", err
-	}
-
-	subSelectionIndex, err := utils.IndexOf(r.variables, subSelectionID)
-	if err != nil {
-		return "", err
-	}
-
-	constraint, err := pldag.NewAtLeastConstraint([]string{id, subSelectionID}, 2)
+func (r *RuleSet) addCompositeSelectionConstraint(id, subID string) (string, error) {
+	constraint, err := pldag.NewAtLeastConstraint([]string{id, subID}, 2)
 	if err != nil {
 		return "", err
 	}
 
 	r.polyhedron.AddEmptyColumn()
+	r.addConstraint(constraint)
 
-	supportImpliesPrimitives := make([]int, len(r.variables)+1)
-	primitivesImpliesSupport := make([]int, len(r.variables)+1)
-	auxiliarySupportsImpliesPrimitive, auxiliaryPrimitivesImpliesSupport := constraint.ToAuxiliaryConstraintsWithSupport()
+	return constraint.ID(), nil
+}
 
-	supportImpliesPrimitives[idIndex] = auxiliarySupportsImpliesPrimitive.Coefficients()[id]
-	supportImpliesPrimitives[subSelectionIndex] = auxiliarySupportsImpliesPrimitive.Coefficients()[subSelectionID]
-	supportImpliesPrimitives[len(supportImpliesPrimitives)-1] = auxiliarySupportsImpliesPrimitive.Coefficients()[constraint.ID()]
-	supportImpliesPrimitivesBias := auxiliarySupportsImpliesPrimitive.Bias()
-	r.polyhedron.Extend(supportImpliesPrimitives, supportImpliesPrimitivesBias)
-
-	primitivesImpliesSupport[idIndex] = auxiliaryPrimitivesImpliesSupport.Coefficients()[id]
-	primitivesImpliesSupport[subSelectionIndex] = auxiliaryPrimitivesImpliesSupport.Coefficients()[subSelectionID]
-	primitivesImpliesSupport[len(primitivesImpliesSupport)-1] = auxiliaryPrimitivesImpliesSupport.Coefficients()[constraint.ID()]
-	primitivesImpliesSupportBias := auxiliaryPrimitivesImpliesSupport.Bias()
-	r.polyhedron.Extend(primitivesImpliesSupport, primitivesImpliesSupportBias)
+func (r *RuleSet) addConstraint(constraint pldag.Constraint) {
+	r.polyhedron.AddEmptyColumn()
 
 	r.variables = append(r.variables, constraint.ID())
 
-	return constraint.ID(), nil
+	supportImpliesConstraint, constraintImpliesSupport :=
+		constraint.ToAuxiliaryConstraintsWithSupport()
+
+	err := r.extendWithAuxiliaryConstraint(supportImpliesConstraint)
+	if err != nil {
+		return
+	}
+
+	err = r.extendWithAuxiliaryConstraint(constraintImpliesSupport)
+	if err != nil {
+		return
+	}
+}
+
+func (r *RuleSet) extendWithAuxiliaryConstraint(constraint pldag.AuxiliaryConstraint) error {
+	row := make([]int, len(r.variables))
+
+	for id, value := range constraint.Coefficients() {
+		idIndex, err := utils.IndexOf(r.variables, id)
+		if err != nil {
+			return err
+		}
+
+		row[idIndex] = value
+	}
+
+	r.polyhedron.Extend(row, constraint.Bias())
+
+	return nil
 }
