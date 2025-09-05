@@ -29,34 +29,43 @@ func (s Selection) ID() string {
 	return s.id
 }
 
-func (s Selections) getImpactingSelections() Selections {
-	selections := s.removeRedundantSelections()
+func removeRedundantSelections(selectionsOrderedByOccurence Selections) Selections {
+	selectionsOrderedByPriority := utils.Reverse(selectionsOrderedByOccurence)
 
-	return selections
+	impactingSelectionsOrderedByPriority := filterOutRedundantSelections(selectionsOrderedByPriority)
+
+	addSelectionsOrderedByPriority := impactingSelectionsOrderedByPriority.filterOutRemoveSelections()
+
+	impactingSelections := utils.Reverse(addSelectionsOrderedByPriority)
+
+	return impactingSelections
 }
 
-func (s Selections) removeRedundantSelections() Selections {
-	selectionsByPriority := utils.Reverse(s)
-
-	impactingSelectionsByPriority := Selections{}
-	for _, selection := range selectionsByPriority {
-		if selection.isRedundant(impactingSelectionsByPriority) {
+func filterOutRedundantSelections(
+	selectionsOrderedByPriority Selections,
+) Selections {
+	var filtered Selections
+	for _, selection := range selectionsOrderedByPriority {
+		if selection.isRedundant(selectionsOrderedByPriority) {
 			continue
 		}
 
-		impactingSelectionsByPriority = append(impactingSelectionsByPriority, selection)
+		filtered = append(filtered, selection)
 	}
 
-	addSelectionsByPriority := Selections{}
-	for _, selection := range impactingSelectionsByPriority {
-		if selection.action == ADD {
-			addSelectionsByPriority = append(addSelectionsByPriority, selection)
+	return filtered
+}
+
+func (s Selections) filterOutRemoveSelections() Selections {
+	var filtered Selections
+	for _, selection := range s {
+		isRemove := selection.action == REMOVE
+		if !isRemove {
+			filtered = append(filtered, selection)
 		}
 	}
 
-	impactingSelections := utils.Reverse(addSelectionsByPriority)
-
-	return impactingSelections
+	return filtered
 }
 
 func (s Selection) isRedundant(existingSelections Selections) bool {

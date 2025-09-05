@@ -72,7 +72,7 @@ func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
 }
 
 func (r *RuleSet) CalculateSelectedIDs(selections Selections) ([]string, error) {
-	impactingSelections := selections.getImpactingSelections()
+	impactingSelections := selections.removeRedundantSelections()
 	var selectedIDs []string
 	for _, selection := range impactingSelections {
 		hasSubselection := selection.subSelectionID != nil
