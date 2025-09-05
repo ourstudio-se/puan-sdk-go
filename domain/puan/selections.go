@@ -29,8 +29,8 @@ func (s Selection) ID() string {
 	return s.id
 }
 
-func removeRedundantSelections(selectionsOrderedByOccurence Selections) Selections {
-	selectionsOrderedByPriority := utils.Reverse(selectionsOrderedByOccurence)
+func removeRedundantSelections(selectionsOrderedByOccurrence Selections) Selections {
+	selectionsOrderedByPriority := utils.Reverse(selectionsOrderedByOccurrence)
 
 	impactingSelectionsOrderedByPriority := filterOutRedundantSelections(selectionsOrderedByPriority)
 
@@ -46,7 +46,7 @@ func filterOutRedundantSelections(
 ) Selections {
 	var filtered Selections
 	for _, selection := range selectionsOrderedByPriority {
-		if selection.isRedundant(selectionsOrderedByPriority) {
+		if selection.isRedundant(filtered) {
 			continue
 		}
 

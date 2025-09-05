@@ -4,8 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/ourstudio-se/puan-sdk-go/utils"
 )
 
 func Test_removeRedundantSelections(t *testing.T) {
@@ -17,88 +15,41 @@ func Test_removeRedundantSelections(t *testing.T) {
 		{
 			name: "subselection than only id remove selection",
 			selections: Selections{
-				{
-					id:             "x",
-					subSelectionID: utils.Pointer("y"),
-					action:         ADD,
-				},
-				{
-					id:     "x",
-					action: REMOVE,
-				},
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
 			},
 			expected: Selections{},
 		},
 		{
-			name: "subselection two different ids",
+			name: "subselection two different sub ids",
 			selections: Selections{
-				{
-					id:             "a",
-					subSelectionID: utils.Pointer("x"),
-					action:         ADD,
-				},
-				{
-					id:             "a",
-					subSelectionID: utils.Pointer("y"),
-					action:         ADD,
-				},
+				NewSelectionBuilder("a").WithSubSelectionID("x").Build(),
+				NewSelectionBuilder("a").WithSubSelectionID("y").Build(),
 			},
 			expected: Selections{
-				{
-					id:             "a",
-					subSelectionID: utils.Pointer("x"),
-					action:         ADD,
-				},
-				{
-					id:             "a",
-					subSelectionID: utils.Pointer("y"),
-					action:         ADD,
-				},
+				NewSelectionBuilder("a").WithSubSelectionID("x").Build(),
+				NewSelectionBuilder("a").WithSubSelectionID("y").Build(),
 			},
 		},
 		{
 			name: "subselection than only id selection",
 			selections: Selections{
-				{
-					id:             "x",
-					subSelectionID: utils.Pointer("y"),
-					action:         ADD,
-				},
-				{
-					id:     "x",
-					action: ADD,
-				},
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+				NewSelectionBuilder("x").Build(),
 			},
 			expected: Selections{
-				{
-					id:     "x",
-					action: ADD,
-				},
+				NewSelectionBuilder("x").Build(),
 			},
 		},
 		{
 			name: "only id selection then subselection",
 			selections: Selections{
-				{
-					id:     "x",
-					action: ADD,
-				},
-				{
-					id:             "x",
-					subSelectionID: utils.Pointer("y"),
-					action:         ADD,
-				},
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
 			},
 			expected: Selections{
-				{
-					id:     "x",
-					action: ADD,
-				},
-				{
-					id:             "x",
-					subSelectionID: utils.Pointer("y"),
-					action:         ADD,
-				},
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
 			},
 		},
 		{
@@ -167,7 +118,7 @@ func Test_removeRedundantSelections(t *testing.T) {
 
 	for _, tt := range theories {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := tt.selections.removeRedundantSelections()
+			actual := removeRedundantSelections(tt.selections)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
