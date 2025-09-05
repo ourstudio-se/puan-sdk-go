@@ -134,3 +134,160 @@ func Test_getImpactingSelections(t *testing.T) {
 		})
 	}
 }
+
+func Test_filterOutRedundantSelections(t *testing.T) {
+	theories := []struct {
+		name       string
+		selections Selections
+		expected   Selections
+	}{
+		{
+			name: "remove duplicated selection",
+			selections: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			},
+			expected: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			},
+		},
+		{
+			name: "remove multiple duplicated selections",
+			selections: Selections{
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("x").Build(),
+			},
+			expected: Selections{
+				NewSelectionBuilder("x").Build(),
+			},
+		},
+		{
+			name: "should not remove selections",
+			selections: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("z").WithAction(REMOVE).Build(),
+			},
+			expected: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("z").WithAction(REMOVE).Build(),
+			},
+		},
+		{
+			name: "remove duplicated independent of action",
+			selections: Selections{
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+				NewSelectionBuilder("x").Build(),
+			},
+			expected: Selections{
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+			},
+		},
+	}
+
+	for _, tt := range theories {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := filterOutRedundantSelections(tt.selections)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+
+}
+
+func Test_makesRedundant(t *testing.T) {
+	theories := []struct {
+		name      string
+		selection Selection
+		other     Selection
+		expected  bool
+	}{
+		{
+			name:      "not redundant different ids",
+			selection: NewSelectionBuilder("x").Build(),
+			other:     NewSelectionBuilder("y").Build(),
+			expected:  false,
+		},
+		{
+			name:      "not redundant different sub ids",
+			selection: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			other:     NewSelectionBuilder("x").WithSubSelectionID("z").Build(),
+			expected:  false,
+		},
+		{
+			name:      "redundant same sub ids",
+			selection: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			other:     NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			expected:  true,
+		},
+		{
+			name:      "redundant selection has no sub ids",
+			selection: NewSelectionBuilder("x").Build(),
+			other:     NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			expected:  true,
+		},
+		{
+			name:      "redundant selection has sub ids", // TODO: Discuss this
+			selection: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			other:     NewSelectionBuilder("x").Build(),
+			expected:  false,
+		},
+		{
+			name:      "redundant single id already selected",
+			selection: NewSelectionBuilder("x").Build(),
+			other:     NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			expected:  true,
+		},
+	}
+
+	for _, tt := range theories {
+		actual := tt.selection.makesRedundant(tt.other)
+		assert.Equal(t, tt.expected, actual)
+	}
+}
+
+func Test_filterOutRemoveSelections(t *testing.T) {
+	theories := []struct {
+		name       string
+		selections Selections
+		expected   Selections
+	}{
+		{
+			name: "remove all selections",
+			selections: Selections{
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+				NewSelectionBuilder("y").WithAction(REMOVE).Build(),
+			},
+			expected: nil,
+		},
+		{
+			name: "remove only one selections",
+			selections: Selections{
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+				NewSelectionBuilder("y").Build(),
+			},
+			expected: Selections{
+				NewSelectionBuilder("y").Build(),
+			},
+		},
+		{
+			name: "no remove selections",
+			selections: Selections{
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("y").Build(),
+			},
+			expected: Selections{
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("y").Build(),
+			},
+		},
+	}
+
+	for _, tt := range theories {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.selections.filterOutRemoveSelections()
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+
+}

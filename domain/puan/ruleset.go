@@ -86,7 +86,6 @@ func (r *RuleSet) CalculateSelectedIDs(selections Selections) ([]string, error) 
 		} else {
 			selectedIDs = append(selectedIDs, selection.id)
 		}
-
 	}
 
 	return selectedIDs, nil
