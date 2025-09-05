@@ -50,6 +50,26 @@ func Contains[T comparable](elements []T, element T) bool {
 	return false
 }
 
+func ContainsAny[T comparable](a []T, b []T) bool {
+	for _, e := range b {
+		if Contains(a, e) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func ContainsAll[T comparable](a []T, b []T) bool {
+	for _, e := range b {
+		if !Contains(a, e) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func IndexOf[T comparable](elements []T, element T) (int, error) {
 	for i, e := range elements {
 		if e == element {

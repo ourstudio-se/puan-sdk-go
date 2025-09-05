@@ -1,6 +1,8 @@
 package puan
 
 import (
+	"github.com/go-errors/errors"
+
 	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/utils"
 )
@@ -27,8 +29,32 @@ func (c RuleSetCreator) PLDAG() *pldag.Model {
 	return c.pldag
 }
 
-func (c RuleSetCreator) SetPreferreds(id ...string) {
+func (c RuleSetCreator) SetPreferreds(id ...string) error {
+	err := c.validatePreferredIDs(id)
+	if err != nil {
+		return err
+	}
+
 	c.preferredVariables = append(c.preferredVariables, id...)
+
+	return nil
+}
+
+func (c RuleSetCreator) validatePreferredIDs(ids []string) error {
+	if utils.ContainsDuplicates(ids) {
+		return errors.New("duplicated preferred variables")
+	}
+
+	if utils.ContainsAny(c.preferredVariables, ids) {
+		return errors.New("preferred variable already added")
+	}
+
+	missingIDs := !utils.ContainsAll(c.pldag.Variables(), ids)
+	if missingIDs {
+		return errors.New("preferred variable not in model")
+	}
+
+	return nil
 }
 
 func (c RuleSetCreator) Create() *RuleSet {
@@ -60,19 +86,45 @@ func (r *RuleSet) PreferredVariables() []string {
 	return r.preferredVariables
 }
 
+type querySpecification struct {
+	ruleSet           *RuleSet
+	selectionIDLookUp map[Selection]string
+}
+
 func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
-	selectedIDs, err := r.CalculateSelectedIDs(selections)
+	impactingSelections := getImpactingSelections(selections)
+	specification, err := r.newQuerySpecification(impactingSelections)
 	if err != nil {
 		return nil, err
 	}
 
-	objective := CalculateObjective(r.primitiveVariables, selectedIDs, r.preferredVariables)
+	selectedIDs, err := getSelectedIDs(impactingSelections, specification.selectionIDLookUp)
+	if err != nil {
+		return nil, err
+	}
 
-	return NewQuery(r.polyhedron, r.variables, objective), nil
+	objective := CalculateObjective(specification.ruleSet.primitiveVariables, selectedIDs, specification.ruleSet.preferredVariables)
+
+	return NewQuery(specification.ruleSet.polyhedron, specification.ruleSet.variables, objective), nil
+}
+
+func getSelectedIDs(selections Selections, idLookUp map[Selection]string) ([]string, error) {
+	ids := make([]string, len(selections))
+	for i, selection := range selections {
+		id, ok := idLookUp[selection]
+		if !ok {
+			return nil, errors.New("selection not found")
+		}
+
+		ids[i] = id
+	}
+
+	return ids, nil
 }
 
 func (r *RuleSet) CalculateSelectedIDs(selections Selections) ([]string, error) {
 	impactingSelections := getImpactingSelections(selections)
+
 	var selectedIDs []string
 	for _, selection := range impactingSelections {
 		hasSubselection := selection.subSelectionID != nil
@@ -89,6 +141,55 @@ func (r *RuleSet) CalculateSelectedIDs(selections Selections) ([]string, error) 
 	}
 
 	return selectedIDs, nil
+}
+
+func (r *RuleSet) copy() *RuleSet {
+	aMatrix := make([][]int, len(r.polyhedron.A()))
+	copy(aMatrix, r.polyhedron.A())
+
+	bVector := make([]int, len(r.polyhedron.B()))
+	copy(bVector, r.polyhedron.B())
+
+	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
+
+	variableIDs := make([]string, len(r.variables))
+	copy(variableIDs, r.variables)
+
+	primitiveVariables := make([]string, len(r.primitiveVariables))
+	copy(primitiveVariables, r.primitiveVariables)
+
+	preferredIDs := make([]string, len(r.preferredVariables))
+	copy(preferredIDs, r.preferredVariables)
+
+	return &RuleSet{
+		polyhedron:         polyhedron,
+		primitiveVariables: primitiveVariables,
+		variables:          variableIDs,
+		preferredVariables: preferredIDs,
+	}
+
+}
+
+func (r *RuleSet) newQuerySpecification(selections Selections) (*querySpecification, error) {
+	ruleSet := r.copy()
+	selectionIDLookUp := make(map[Selection]string)
+	for _, selection := range selections {
+		if selection.isComposite() {
+			id, err := ruleSet.prepareCompositeSelection(selection.id, *selection.subSelectionID)
+			if err != nil {
+				return nil, err
+			}
+
+			selectionIDLookUp[selection] = id
+		} else {
+			selectionIDLookUp[selection] = selection.id
+		}
+	}
+
+	return &querySpecification{
+		ruleSet:           ruleSet,
+		selectionIDLookUp: selectionIDLookUp,
+	}, nil
 }
 
 func (r *RuleSet) prepareCompositeSelection(id, subSelectionID string) (string, error) {

@@ -83,3 +83,31 @@ func Test_IndexOf_givenElementNotExists(t *testing.T) {
 
 	assert.Error(t, err)
 }
+
+func Test_ContainsAny_givenSharedValues(t *testing.T) {
+	sliceA := []string{"a", "b", "c"}
+	sliceB := []string{"b", "c", "d"}
+	actual := ContainsAny(sliceA, sliceB)
+	assert.True(t, actual)
+}
+
+func Test_ContainsAny_givenNoSharedValues(t *testing.T) {
+	sliceA := []string{"a", "b", "c"}
+	sliceB := []string{"d", "e", "g"}
+	actual := ContainsAny(sliceA, sliceB)
+	assert.False(t, actual)
+}
+
+func Test_ContainsAll_givenAllValues(t *testing.T) {
+	sliceA := []string{"a", "b", "c", "d"}
+	sliceB := []string{"a", "b", "c"}
+	actual := ContainsAll(sliceA, sliceB)
+	assert.True(t, actual)
+}
+
+func Test_ContainsAll_givenMissingValues(t *testing.T) {
+	sliceA := []string{"a", "b", "c"}
+	sliceB := []string{"d", "e", "g"}
+	actual := ContainsAll(sliceA, sliceB)
+	assert.False(t, actual)
+}

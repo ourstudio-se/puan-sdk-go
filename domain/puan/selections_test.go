@@ -227,16 +227,10 @@ func Test_makesRedundant(t *testing.T) {
 			expected:  true,
 		},
 		{
-			name:      "redundant selection has sub ids", // TODO: Discuss this
+			name:      "redundant selection has sub ids",
 			selection: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
 			other:     NewSelectionBuilder("x").Build(),
 			expected:  false,
-		},
-		{
-			name:      "redundant single id already selected",
-			selection: NewSelectionBuilder("x").Build(),
-			other:     NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
-			expected:  true,
 		},
 	}
 

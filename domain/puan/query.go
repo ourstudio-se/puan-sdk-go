@@ -15,3 +15,15 @@ func NewQuery(polyhedron *pldag.Polyhedron, variables []string, objective Weight
 		objective:  objective,
 	}
 }
+
+func (q *Query) Polyhedron() *pldag.Polyhedron {
+	return q.polyhedron
+}
+
+func (q *Query) Variables() []string {
+	return q.variables
+}
+
+func (q *Query) Objective() Weights {
+	return q.objective
+}

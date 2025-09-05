@@ -19,19 +19,13 @@ func main() {
 		puan.NewSelectionBuilder("a").WithSubSelectionID(x).Build(),
 	}
 
-	selectedIDs, err := ruleSet.CalculateSelectedIDs(selections)
+	query, err := ruleSet.NewQuery(selections)
 	if err != nil {
 		panic(err)
 	}
 
-	objective := puan.CalculateObjective(
-		ruleSet.PrimitiveVariables(),
-		selectedIDs,
-		nil,
-	)
-
 	client := glpk.NewClient("http://127.0.0.1:9000")
-	solution, err := client.Solve(ruleSet.Polyhedron(), ruleSet.Variables(), objective)
+	solution, err := client.Solve(query.Polyhedron(), query.Variables(), query.Objective())
 	if err != nil {
 		panic(err)
 	}

@@ -2,6 +2,7 @@ package glpk
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -30,6 +31,9 @@ func (c *Client) Solve(
 	objective map[string]int,
 ) (puan.Solution, error) {
 	payload := newRequestPayload(polyhedron, variables, objective)
+
+	bb, _ := json.Marshal(payload)
+	fmt.Println(string(bb))
 
 	request, err := c.newRequest(payload)
 	if err != nil {

@@ -17,6 +17,10 @@ type Selection struct {
 
 type Selections []Selection
 
+func (s Selection) isComposite() bool {
+	return s.subSelectionID != nil
+}
+
 func newSelection(action Action, id string, subSelectionID *string) Selection {
 	return Selection{
 		id:             id,
