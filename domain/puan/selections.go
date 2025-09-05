@@ -29,13 +29,10 @@ func (s Selection) ID() string {
 	return s.id
 }
 
-func removeRedundantSelections(selectionsOrderedByOccurrence Selections) Selections {
+func getImpactingSelections(selectionsOrderedByOccurrence Selections) Selections {
 	selectionsOrderedByPriority := utils.Reverse(selectionsOrderedByOccurrence)
-
 	impactingSelectionsOrderedByPriority := filterOutRedundantSelections(selectionsOrderedByPriority)
-
 	addSelectionsOrderedByPriority := impactingSelectionsOrderedByPriority.filterOutRemoveSelections()
-
 	impactingSelections := utils.Reverse(addSelectionsOrderedByPriority)
 
 	return impactingSelections

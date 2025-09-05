@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_removeRedundantSelections(t *testing.T) {
+func Test_getImpactingSelections(t *testing.T) {
 	theories := []struct {
 		name       string
 		selections Selections
@@ -114,11 +114,22 @@ func Test_removeRedundantSelections(t *testing.T) {
 				NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(ADD).Build(),
 			},
 		},
+		{
+			name: "Add selection, then subselection, then remove sub-selection",
+			selections: Selections{
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("z").Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("z").WithAction(REMOVE).Build(),
+			},
+			expected: Selections{
+				NewSelectionBuilder("x").Build(),
+			},
+		},
 	}
 
 	for _, tt := range theories {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := removeRedundantSelections(tt.selections)
+			actual := getImpactingSelections(tt.selections)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
