@@ -25,11 +25,11 @@ func NewRuleSetCreator() *RuleSetCreator {
 	}
 }
 
-func (c RuleSetCreator) PLDAG() *pldag.Model {
+func (c *RuleSetCreator) PLDAG() *pldag.Model {
 	return c.pldag
 }
 
-func (c RuleSetCreator) SetPreferreds(id ...string) error {
+func (c *RuleSetCreator) SetPreferreds(id ...string) error {
 	err := c.validatePreferredIDs(id)
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func (c RuleSetCreator) SetPreferreds(id ...string) error {
 	return nil
 }
 
-func (c RuleSetCreator) validatePreferredIDs(ids []string) error {
+func (c *RuleSetCreator) validatePreferredIDs(ids []string) error {
 	if utils.ContainsDuplicates(ids) {
 		return errors.New("duplicated preferred variables")
 	}
@@ -57,7 +57,7 @@ func (c RuleSetCreator) validatePreferredIDs(ids []string) error {
 	return nil
 }
 
-func (c RuleSetCreator) Create() *RuleSet {
+func (c *RuleSetCreator) Create() *RuleSet {
 	polyhedron := c.pldag.GeneratePolyhedron()
 	variables := c.pldag.Variables()
 	primitiveVariables := c.PLDAG().PrimitiveVariables()
@@ -133,7 +133,7 @@ func (r *RuleSet) CalculateSelectedIDs(selections Selections) ([]string, error) 
 	for _, selection := range impactingSelections {
 		hasSubselection := selection.subSelectionID != nil
 		if hasSubselection {
-			auxiliaryID, err := r.addCompositeSelectionConstraint(selection.id, *selection.subSelectionID)
+			auxiliaryID, err := r.setCompositeSelectionConstraint(selection.id, *selection.subSelectionID)
 			if err != nil {
 				return nil, err
 			}
@@ -171,23 +171,19 @@ func (r *RuleSet) copy() *RuleSet {
 		variables:          variableIDs,
 		preferredVariables: preferredIDs,
 	}
-
 }
 
 func (r *RuleSet) newQuerySpecification(selections Selections) (*querySpecification, error) {
 	ruleSet := r.copy()
+
 	selectionIDLookUp := make(map[Selection]string)
 	for _, selection := range selections {
-		if selection.isComposite() {
-			id, err := ruleSet.addCompositeSelectionConstraint(selection.id, *selection.subSelectionID)
-			if err != nil {
-				return nil, err
-			}
-
-			selectionIDLookUp[selection] = id
-		} else {
-			selectionIDLookUp[selection] = selection.id
+		id, err := ruleSet.obtainID(selection)
+		if err != nil {
+			return nil, err
 		}
+
+		selectionIDLookUp[selection] = id
 	}
 
 	return &querySpecification{
@@ -196,13 +192,36 @@ func (r *RuleSet) newQuerySpecification(selections Selections) (*querySpecificat
 	}, nil
 }
 
-func (r *RuleSet) addCompositeSelectionConstraint(id, subID string) (string, error) {
+func (r *RuleSet) obtainID(selection Selection) (string, error) {
+	if selection.isComposite() {
+		id, err := r.setCompositeSelectionConstraint(selection.id, *selection.subSelectionID)
+		if err != nil {
+			return "", err
+		}
+
+		return id, nil
+	}
+
+	return selection.id, nil
+}
+
+/*
+*
+TODO: handle when we already have the constraint in the model
+
+creator.PLDAG().SetAnd("a", "x")
+...
+
+	selections := puan.Selections{
+		puan.NewSelectionBuilder("a").WithSubSelectionID(x).Build(),
+	}
+*/
+func (r *RuleSet) setCompositeSelectionConstraint(id, subID string) (string, error) {
 	constraint, err := pldag.NewAtLeastConstraint([]string{id, subID}, 2)
 	if err != nil {
 		return "", err
 	}
 
-	r.polyhedron.AddEmptyColumn()
 	r.addConstraint(constraint)
 
 	return constraint.ID(), nil
@@ -216,30 +235,39 @@ func (r *RuleSet) addConstraint(constraint pldag.Constraint) {
 	supportImpliesConstraint, constraintImpliesSupport :=
 		constraint.ToAuxiliaryConstraintsWithSupport()
 
-	err := r.extendWithAuxiliaryConstraint(supportImpliesConstraint)
+	err := r.addAuxiliaryConstraint(supportImpliesConstraint)
 	if err != nil {
 		return
 	}
 
-	err = r.extendWithAuxiliaryConstraint(constraintImpliesSupport)
+	err = r.addAuxiliaryConstraint(constraintImpliesSupport)
 	if err != nil {
 		return
 	}
 }
 
-func (r *RuleSet) extendWithAuxiliaryConstraint(constraint pldag.AuxiliaryConstraint) error {
-	row := make([]int, len(r.variables))
-
-	for id, value := range constraint.Coefficients() {
-		idIndex, err := utils.IndexOf(r.variables, id)
-		if err != nil {
-			return err
-		}
-
-		row[idIndex] = value
+func (r *RuleSet) addAuxiliaryConstraint(constraint pldag.AuxiliaryConstraint) error {
+	row, err := r.newRow(constraint)
+	if err != nil {
+		return err
 	}
 
 	r.polyhedron.Extend(row, constraint.Bias())
 
 	return nil
+}
+
+func (r *RuleSet) newRow(constriant pldag.AuxiliaryConstraint) ([]int, error) {
+	row := make([]int, len(r.variables))
+
+	for id, value := range constriant.Coefficients() {
+		idIndex, err := utils.IndexOf(r.variables, id)
+		if err != nil {
+			return nil, err
+		}
+
+		row[idIndex] = value
+	}
+
+	return row, nil
 }
