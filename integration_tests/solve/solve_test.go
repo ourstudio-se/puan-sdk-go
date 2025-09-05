@@ -27,7 +27,7 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred_shouldReturnNotPrefe
 	_ = creator.PLDAG().Assume(root)
 
 	invertedPreferred, _ := creator.PLDAG().SetNot("packageA")
-	creator.SetPreferred(invertedPreferred)
+	creator.SetPreferreds(invertedPreferred)
 
 	ruleSet := creator.Create()
 

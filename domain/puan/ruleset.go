@@ -27,7 +27,7 @@ func (c RuleSetCreator) PLDAG() *pldag.Model {
 	return c.pldag
 }
 
-func (c RuleSetCreator) SetPreferred(id ...string) {
+func (c RuleSetCreator) SetPreferreds(id ...string) {
 	c.preferredVariables = append(c.preferredVariables, id...)
 }
 
