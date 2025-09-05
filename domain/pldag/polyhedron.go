@@ -104,12 +104,12 @@ func (p *Polyhedron) B() []int {
 	return p.bVector
 }
 
-func (p *Polyhedron) IncrementMatrixRows() {
+func (p *Polyhedron) AddEmptyColumn() {
 	for i := range p.aMatrix {
 		p.aMatrix[i] = append(p.aMatrix[i], 0)
 	}
 }
-func (p *Polyhedron) Append(row []int, bias Bias) {
+func (p *Polyhedron) Extend(row []int, bias Bias) {
 	p.aMatrix = append(p.aMatrix, row)
 	p.bVector = append(p.bVector, int(bias))
 }

@@ -108,7 +108,7 @@ func (r *RuleSet) prepareCompositeSelection(id, subSelectionID string) (string, 
 		return "", err
 	}
 
-	r.polyhedron.IncrementMatrixRows()
+	r.polyhedron.AddEmptyColumn()
 
 	supportImpliesPrimitives := make([]int, len(r.variables)+1)
 	primitivesImpliesSupport := make([]int, len(r.variables)+1)
@@ -118,13 +118,13 @@ func (r *RuleSet) prepareCompositeSelection(id, subSelectionID string) (string, 
 	supportImpliesPrimitives[subSelectionIndex] = auxiliarySupportsImpliesPrimitive.Coefficients()[subSelectionID]
 	supportImpliesPrimitives[len(supportImpliesPrimitives)-1] = auxiliarySupportsImpliesPrimitive.Coefficients()[constraint.ID()]
 	supportImpliesPrimitivesBias := auxiliarySupportsImpliesPrimitive.Bias()
-	r.polyhedron.Append(supportImpliesPrimitives, supportImpliesPrimitivesBias)
+	r.polyhedron.Extend(supportImpliesPrimitives, supportImpliesPrimitivesBias)
 
 	primitivesImpliesSupport[idIndex] = auxiliaryPrimitivesImpliesSupport.Coefficients()[id]
 	primitivesImpliesSupport[subSelectionIndex] = auxiliaryPrimitivesImpliesSupport.Coefficients()[subSelectionID]
 	primitivesImpliesSupport[len(primitivesImpliesSupport)-1] = auxiliaryPrimitivesImpliesSupport.Coefficients()[constraint.ID()]
 	primitivesImpliesSupportBias := auxiliaryPrimitivesImpliesSupport.Bias()
-	r.polyhedron.Append(primitivesImpliesSupport, primitivesImpliesSupportBias)
+	r.polyhedron.Extend(primitivesImpliesSupport, primitivesImpliesSupportBias)
 
 	return constraint.ID(), nil
 }
