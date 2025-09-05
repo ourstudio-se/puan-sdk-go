@@ -226,5 +226,7 @@ func (r *RuleSet) prepareCompositeSelection(id, subSelectionID string) (string, 
 	primitivesImpliesSupportBias := auxiliaryPrimitivesImpliesSupport.Bias()
 	r.polyhedron.Extend(primitivesImpliesSupport, primitivesImpliesSupportBias)
 
+	r.variables = append(r.variables, constraint.ID())
+
 	return constraint.ID(), nil
 }
