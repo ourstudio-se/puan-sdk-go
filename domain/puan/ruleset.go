@@ -109,7 +109,13 @@ func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
 		specification.ruleSet.preferredVariables,
 	)
 
-	return NewQuery(specification.ruleSet.polyhedron, specification.ruleSet.variables, objective), nil
+	query := NewQuery(
+		specification.ruleSet.polyhedron,
+		specification.ruleSet.variables,
+		objective,
+	)
+
+	return query, nil
 }
 
 func getSelectedIDs(selections Selections, idLookUp map[Selection]string) ([]string, error) {
@@ -176,20 +182,29 @@ func (r *RuleSet) copy() *RuleSet {
 func (r *RuleSet) newQuerySpecification(selections Selections) (*querySpecification, error) {
 	ruleSet := r.copy()
 
-	selectionIDLookUp := make(map[Selection]string)
-	for _, selection := range selections {
-		id, err := ruleSet.obtainID(selection)
-		if err != nil {
-			return nil, err
-		}
-
-		selectionIDLookUp[selection] = id
+	selectionIDLookUp, err := ruleSet.newIDLookup(selections)
+	if err != nil {
+		return nil, err
 	}
 
 	return &querySpecification{
 		ruleSet:           ruleSet,
 		selectionIDLookUp: selectionIDLookUp,
 	}, nil
+}
+
+func (r *RuleSet) newIDLookup(selections Selections) (map[Selection]string, error) {
+	lookup := make(map[Selection]string)
+	for _, selection := range selections {
+		id, err := r.obtainID(selection)
+		if err != nil {
+			return nil, err
+		}
+
+		lookup[selection] = id
+	}
+
+	return lookup, nil
 }
 
 func (r *RuleSet) obtainID(selection Selection) (string, error) {
@@ -211,22 +226,22 @@ func (r *RuleSet) setCompositeSelectionConstraint(id, subID string) (string, err
 		return "", err
 	}
 
-	r.addConstraintIfNotExist(constraint)
+	r.setConstraintIfNotExist(constraint)
 
 	return constraint.ID(), nil
 }
 
-func (r *RuleSet) addConstraintIfNotExist(constraint pldag.Constraint) {
+func (r *RuleSet) setConstraintIfNotExist(constraint pldag.Constraint) {
 	for _, variable := range r.variables {
 		if variable == constraint.ID() {
 			return
 		}
 	}
 
-	r.addConstraint(constraint)
+	r.setConstraint(constraint)
 }
 
-func (r *RuleSet) addConstraint(constraint pldag.Constraint) {
+func (r *RuleSet) setConstraint(constraint pldag.Constraint) {
 	r.polyhedron.AddEmptyColumn()
 
 	r.variables = append(r.variables, constraint.ID())
@@ -234,18 +249,18 @@ func (r *RuleSet) addConstraint(constraint pldag.Constraint) {
 	supportImpliesConstraint, constraintImpliesSupport :=
 		constraint.ToAuxiliaryConstraintsWithSupport()
 
-	err := r.addAuxiliaryConstraint(supportImpliesConstraint)
+	err := r.setAuxiliaryConstraint(supportImpliesConstraint)
 	if err != nil {
 		return
 	}
 
-	err = r.addAuxiliaryConstraint(constraintImpliesSupport)
+	err = r.setAuxiliaryConstraint(constraintImpliesSupport)
 	if err != nil {
 		return
 	}
 }
 
-func (r *RuleSet) addAuxiliaryConstraint(constraint pldag.AuxiliaryConstraint) error {
+func (r *RuleSet) setAuxiliaryConstraint(constraint pldag.AuxiliaryConstraint) error {
 	row, err := r.newRow(constraint)
 	if err != nil {
 		return err
