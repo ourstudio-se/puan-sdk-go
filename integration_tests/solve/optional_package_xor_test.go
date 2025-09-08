@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
 	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
 )
@@ -26,34 +25,18 @@ import (
 // package X with its preferred components itemC and itemD
 // Then we select (X, itemC, itemD) and we expect itemA to be replaced
 func Test_optionalVariantWithXORsBetweenItemsAndForbids_shouldReturnPreferred(t *testing.T) {
-	model, preferredIDs := optionalPackageWithItemsWithXORsAndForbids()
+	ruleset := optionalPackageWithItemsWithXORsAndForbids()
 
 	selections := puan.Selections{
-		{
-			ID:     "itemA",
-			Action: puan.ADD,
-		},
-		{
-			ID:     "packageX",
-			Action: puan.ADD,
-		},
-		{
-			ID:     "itemC",
-			Action: puan.ADD,
-		},
-		{
-			ID:     "itemD",
-			Action: puan.ADD,
-		},
+		puan.NewSelectionBuilder("itemA").Build(),
+		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemC").Build(),
+		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemD").Build(),
 	}
 
-	polyhedron := model.GeneratePolyhedron()
+	query, _ := ruleset.NewQuery(selections)
 	client := glpk.NewClient(url)
-
-	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, preferredIDs)
-	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
-	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	solution, _ := client.Solve(query)
+	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -82,34 +65,18 @@ func Test_optionalVariantWithXORsBetweenItemsAndForbids_shouldReturnPreferred(t 
 // package X with its preferred components itemC and itemD
 // Then we select (X, itemC, itemD) and we expect itemA to be replaced
 func Test_optionalVariantWithXORsBetweenItemsAndForbids_shouldReturnNOTPreferred(t *testing.T) {
-	model, preferredIDs := optionalPackageWithItemsWithXORsAndForbids()
+	ruleset := optionalPackageWithItemsWithXORsAndForbids()
 
 	selections := puan.Selections{
-		{
-			ID:     "itemC",
-			Action: puan.ADD,
-		},
-		{
-			ID:     "packageX",
-			Action: puan.ADD,
-		},
-		{
-			ID:     "itemA",
-			Action: puan.ADD,
-		},
-		{
-			ID:     "itemB",
-			Action: puan.ADD,
-		},
+		puan.NewSelectionBuilder("itemC").Build(),
+		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemA").Build(),
+		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemB").Build(),
 	}
 
-	polyhedron := model.GeneratePolyhedron()
+	query, _ := ruleset.NewQuery(selections)
 	client := glpk.NewClient(url)
-
-	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(model.PrimitiveVariables(), selectionsIDs, preferredIDs)
-	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
-	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	solution, _ := client.Solve(query)
+	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -123,29 +90,30 @@ func Test_optionalVariantWithXORsBetweenItemsAndForbids_shouldReturnNOTPreferred
 	)
 }
 
-func optionalPackageWithItemsWithXORsAndForbids() (*pldag.Model, []string) {
-	model := pldag.New()
-	model.SetPrimitives("itemA", "itemB", "itemC", "itemD", "packageX")
+func optionalPackageWithItemsWithXORsAndForbids() *puan.RuleSet {
+	creator := puan.NewRuleSetCreator()
 
-	reversedItemA, _ := model.SetImply("itemA", "packageX")
+	creator.PLDAG().SetPrimitives("itemA", "itemB", "itemC", "itemD", "packageX")
 
-	exactlyOneOfItemCAndA, _ := model.SetXor("itemC", "itemA")
-	exactlyOneOfItemCAndAInX, _ := model.SetImply("packageX", exactlyOneOfItemCAndA)
+	reversedItemA, _ := creator.PLDAG().SetImply("itemA", "packageX")
 
-	exactlyOneOfItemDAndB, _ := model.SetXor("itemD", "itemB")
-	exactlyOneOfItemDAndBInX, _ := model.SetImply("packageX", exactlyOneOfItemDAndB)
+	exactlyOneOfItemCAndA, _ := creator.PLDAG().SetXor("itemC", "itemA")
+	exactlyOneOfItemCAndAInX, _ := creator.PLDAG().SetImply("packageX", exactlyOneOfItemCAndA)
 
-	notItemC, _ := model.SetNot("itemC")
-	itemAForbidsItemC, _ := model.SetImply("itemA", notItemC)
+	exactlyOneOfItemDAndB, _ := creator.PLDAG().SetXor("itemD", "itemB")
+	exactlyOneOfItemDAndBInX, _ := creator.PLDAG().SetImply("packageX", exactlyOneOfItemDAndB)
 
-	exactlyOneOfItemCAndAWithB, _ := model.SetImply("itemB", exactlyOneOfItemCAndA)
+	notItemC, _ := creator.PLDAG().SetNot("itemC")
+	itemAForbidsItemC, _ := creator.PLDAG().SetImply("itemA", notItemC)
 
-	itemARequiresItemB, _ := model.SetImply("itemA", "itemB")
+	exactlyOneOfItemCAndAWithB, _ := creator.PLDAG().SetImply("itemB", exactlyOneOfItemCAndA)
 
-	notItemD, _ := model.SetNot("itemD")
-	itemAForbidsItemD, _ := model.SetImply("itemA", notItemD)
+	itemARequiresItemB, _ := creator.PLDAG().SetImply("itemA", "itemB")
 
-	root, _ := model.SetAnd(
+	notItemD, _ := creator.PLDAG().SetNot("itemD")
+	itemAForbidsItemD, _ := creator.PLDAG().SetImply("itemA", notItemD)
+
+	root, _ := creator.PLDAG().SetAnd(
 		reversedItemA,
 		exactlyOneOfItemCAndAInX,
 		exactlyOneOfItemDAndBInX,
@@ -155,11 +123,15 @@ func optionalPackageWithItemsWithXORsAndForbids() (*pldag.Model, []string) {
 		itemAForbidsItemD,
 	)
 
-	_ = model.Assume(root)
+	_ = creator.PLDAG().Assume(root)
 
-	preferredVariant, _ := model.SetAnd("itemC", "itemD")
-	notPreferredVariant, _ := model.SetNot(preferredVariant)
-	invertedPreferred, _ := model.SetAnd("packageX", notPreferredVariant)
+	preferredVariant, _ := creator.PLDAG().SetAnd("itemC", "itemD")
+	notPreferredVariant, _ := creator.PLDAG().SetNot(preferredVariant)
+	invertedPreferred, _ := creator.PLDAG().SetAnd("packageX", notPreferredVariant)
 
-	return model, []string{invertedPreferred}
+	_ = creator.SetPreferreds(invertedPreferred)
+
+	ruleSet := creator.Create()
+
+	return ruleSet
 }

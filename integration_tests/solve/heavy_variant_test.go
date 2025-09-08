@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
 	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
 )
@@ -19,35 +18,18 @@ import (
 // We give pre selected action [itemX] and selects [packageA, itemY] and
 // expects solution [packageA, itemX] and pre selected [[itemX], [itemA, itemX]]
 func Test_changeHeavyVariant_shouldReturnSelectedVariant(t *testing.T) {
-	model := heavyVariantSetup()
+	ruleSet := heavyVariantSetup()
 
 	selections := puan.Selections{
-		{
-			ID:     "itemX",
-			Action: puan.ADD,
-		},
-		{
-			ID:     "packageA",
-			Action: puan.ADD,
-		},
-		{
-			ID:     "itemY",
-			Action: puan.ADD,
-		},
+		puan.NewSelectionBuilder("itemX").Build(),
+		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").Build(),
 	}
 
-	polyhedron := model.GeneratePolyhedron()
+	query, _ := ruleSet.NewQuery(selections)
+
 	client := glpk.NewClient(url)
-
-	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(
-		model.PrimitiveVariables(),
-		selectionsIDs,
-		nil,
-	)
-
-	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
-	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	solution, _ := client.Solve(query)
+	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -68,27 +50,58 @@ func Test_changeHeavyVariant_shouldReturnSelectedVariant(t *testing.T) {
 
 // Test_changeHeavyVariant_withVariantSelection_shouldReturnSelectedVariant
 // Ref: test_will_change_heavy_package_variant_is_pre_selected_and_other_package_variant_option_is_selected
+// Comment: This test differ from python test setup, since packageA is preselected individually here.
+// We might need to change the behavior such that composite selection gives wights to primary ID.
 func Test_changeHeavyVariant_withVariantSelection_shouldReturnSelectedVariant(t *testing.T) {
-	// TODO: Same as Test_changeHeavyVariant_shouldReturnSelectedVariant, selection of variants needs to be implemented.
-	t.Skip()
+	ruleSet := heavyVariantSetup()
+
+	selections := puan.Selections{
+		puan.NewSelectionBuilder("packageA").Build(),
+		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
+		puan.NewSelectionBuilder("itemY").Build(),
+	}
+
+	query, _ := ruleSet.NewQuery(selections)
+
+	client := glpk.NewClient(url)
+	solution, _ := client.Solve(query)
+	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"packageA": 1,
+			"itemX":    0,
+			"itemY":    1,
+			"itemM":    1,
+			"itemN":    1,
+			"itemO":    1,
+			"itemP":    1,
+			"itemQ":    1,
+			"itemR":    1,
+			"itemS":    1,
+		},
+		primitiveSolution,
+	)
 }
 
-func heavyVariantSetup() *pldag.Model {
-	model := pldag.New()
-	model.SetPrimitives("packageA", "itemX", "itemY", "itemM", "itemN", "itemO", "itemP", "itemQ", "itemR", "itemS")
+func heavyVariantSetup() *puan.RuleSet {
+	creator := puan.NewRuleSetCreator()
+	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemM", "itemN", "itemO", "itemP", "itemQ", "itemR", "itemS")
 
-	exactlyOneOfItemXAndY, _ := model.SetXor("itemX", "itemY")
-	packageARequiresExactlyOneOfXAndY, _ := model.SetImply("packageA", exactlyOneOfItemXAndY)
+	exactlyOneOfItemXAndY, _ := creator.PLDAG().SetXor("itemX", "itemY")
+	packageARequiresExactlyOneOfXAndY, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfItemXAndY)
 
-	includedItemsInA, _ := model.SetAnd("itemM", "itemN", "itemO", "itemP", "itemQ", "itemR", "itemS")
-	packageARequiresItems, _ := model.SetImply("packageA", includedItemsInA)
+	includedItemsInA, _ := creator.PLDAG().SetAnd("itemM", "itemN", "itemO", "itemP", "itemQ", "itemR", "itemS")
+	packageARequiresItems, _ := creator.PLDAG().SetImply("packageA", includedItemsInA)
 
-	root, _ := model.SetAnd(
+	root, _ := creator.PLDAG().SetAnd(
 		packageARequiresExactlyOneOfXAndY,
 		packageARequiresItems,
 	)
 
-	_ = model.Assume(root)
+	_ = creator.PLDAG().Assume(root)
 
-	return model
+	ruleSet := creator.Create()
+
+	return ruleSet
 }

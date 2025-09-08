@@ -3,7 +3,7 @@ package glpk
 import (
 	"testing"
 
-	"github.com/go-faker/faker/v4"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
@@ -93,7 +93,7 @@ func Test_solutionResponse_validate_givenUnexpectedStatus_shouldReturnError(
 		Solutions: []Solution{
 			{
 				Solution: fake.New[map[string]int](),
-				Status:   faker.Word(),
+				Status:   uuid.New().String(),
 			},
 		},
 	}

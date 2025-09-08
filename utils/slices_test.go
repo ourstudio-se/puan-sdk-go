@@ -46,3 +46,68 @@ func Test_ContainsDuplicates_shouldReturnFalse(t *testing.T) {
 
 	assert.Equal(t, false, actual)
 }
+
+func Test_Reverse(t *testing.T) {
+	slice := []int{1, 2, 3, 4, 5}
+	actual := Reverse(slice)
+	expected := []int{5, 4, 3, 2, 1}
+
+	assert.Equal(t, expected, actual)
+}
+
+func Test_Contains_shouldReturnTrue(t *testing.T) {
+	slice := []string{"a", "b", "c"}
+	actual := Contains(slice, "b")
+
+	assert.True(t, actual)
+}
+
+func Test_Contains_shouldReturnFalse(t *testing.T) {
+	slice := []string{"a", "b", "c"}
+	actual := Contains(slice, "k")
+
+	assert.False(t, actual)
+}
+
+func Test_IndexOf_givenElementExists(t *testing.T) {
+	slice := []int{1, 2, 3}
+	index, err := IndexOf(slice, 2)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 1, index)
+}
+
+func Test_IndexOf_givenElementNotExists(t *testing.T) {
+	slice := []int{1, 2, 3}
+	_, err := IndexOf(slice, 4)
+
+	assert.Error(t, err)
+}
+
+func Test_ContainsAny_givenSharedValues(t *testing.T) {
+	sliceA := []string{"a", "b", "c"}
+	sliceB := []string{"b", "c", "d"}
+	actual := ContainsAny(sliceA, sliceB)
+	assert.True(t, actual)
+}
+
+func Test_ContainsAny_givenNoSharedValues(t *testing.T) {
+	sliceA := []string{"a", "b", "c"}
+	sliceB := []string{"d", "e", "g"}
+	actual := ContainsAny(sliceA, sliceB)
+	assert.False(t, actual)
+}
+
+func Test_ContainsAll_givenAllValues(t *testing.T) {
+	sliceA := []string{"a", "b", "c", "d"}
+	sliceB := []string{"a", "b", "c"}
+	actual := ContainsAll(sliceA, sliceB)
+	assert.True(t, actual)
+}
+
+func Test_ContainsAll_givenMissingValues(t *testing.T) {
+	sliceA := []string{"a", "b", "c"}
+	sliceB := []string{"d", "e", "g"}
+	actual := ContainsAll(sliceA, sliceB)
+	assert.False(t, actual)
+}

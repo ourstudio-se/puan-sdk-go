@@ -1,5 +1,7 @@
 package utils
 
+import "github.com/go-errors/errors"
+
 func Without[T comparable](sliceA []T, sliceB []T) []T {
 	var result []T
 	excludeMap := make(map[T]struct{}, len(sliceB))
@@ -27,4 +29,53 @@ func ContainsDuplicates[T comparable](elements []T) bool {
 	}
 
 	return false
+}
+
+func Reverse[T any](elements []T) []T {
+	result := make([]T, len(elements))
+	for i := range elements {
+		result[len(elements)-1-i] = elements[i]
+	}
+
+	return result
+}
+
+func Contains[T comparable](elements []T, element T) bool {
+	for _, e := range elements {
+		if e == element {
+			return true
+		}
+	}
+
+	return false
+}
+
+func ContainsAny[T comparable](a []T, b []T) bool {
+	for _, e := range b {
+		if Contains(a, e) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func ContainsAll[T comparable](a []T, b []T) bool {
+	for _, e := range b {
+		if !Contains(a, e) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func IndexOf[T comparable](elements []T, element T) (int, error) {
+	for i, e := range elements {
+		if e == element {
+			return i, nil
+		}
+	}
+
+	return -1, errors.New("element not found")
 }

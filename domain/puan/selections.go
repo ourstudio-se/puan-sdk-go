@@ -1,46 +1,100 @@
 package puan
 
+import (
+	"github.com/ourstudio-se/puan-sdk-go/utils"
+)
+
 const ADD Action = "ADD"
 const REMOVE Action = "REMOVE"
 
 type Action string
 
 type Selection struct {
-	ID     string
-	Action Action
+	id             string
+	subSelectionID *string
+	action         Action
 }
+
 type Selections []Selection
 
-func (s Selections) GetImpactingSelectionIDS() []string {
-	selections := s.removeRedundantSelections()
-	ids := selections.ids()
-
-	return ids
+func (s Selection) isComposite() bool {
+	return s.subSelectionID != nil
 }
 
-func (s Selections) removeRedundantSelections() Selections {
-	lastActions := make(map[string]Action)
-	for _, selection := range s {
-		lastActions[selection.ID] = selection.Action
+func newSelection(action Action, id string, subSelectionID *string) Selection {
+	return Selection{
+		id:             id,
+		subSelectionID: subSelectionID,
+		action:         action,
+	}
+}
+
+func (s Selection) ID() string {
+	return s.id
+}
+
+func getImpactingSelections(selectionsOrderedByOccurrence Selections) Selections {
+	selectionsOrderedByPriority := utils.Reverse(selectionsOrderedByOccurrence)
+	impactingSelectionsOrderedByPriority := filterOutRedundantSelections(selectionsOrderedByPriority)
+	addSelectionsOrderedByPriority := impactingSelectionsOrderedByPriority.filterOutRemoveSelections()
+	impactingSelections := utils.Reverse(addSelectionsOrderedByPriority)
+
+	return impactingSelections
+}
+
+func filterOutRedundantSelections(
+	selectionsOrderedByPriority Selections,
+) Selections {
+	var filtered Selections
+	for _, selection := range selectionsOrderedByPriority {
+		if selection.isRedundant(filtered) {
+			continue
+		}
+
+		filtered = append(filtered, selection)
 	}
 
-	activeSelections := Selections{}
+	return filtered
+}
+
+func (s Selections) filterOutRemoveSelections() Selections {
+	var filtered Selections
 	for _, selection := range s {
-		if action, ok := lastActions[selection.ID]; ok {
-			if action == ADD {
-				activeSelections = append(activeSelections, selection)
-			}
+		isRemove := selection.action == REMOVE
+		if !isRemove {
+			filtered = append(filtered, selection)
 		}
 	}
 
-	return activeSelections
+	return filtered
 }
 
-func (s Selections) ids() []string {
-	ids := make([]string, len(s))
-	for i, selection := range s {
-		ids[i] = selection.ID
+func (s Selection) isRedundant(existingSelections Selections) bool {
+	for _, existingSelection := range existingSelections {
+		if existingSelection.makesRedundant(s) {
+			return true
+		}
 	}
 
-	return ids
+	return false
+}
+
+func (s Selection) makesRedundant(other Selection) bool {
+	if s.id != other.id {
+		return false
+	}
+
+	if s.subSelectionID == nil {
+		return true
+	}
+
+	if other.subSelectionID == nil {
+		return false
+	}
+
+	if *other.subSelectionID == *s.subSelectionID {
+		return true
+	}
+
+	return false
 }

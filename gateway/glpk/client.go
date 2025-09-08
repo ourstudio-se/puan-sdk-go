@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
 )
 
@@ -25,11 +24,9 @@ func NewClient(baseURL string) *Client {
 }
 
 func (c *Client) Solve(
-	polyhedron pldag.Polyhedron,
-	variables []string,
-	objective map[string]int,
+	query *puan.Query,
 ) (puan.Solution, error) {
-	payload := newRequestPayload(polyhedron, variables, objective)
+	payload := newRequestPayload(query)
 
 	request, err := c.newRequest(payload)
 	if err != nil {
@@ -60,13 +57,12 @@ func (c *Client) Solve(
 }
 
 func newRequestPayload(
-	polyhedron pldag.Polyhedron,
-	variableIDs []string,
-	objective Objective,
+	query *puan.Query,
 ) SolveRequest {
-	A := toSparseMatrix(polyhedron.SparseMatrix())
-	b := polyhedron.B()
-	variables := toBooleanVariables(variableIDs)
+	A := toSparseMatrix(query.Polyhedron().SparseMatrix())
+	b := query.Polyhedron().B()
+	variables := toBooleanVariables(query.Variables())
+	objective := Objective(query.Objective())
 	objectives := []Objective{objective}
 
 	request := SolveRequest{

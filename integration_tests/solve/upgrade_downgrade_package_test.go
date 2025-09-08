@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
 	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
 )
@@ -17,26 +16,17 @@ import (
 // C is larger than B, and B is larger than A.
 // Selected package is only A.
 func Test_exactlyOnePackage_upgrade_case1(t *testing.T) {
-	model, invertedPreferred := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
-	polyhedron := model.GeneratePolyhedron()
-	client := glpk.NewClient(url)
+	ruleSet := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
 
 	selections := puan.Selections{
-		{
-			ID:     "packageA",
-			Action: puan.ADD,
-		},
+		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(
-		model.PrimitiveVariables(),
-		selectionsIDs,
-		invertedPreferred,
-	)
+	query, _ := ruleSet.NewQuery(selections)
 
-	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
-	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	client := glpk.NewClient(url)
+	solution, _ := client.Solve(query)
+	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -58,30 +48,18 @@ func Test_exactlyOnePackage_upgrade_case1(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is A, then B.
 func Test_exactlyOnePackage_upgrade_case2(t *testing.T) {
-	model, invertedPreferred := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
-	polyhedron := model.GeneratePolyhedron()
-	client := glpk.NewClient(url)
+	ruleSet := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
 
 	selections := puan.Selections{
-		{
-			ID:     "packageA",
-			Action: puan.ADD,
-		},
-		{
-			ID:     "packageB",
-			Action: puan.ADD,
-		},
+		puan.NewSelectionBuilder("packageA").Build(),
+		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(
-		model.PrimitiveVariables(),
-		selectionsIDs,
-		invertedPreferred,
-	)
+	query, _ := ruleSet.NewQuery(selections)
 
-	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
-	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	client := glpk.NewClient(url)
+	solution, _ := client.Solve(query)
+	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -103,29 +81,18 @@ func Test_exactlyOnePackage_upgrade_case2(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is A, then C.
 func Test_exactlyOnePackage_upgrade_case3(t *testing.T) {
-	model, invertedPreferred := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
-	polyhedron := model.GeneratePolyhedron()
-	client := glpk.NewClient(url)
+	ruleSet := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
 
 	selections := puan.Selections{
-		{
-			ID:     "packageA",
-			Action: puan.ADD,
-		},
-		{
-			ID:     "packageC",
-			Action: puan.ADD,
-		},
+		puan.NewSelectionBuilder("packageA").Build(),
+		puan.NewSelectionBuilder("packageC").Build(),
 	}
-	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(
-		model.PrimitiveVariables(),
-		selectionsIDs,
-		invertedPreferred,
-	)
 
-	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
-	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	query, _ := ruleSet.NewQuery(selections)
+
+	client := glpk.NewClient(url)
+	solution, _ := client.Solve(query)
+	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -147,29 +114,18 @@ func Test_exactlyOnePackage_upgrade_case3(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is B, then C.
 func Test_exactlyOnePackage_upgrade_case4(t *testing.T) {
-	model, invertedPreferred := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
-	polyhedron := model.GeneratePolyhedron()
-	client := glpk.NewClient(url)
+	ruleSet := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
 
 	selections := puan.Selections{
-		{
-			ID:     "packageB",
-			Action: puan.ADD,
-		},
-		{
-			ID:     "packageC",
-			Action: puan.ADD,
-		},
+		puan.NewSelectionBuilder("packageB").Build(),
+		puan.NewSelectionBuilder("packageC").Build(),
 	}
-	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(
-		model.PrimitiveVariables(),
-		selectionsIDs,
-		invertedPreferred,
-	)
 
-	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
-	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	query, _ := ruleSet.NewQuery(selections)
+
+	client := glpk.NewClient(url)
+	solution, _ := client.Solve(query)
+	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -191,29 +147,18 @@ func Test_exactlyOnePackage_upgrade_case4(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is C, then A.
 func Test_exactlyOnePackage_downgrade_case1(t *testing.T) {
-	model, invertedPreferred := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
-	polyhedron := model.GeneratePolyhedron()
-	client := glpk.NewClient(url)
+	ruleSet := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
 
 	selections := puan.Selections{
-		{
-			ID:     "packageC",
-			Action: puan.ADD,
-		},
-		{
-			ID:     "packageA",
-			Action: puan.ADD,
-		},
+		puan.NewSelectionBuilder("packageC").Build(),
+		puan.NewSelectionBuilder("packageA").Build(),
 	}
-	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(
-		model.PrimitiveVariables(),
-		selectionsIDs,
-		invertedPreferred,
-	)
 
-	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
-	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	query, _ := ruleSet.NewQuery(selections)
+
+	client := glpk.NewClient(url)
+	solution, _ := client.Solve(query)
+	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -235,29 +180,18 @@ func Test_exactlyOnePackage_downgrade_case1(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is B, then A.
 func Test_exactlyOnePackage_downgrade_case2(t *testing.T) {
-	model, invertedPreferred := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
-	polyhedron := model.GeneratePolyhedron()
-	client := glpk.NewClient(url)
+	ruleSet := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
 
 	selections := puan.Selections{
-		{
-			ID:     "packageB",
-			Action: puan.ADD,
-		},
-		{
-			ID:     "packageA",
-			Action: puan.ADD,
-		},
+		puan.NewSelectionBuilder("packageB").Build(),
+		puan.NewSelectionBuilder("packageA").Build(),
 	}
-	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(
-		model.PrimitiveVariables(),
-		selectionsIDs,
-		invertedPreferred,
-	)
 
-	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
-	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	query, _ := ruleSet.NewQuery(selections)
+
+	client := glpk.NewClient(url)
+	solution, _ := client.Solve(query)
+	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -279,30 +213,18 @@ func Test_exactlyOnePackage_downgrade_case2(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is C, then B.
 func Test_exactlyOnePackage_downgrade_case3(t *testing.T) {
-	model, invertedPreferred := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
-	polyhedron := model.GeneratePolyhedron()
-	client := glpk.NewClient(url)
+	ruleSet := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
 
 	selections := puan.Selections{
-		{
-			ID:     "packageC",
-			Action: puan.ADD,
-		},
-		{
-			ID:     "packageB",
-			Action: puan.ADD,
-		},
+		puan.NewSelectionBuilder("packageC").Build(),
+		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(
-		model.PrimitiveVariables(),
-		selectionsIDs,
-		invertedPreferred,
-	)
+	query, _ := ruleSet.NewQuery(selections)
 
-	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
-	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	client := glpk.NewClient(url)
+	solution, _ := client.Solve(query)
+	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -324,21 +246,15 @@ func Test_exactlyOnePackage_downgrade_case3(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Nothing is selected, expect the preferred package.
 func Test_exactlyOnePackage_downgrade_case4(t *testing.T) {
-	model, invertedPreferred := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
-	polyhedron := model.GeneratePolyhedron()
-	client := glpk.NewClient(url)
+	ruleSet := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
 
 	selections := puan.Selections{}
 
-	selectionsIDs := selections.GetImpactingSelectionIDS()
-	objective := puan.CalculateObjective(
-		model.PrimitiveVariables(),
-		selectionsIDs,
-		invertedPreferred,
-	)
+	query, _ := ruleSet.NewQuery(selections)
 
-	solution, _ := client.Solve(polyhedron, model.Variables(), objective)
-	primitiveSolution, _ := solution.Extract(model.PrimitiveVariables()...)
+	client := glpk.NewClient(url)
+	solution, _ := client.Solve(query)
+	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -354,29 +270,27 @@ func Test_exactlyOnePackage_downgrade_case4(t *testing.T) {
 	)
 }
 
-func exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest() (*pldag.Model, []string) {
-	model := pldag.New()
-	model.SetPrimitives("packageA", "packageB", "packageC", "itemX", "itemY", "itemZ", "itemK")
+func exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest() *puan.RuleSet {
+	creator := puan.NewRuleSetCreator()
+	creator.PLDAG().SetPrimitives("packageA", "packageB", "packageC", "itemX", "itemY", "itemZ", "itemK")
 
-	includedItemsInA, _ := model.SetAnd("itemX", "itemY")
-	includedItemsInB, _ := model.SetAnd("itemX", "itemY", "itemZ")
-	includedItemsInC, _ := model.SetAnd("itemX", "itemY", "itemZ", "itemK")
+	includedItemsInA, _ := creator.PLDAG().SetAnd("itemX", "itemY")
+	includedItemsInB, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemZ")
+	includedItemsInC, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemZ", "itemK")
 
-	packageARequiredItems, _ := model.SetImply("packageA", includedItemsInA)
-	packageBRequiredItems, _ := model.SetImply("packageB", includedItemsInB)
-	packageCRequiredItems, _ := model.SetEquivalent("packageC", includedItemsInC)
+	packageARequiredItems, _ := creator.PLDAG().SetImply("packageA", includedItemsInA)
+	packageBRequiredItems, _ := creator.PLDAG().SetImply("packageB", includedItemsInB)
+	packageCRequiredItems, _ := creator.PLDAG().SetEquivalent("packageC", includedItemsInC)
 
-	exactlyOnePackage, _ := model.SetXor("packageA", "packageB", "packageC")
-	anyOfThePackages, _ := model.SetOr("packageA", "packageB", "packageC")
-	packageBOrC, _ := model.SetOr("packageB", "packageC")
+	exactlyOnePackage, _ := creator.PLDAG().SetXor("packageA", "packageB", "packageC")
+	anyOfThePackages, _ := creator.PLDAG().SetOr("packageA", "packageB", "packageC")
+	packageBOrC, _ := creator.PLDAG().SetOr("packageB", "packageC")
 
-	itemsInAllPackages, _ := model.SetImply(includedItemsInA, anyOfThePackages)
-	itemsInPackageBOrC, _ := model.SetImply(includedItemsInB, packageBOrC)
-	reversedPackageC, _ := model.SetImply(includedItemsInC, "packageC")
+	itemsInAllPackages, _ := creator.PLDAG().SetImply(includedItemsInA, anyOfThePackages)
+	itemsInPackageBOrC, _ := creator.PLDAG().SetImply(includedItemsInB, packageBOrC)
+	reversedPackageC, _ := creator.PLDAG().SetImply(includedItemsInC, "packageC")
 
-	invertedPreferred, _ := model.SetNot("packageA")
-
-	root, _ := model.SetAnd(
+	root, _ := creator.PLDAG().SetAnd(
 		exactlyOnePackage,
 		packageARequiredItems,
 		packageBRequiredItems,
@@ -385,7 +299,12 @@ func exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest() (*pldag.Model, [
 		itemsInPackageBOrC,
 		reversedPackageC,
 	)
-	_ = model.Assume(root)
+	_ = creator.PLDAG().Assume(root)
 
-	return model, []string{invertedPreferred}
+	invertedPreferred, _ := creator.PLDAG().SetNot("packageA")
+	_ = creator.SetPreferreds(invertedPreferred)
+
+	ruleSet := creator.Create()
+
+	return ruleSet
 }
