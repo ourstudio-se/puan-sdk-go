@@ -3,7 +3,7 @@ package puan
 import (
 	"testing"
 
-	"github.com/go-faker/faker/v4"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
@@ -61,7 +61,7 @@ func Test_RuleSet_copy_givenChangeToOriginal_shouldNotChangeCopy(t *testing.T) {
 }
 
 func Test_RuleSet_obtainSelectionID_givenStandaloneSelection_shouldReturnSelectionID(t *testing.T) {
-	want := faker.Word()
+	want := uuid.New().String()
 	selection := NewSelectionBuilder(want).Build()
 
 	ruleSet := &RuleSet{}
@@ -75,8 +75,8 @@ func Test_RuleSet_obtainSelectionID_givenStandaloneSelection_shouldReturnSelecti
 func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintDoesNotExist_shouldSetNewConstraint(
 	t *testing.T,
 ) {
-	primaryID := faker.Word()
-	subID := faker.Word()
+	primaryID := uuid.New().String()
+	subID := uuid.New().String()
 
 	creator := NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives(primaryID, subID)
@@ -95,8 +95,8 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintDoesNotExist_sh
 func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintExists_shouldNotSetNewConstraint(
 	t *testing.T,
 ) {
-	primaryID := faker.Word()
-	subID := faker.Word()
+	primaryID := uuid.New().String()
+	subID := uuid.New().String()
 
 	creator := NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives(primaryID, subID)
@@ -116,7 +116,7 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintExists_shouldNo
 func Test_RuleSet_constraintExists_givenVariablesExists_shouldReturnTrue(
 	t *testing.T,
 ) {
-	constraint, _ := pldag.NewAtLeastConstraint([]string{faker.Word()}, 1)
+	constraint, _ := pldag.NewAtLeastConstraint([]string{uuid.New().String()}, 1)
 
 	ruleSet := &RuleSet{}
 	ruleSet.polyhedron = pldag.NewPolyhedron(nil, nil)
@@ -130,8 +130,8 @@ func Test_RuleSet_constraintExists_givenVariablesExists_shouldReturnTrue(
 func Test_newCompositeSelectionConstraint_shouldCreateConstraint(
 	t *testing.T,
 ) {
-	primaryID := faker.Word()
-	subID := faker.Word()
+	primaryID := uuid.New().String()
+	subID := uuid.New().String()
 
 	got, err := newCompositeSelectionConstraint(primaryID, subID)
 
@@ -143,8 +143,8 @@ func Test_newCompositeSelectionConstraint_shouldCreateConstraint(
 func Test_RuleSet_newRow(
 	t *testing.T,
 ) {
-	id1 := faker.Word()
-	id2 := faker.Word()
+	id1 := uuid.New().String()
+	id2 := uuid.New().String()
 	value1 := fake.New[int]()
 	value2 := fake.New[int]()
 	coefficients := pldag.CoefficientValues{
@@ -154,10 +154,10 @@ func Test_RuleSet_newRow(
 
 	ruleSet := &RuleSet{}
 	ruleSet.variables = []string{
-		faker.Word(),
+		uuid.New().String(),
 		id1,
 		id2,
-		faker.Word(),
+		uuid.New().String(),
 	}
 
 	got, err := ruleSet.newRow(coefficients)
@@ -167,7 +167,7 @@ func Test_RuleSet_newRow(
 }
 
 func Test_RuleSet_setConstraint_shouldAddColumnOnExistingRows(t *testing.T) {
-	primitiveID := faker.Word()
+	primitiveID := uuid.New().String()
 	constraint, _ := pldag.NewAtLeastConstraint([]string{primitiveID}, 1)
 
 	ruleSet := &RuleSet{}
@@ -181,7 +181,7 @@ func Test_RuleSet_setConstraint_shouldAddColumnOnExistingRows(t *testing.T) {
 }
 
 func Test_RuleSet_setConstraint_shouldAddConstraintIDToVariables(t *testing.T) {
-	primitiveID := faker.Word()
+	primitiveID := uuid.New().String()
 	constraint, _ := pldag.NewAtLeastConstraint([]string{primitiveID}, 1)
 
 	ruleSet := &RuleSet{}
@@ -195,7 +195,7 @@ func Test_RuleSet_setConstraint_shouldAddConstraintIDToVariables(t *testing.T) {
 }
 
 func Test_RuleSet_setConstraint_shouldAddTwoRowsToPolyhedron(t *testing.T) {
-	primitiveID := faker.Word()
+	primitiveID := uuid.New().String()
 	constraint, _ := pldag.NewAtLeastConstraint([]string{primitiveID}, 1)
 
 	ruleSet := &RuleSet{}
@@ -209,7 +209,7 @@ func Test_RuleSet_setConstraint_shouldAddTwoRowsToPolyhedron(t *testing.T) {
 }
 
 func Test_RuleSet_setConstraint_shouldAddTwoBiases(t *testing.T) {
-	primitiveID := faker.Word()
+	primitiveID := uuid.New().String()
 	constraint, _ := pldag.NewAtLeastConstraint([]string{primitiveID}, 1)
 
 	ruleSet := &RuleSet{}

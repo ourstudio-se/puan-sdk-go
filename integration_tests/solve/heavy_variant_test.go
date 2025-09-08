@@ -50,10 +50,13 @@ func Test_changeHeavyVariant_shouldReturnSelectedVariant(t *testing.T) {
 
 // Test_changeHeavyVariant_withVariantSelection_shouldReturnSelectedVariant
 // Ref: test_will_change_heavy_package_variant_is_pre_selected_and_other_package_variant_option_is_selected
+// Comment: This test differ from python test setup, since packageA is preselected individually here.
+// We might need to change the behavior such that composite selection gives wights to primary ID.
 func Test_changeHeavyVariant_withVariantSelection_shouldReturnSelectedVariant(t *testing.T) {
 	ruleSet := heavyVariantSetup()
 
 	selections := puan.Selections{
+		puan.NewSelectionBuilder("packageA").Build(),
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
 		puan.NewSelectionBuilder("itemY").Build(),
 	}
