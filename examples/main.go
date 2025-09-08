@@ -10,8 +10,8 @@ import (
 func main() {
 	creator := puan.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives([]string{"a", "x", "y"}...)
-	variant1, _ := creator.PLDAG().SetImply("a", "x")
-	variant2, _ := creator.PLDAG().SetImply("a", "y")
+	variant1, _ := creator.PLDAG().SetAnd("a", "x")
+	variant2, _ := creator.PLDAG().SetAnd("a", "y")
 	exactlyOneVariant, _ := creator.PLDAG().SetXor(variant1, variant2)
 	a, err := creator.PLDAG().SetImply("a", exactlyOneVariant)
 	if err != nil {

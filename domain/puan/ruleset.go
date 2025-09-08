@@ -205,26 +205,25 @@ func (r *RuleSet) obtainID(selection Selection) (string, error) {
 	return selection.id, nil
 }
 
-/*
-*
-TODO: handle when we already have the constraint in the model
-
-creator.PLDAG().SetAnd("a", "x")
-...
-
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("a").WithSubSelectionID(x).Build(),
-	}
-*/
 func (r *RuleSet) setCompositeSelectionConstraint(id, subID string) (string, error) {
 	constraint, err := pldag.NewAtLeastConstraint([]string{id, subID}, 2)
 	if err != nil {
 		return "", err
 	}
 
-	r.addConstraint(constraint)
+	r.addConstraintIfNotExist(constraint)
 
 	return constraint.ID(), nil
+}
+
+func (r *RuleSet) addConstraintIfNotExist(constraint pldag.Constraint) {
+	for _, variable := range r.variables {
+		if variable == constraint.ID() {
+			return
+		}
+	}
+
+	r.addConstraint(constraint)
 }
 
 func (r *RuleSet) addConstraint(constraint pldag.Constraint) {
