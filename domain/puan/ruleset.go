@@ -226,7 +226,10 @@ func (r *RuleSet) setCompositeSelectionConstraint(id, subID string) (string, err
 		return "", err
 	}
 
-	r.setConstraintIfNotExist(constraint)
+	err = r.setConstraintIfNotExist(constraint)
+	if err != nil {
+		return "", err
+	}
 
 	return constraint.ID(), nil
 }
@@ -235,19 +238,19 @@ func newCompositeSelectionConstraint(id, subID string) (pldag.Constraint, error)
 	return pldag.NewAtLeastConstraint([]string{id, subID}, 2)
 }
 
-func (r *RuleSet) setConstraintIfNotExist(constraint pldag.Constraint) {
+func (r *RuleSet) setConstraintIfNotExist(constraint pldag.Constraint) error {
 	if r.constraintExists(constraint) {
-		return
+		return nil
 	}
 
-	r.setConstraint(constraint)
+	return r.setConstraint(constraint)
 }
 
 func (r *RuleSet) constraintExists(constraint pldag.Constraint) bool {
 	return utils.Contains(r.variables, constraint.ID())
 }
 
-func (r *RuleSet) setConstraint(constraint pldag.Constraint) {
+func (r *RuleSet) setConstraint(constraint pldag.Constraint) error {
 	r.polyhedron.AddEmptyColumn()
 
 	r.variables = append(r.variables, constraint.ID())
@@ -257,13 +260,15 @@ func (r *RuleSet) setConstraint(constraint pldag.Constraint) {
 
 	err := r.setAuxiliaryConstraint(supportImpliesConstraint)
 	if err != nil {
-		return
+		return err
 	}
 
 	err = r.setAuxiliaryConstraint(constraintImpliesSupport)
 	if err != nil {
-		return
+		return err
 	}
+
+	return nil
 }
 
 func (r *RuleSet) setAuxiliaryConstraint(constraint pldag.AuxiliaryConstraint) error {

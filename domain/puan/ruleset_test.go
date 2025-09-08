@@ -178,3 +178,59 @@ func Test_RuleSet_newRow(
 	assert.NoError(t, err)
 	assert.Equal(t, []int{0, value1, value2, 0}, got)
 }
+
+func Test_RuleSet_setConstraint_shouldAddColumnOnExistingRows(t *testing.T) {
+	primitiveID := faker.Word()
+	constraint, _ := pldag.NewAtLeastConstraint([]string{primitiveID}, 1)
+
+	ruleSet := &RuleSet{}
+	ruleSet.polyhedron = pldag.NewPolyhedron(nil, nil)
+	ruleSet.variables = []string{primitiveID}
+
+	err := ruleSet.setConstraint(constraint)
+
+	assert.NoError(t, err)
+	assert.Len(t, ruleSet.polyhedron.A()[0], 2)
+}
+
+func Test_RuleSet_setConstraint_shouldAddConstraintIDToVariables(t *testing.T) {
+	primitiveID := faker.Word()
+	constraint, _ := pldag.NewAtLeastConstraint([]string{primitiveID}, 1)
+
+	ruleSet := &RuleSet{}
+	ruleSet.polyhedron = pldag.NewPolyhedron(nil, nil)
+	ruleSet.variables = []string{primitiveID}
+
+	err := ruleSet.setConstraint(constraint)
+
+	assert.NoError(t, err)
+	assert.Equal(t, constraint.ID(), ruleSet.variables[1])
+}
+
+func Test_RuleSet_setConstraint_shouldAddTwoRowsToPolyhedron(t *testing.T) {
+	primitiveID := faker.Word()
+	constraint, _ := pldag.NewAtLeastConstraint([]string{primitiveID}, 1)
+
+	ruleSet := &RuleSet{}
+	ruleSet.polyhedron = pldag.NewPolyhedron(nil, nil)
+	ruleSet.variables = []string{primitiveID}
+
+	err := ruleSet.setConstraint(constraint)
+
+	assert.NoError(t, err)
+	assert.Len(t, ruleSet.polyhedron.A(), 2)
+}
+
+func Test_RuleSet_setConstraint_shouldAddTwoBiases(t *testing.T) {
+	primitiveID := faker.Word()
+	constraint, _ := pldag.NewAtLeastConstraint([]string{primitiveID}, 1)
+
+	ruleSet := &RuleSet{}
+	ruleSet.polyhedron = pldag.NewPolyhedron(nil, nil)
+	ruleSet.variables = []string{primitiveID}
+
+	err := ruleSet.setConstraint(constraint)
+
+	assert.NoError(t, err)
+	assert.Len(t, ruleSet.polyhedron.B(), 2)
+}
