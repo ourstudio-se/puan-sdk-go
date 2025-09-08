@@ -7,6 +7,7 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
 )
 
+//nolint:gocyclo
 func main() {
 	creator := puan.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives([]string{"a", "x", "y"}...)
