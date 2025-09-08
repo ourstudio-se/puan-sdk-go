@@ -145,7 +145,7 @@ func (m *Model) newAssumedConstraint(variables ...string) AuxiliaryConstraint {
 
 	bias := Bias(-len(variables))
 
-	return newAuxiliaryConstraint(coefficients, bias)
+	return NewAuxiliaryConstraint(coefficients, bias)
 }
 
 func (m *Model) validateAssumedVariables(assumedVariables ...string) error {

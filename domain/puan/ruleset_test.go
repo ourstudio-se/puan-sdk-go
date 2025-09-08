@@ -125,3 +125,56 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintExists_shouldNo
 	assert.Equal(t, wantVariables, ruleSet.variables)
 	assert.Equal(t, wantPolyhedron, ruleSet.polyhedron)
 }
+
+func Test_RuleSet_constraintExists_givenVariablesExists_shouldReturnTrue(
+	t *testing.T,
+) {
+	constraint, _ := pldag.NewAtLeastConstraint([]string{faker.Word()}, 1)
+
+	ruleSet := &RuleSet{}
+	ruleSet.polyhedron = pldag.NewPolyhedron(nil, nil)
+	ruleSet.variables = []string{constraint.ID()}
+
+	got := ruleSet.constraintExists(constraint)
+
+	assert.True(t, got)
+}
+
+func Test_newCompositeSelectionConstraint_shouldCreateConstraint(
+	t *testing.T,
+) {
+	primaryID := faker.Word()
+	subID := faker.Word()
+
+	got, err := newCompositeSelectionConstraint(primaryID, subID)
+
+	want, _ := pldag.NewAtLeastConstraint([]string{primaryID, subID}, 2)
+	assert.NoError(t, err)
+	assert.Equal(t, want, got)
+}
+
+func Test_RuleSet_newRow(
+	t *testing.T,
+) {
+	id1 := faker.Word()
+	id2 := faker.Word()
+	value1 := fake.New[int]()
+	value2 := fake.New[int]()
+	coefficients := pldag.CoefficientValues{
+		id1: value1,
+		id2: value2,
+	}
+
+	ruleSet := &RuleSet{}
+	ruleSet.variables = []string{
+		faker.Word(),
+		id1,
+		id2,
+		faker.Word(),
+	}
+
+	got, err := ruleSet.newRow(coefficients)
+
+	assert.NoError(t, err)
+	assert.Equal(t, []int{0, value1, value2, 0}, got)
+}

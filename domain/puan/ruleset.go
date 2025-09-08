@@ -221,7 +221,7 @@ func (r *RuleSet) obtainSelectionID(selection Selection) (string, error) {
 }
 
 func (r *RuleSet) setCompositeSelectionConstraint(id, subID string) (string, error) {
-	constraint, err := pldag.NewAtLeastConstraint([]string{id, subID}, 2)
+	constraint, err := newCompositeSelectionConstraint(id, subID)
 	if err != nil {
 		return "", err
 	}
@@ -231,14 +231,20 @@ func (r *RuleSet) setCompositeSelectionConstraint(id, subID string) (string, err
 	return constraint.ID(), nil
 }
 
+func newCompositeSelectionConstraint(id, subID string) (pldag.Constraint, error) {
+	return pldag.NewAtLeastConstraint([]string{id, subID}, 2)
+}
+
 func (r *RuleSet) setConstraintIfNotExist(constraint pldag.Constraint) {
-	for _, variable := range r.variables {
-		if variable == constraint.ID() {
-			return
-		}
+	if r.constraintExists(constraint) {
+		return
 	}
 
 	r.setConstraint(constraint)
+}
+
+func (r *RuleSet) constraintExists(constraint pldag.Constraint) bool {
+	return utils.Contains(r.variables, constraint.ID())
 }
 
 func (r *RuleSet) setConstraint(constraint pldag.Constraint) {
@@ -261,7 +267,7 @@ func (r *RuleSet) setConstraint(constraint pldag.Constraint) {
 }
 
 func (r *RuleSet) setAuxiliaryConstraint(constraint pldag.AuxiliaryConstraint) error {
-	row, err := r.newRow(constraint)
+	row, err := r.newRow(constraint.Coefficients())
 	if err != nil {
 		return err
 	}
@@ -271,10 +277,10 @@ func (r *RuleSet) setAuxiliaryConstraint(constraint pldag.AuxiliaryConstraint) e
 	return nil
 }
 
-func (r *RuleSet) newRow(constriant pldag.AuxiliaryConstraint) ([]int, error) {
+func (r *RuleSet) newRow(coefficients pldag.CoefficientValues) ([]int, error) {
 	row := make([]int, len(r.variables))
 
-	for id, value := range constriant.Coefficients() {
+	for id, value := range coefficients {
 		idIndex, err := utils.IndexOf(r.variables, id)
 		if err != nil {
 			return nil, err

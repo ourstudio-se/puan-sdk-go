@@ -139,7 +139,7 @@ type AuxiliaryConstraint struct {
 }
 type AuxiliaryConstraints []AuxiliaryConstraint
 
-func newAuxiliaryConstraint(coefficients CoefficientValues, bias Bias) AuxiliaryConstraint {
+func NewAuxiliaryConstraint(coefficients CoefficientValues, bias Bias) AuxiliaryConstraint {
 	constraint := AuxiliaryConstraint{
 		coefficients: coefficients,
 		bias:         bias,
