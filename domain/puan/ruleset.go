@@ -196,7 +196,7 @@ func (r *RuleSet) newQuerySpecification(selections Selections) (*querySpecificat
 func (r *RuleSet) newIDLookup(selections Selections) (map[Selection]string, error) {
 	lookup := make(map[Selection]string)
 	for _, selection := range selections {
-		id, err := r.obtainID(selection)
+		id, err := r.obtainSelectionID(selection)
 		if err != nil {
 			return nil, err
 		}
@@ -207,7 +207,7 @@ func (r *RuleSet) newIDLookup(selections Selections) (map[Selection]string, erro
 	return lookup, nil
 }
 
-func (r *RuleSet) obtainID(selection Selection) (string, error) {
+func (r *RuleSet) obtainSelectionID(selection Selection) (string, error) {
 	if selection.isComposite() {
 		id, err := r.setCompositeSelectionConstraint(selection.id, *selection.subSelectionID)
 		if err != nil {
