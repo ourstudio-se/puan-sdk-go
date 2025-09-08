@@ -83,3 +83,45 @@ func Test_RuleSet_obtainSelectionID_givenCompositeSelection_shouldNotUseSelectio
 	assert.NotEqual(t, selection.ID(), id)
 	assert.NotEqual(t, selection.subSelectionID, id)
 }
+
+// nolint:lll
+func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintDoesNotExist_shouldSetNewConstraint(
+	t *testing.T,
+) {
+	primaryID := faker.Word()
+	subID := faker.Word()
+
+	creator := NewRuleSetCreator()
+	creator.PLDAG().SetPrimitives(primaryID, subID)
+	ruleSet := creator.Create()
+
+	id, err := ruleSet.setCompositeSelectionConstraint(primaryID, subID)
+
+	assert.NoError(t, err)
+	assert.Equal(t, id, ruleSet.variables[2])
+	assert.Len(t, ruleSet.variables, 3)
+	assert.Len(t, ruleSet.polyhedron.B(), 2)
+	assert.Len(t, ruleSet.polyhedron.A(), 2)
+	assert.Len(t, ruleSet.polyhedron.A()[0], 3)
+}
+
+func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintExists_shouldNotSetNewConstraint(
+	t *testing.T,
+) {
+	primaryID := faker.Word()
+	subID := faker.Word()
+
+	creator := NewRuleSetCreator()
+	creator.PLDAG().SetPrimitives(primaryID, subID)
+	_, _ = creator.PLDAG().SetAnd(primaryID, subID)
+	ruleSet := creator.Create()
+
+	wantVariables := ruleSet.variables
+	wantPolyhedron := ruleSet.polyhedron
+
+	_, err := ruleSet.setCompositeSelectionConstraint(primaryID, subID)
+
+	assert.NoError(t, err)
+	assert.Equal(t, wantVariables, ruleSet.variables)
+	assert.Equal(t, wantPolyhedron, ruleSet.polyhedron)
+}
