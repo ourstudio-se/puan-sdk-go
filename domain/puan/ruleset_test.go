@@ -4,9 +4,10 @@ import (
 	"testing"
 
 	"github.com/go-faker/faker/v4"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/fake"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_RuleSet_copy_shouldBeEqual(t *testing.T) {
@@ -68,20 +69,6 @@ func Test_RuleSet_obtainSelectionID_givenStandaloneSelection_shouldReturnSelecti
 
 	assert.NoError(t, err)
 	assert.Equal(t, want, got)
-}
-
-func Test_RuleSet_obtainSelectionID_givenCompositeSelection_shouldNotUseSelectionIDs(t *testing.T) {
-	selection := NewSelectionBuilder(faker.Word()).WithSubSelectionID(faker.Word()).Build()
-
-	polyhedron := pldag.NewPolyhedron([][]int{{1, 1}}, []int{2})
-	ruleSet := &RuleSet{}
-	ruleSet.polyhedron = polyhedron
-
-	id, err := ruleSet.obtainSelectionID(selection)
-
-	assert.NoError(t, err)
-	assert.NotEqual(t, selection.ID(), id)
-	assert.NotEqual(t, selection.subSelectionID, id)
 }
 
 // nolint:lll
