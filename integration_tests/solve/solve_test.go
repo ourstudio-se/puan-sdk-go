@@ -27,7 +27,7 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred_shouldReturnNotPrefe
 	_ = creator.PLDAG().Assume(root)
 
 	invertedPreferred, _ := creator.PLDAG().SetNot("packageA")
-	creator.SetPreferreds(invertedPreferred)
+	_ = creator.SetPreferreds(invertedPreferred)
 
 	ruleSet := creator.Create()
 
@@ -36,16 +36,10 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred_shouldReturnNotPrefe
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	selectionsIDs, _ := ruleSet.CalculateSelectedIDs(selections)
-
-	objective := puan.CalculateObjective(
-		ruleSet.PrimitiveVariables(),
-		selectionsIDs,
-		[]string{invertedPreferred},
-	)
+	query, _ := ruleSet.NewQuery(selections)
 
 	client := glpk.NewClient(url)
-	solution, _ := client.Solve(ruleSet.Polyhedron(), ruleSet.Variables(), objective)
+	solution, _ := client.Solve(query)
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,

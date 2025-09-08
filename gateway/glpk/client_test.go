@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
+	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
 )
 
 func Test_newRequestPayload(t *testing.T) {
@@ -12,7 +13,9 @@ func Test_newRequestPayload(t *testing.T) {
 	bVector := []int{5, 6}
 	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
 	variableIDs := []string{"x", "y"}
-	objective := Objective(map[string]int{"x": 2, "y": 4})
+	objective := map[string]int{"x": 2, "y": 4}
+
+	query := puan.NewQuery(polyhedron, variableIDs, objective)
 
 	want := SolveRequest{
 		Polyhedron: Polyhedron{
@@ -38,7 +41,8 @@ func Test_newRequestPayload(t *testing.T) {
 		Direction:  "maximize",
 	}
 
-	if !reflect.DeepEqual(want, newRequestPayload(polyhedron, variableIDs, objective)) {
-		t.Errorf("want %v, got %v", want, newRequestPayload(polyhedron, variableIDs, objective))
+	got := newRequestPayload(query)
+	if !reflect.DeepEqual(want, got) {
+		t.Errorf("want %v, got %v", want, got)
 	}
 }

@@ -45,7 +45,7 @@ func main() {
 	fmt.Println("A column length: ", query.Polyhedron().SparseMatrix().Shape().NrOfColumns())
 
 	client := glpk.NewClient("http://127.0.0.1:9000")
-	solution, err := client.Solve(query.Polyhedron(), query.Variables(), query.Objective())
+	solution, err := client.Solve(query)
 	if err != nil {
 		panic(err)
 	}

@@ -192,7 +192,6 @@ func Test_filterOutRedundantSelections(t *testing.T) {
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
-
 }
 
 func Test_makesRedundant(t *testing.T) {
@@ -283,5 +282,4 @@ func Test_filterOutRemoveSelections(t *testing.T) {
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
-
 }
