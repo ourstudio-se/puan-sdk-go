@@ -662,3 +662,150 @@ func Test_changeVariant_shouldReturnSelected(t *testing.T) {
 		primitiveSolution,
 	)
 }
+
+// Test_notPreferPackage_whenXorComponentsInVariantsHasBeenSelected
+// Ref: test_will_not_prefer_package_when_xor_components_in_variants
+// Description: Following rules are applied
+// xor(itemX, itemY, itemZ)
+// packageP -> xor(itemX, itemY)
+// packageP -> xor(itemA, itemB)
+// pref(itemZ)
+// pref(packageP, itemX)
+// pref(packageP, itemA)
+// pref(packageP, itemA, itemX)
+// We expect package to not be included on initial state
+// but itemZ to be selected alone
+// If nothin is selected initially, preferred packageP, itemX, itemA should be chosen.
+// If itemX has been selected and unselected, we expect itemZ to be selected alone since it is not the initial state anymore.
+func Test_notPreferPackage_whenXorComponentsInVariantsHasBeenSelected(t *testing.T) {
+	creator := puan.NewRuleSetCreator()
+	creator.PLDAG().SetPrimitives("packageP", "itemA", "itemB", "itemX", "itemY", "itemZ")
+
+	exactlyOneOfTheItemsXYZ, _ := creator.PLDAG().SetXor("itemX", "itemY", "itemZ")
+
+	exactlyOneOfItemXAndY, _ := creator.PLDAG().SetXor("itemX", "itemY")
+	packagePRequiresExactlyOneOfTheItems, _ := creator.PLDAG().SetImply("packageP", exactlyOneOfItemXAndY)
+
+	exactlyOneOfItemAAndB, _ := creator.PLDAG().SetXor("itemA", "itemB")
+	packagePRequiresExactlyOneOfItemAAndB, _ := creator.PLDAG().SetImply("packageP", exactlyOneOfItemAAndB)
+
+	root, _ := creator.PLDAG().SetAnd(
+		exactlyOneOfTheItemsXYZ,
+		packagePRequiresExactlyOneOfTheItems,
+		packagePRequiresExactlyOneOfItemAAndB,
+	)
+
+	_ = creator.PLDAG().Assume(root)
+
+	invertedZPreferred, _ := creator.PLDAG().SetNot("itemZ")
+
+	prefItemsInPackageP, _ := creator.PLDAG().SetAnd("itemA", "itemX")
+	prefPackagePImpliesAAndItemX, _ := creator.PLDAG().SetImply("packageP", prefItemsInPackageP)
+	invertedPackagePAndPackageAAndItemX, _ := creator.PLDAG().SetNot(prefPackagePImpliesAAndItemX)
+
+	_ = creator.SetPreferreds(invertedZPreferred, invertedPackagePAndPackageAAndItemX)
+
+	ruleSet := creator.Create()
+
+	selections := puan.Selections{
+		puan.NewSelectionBuilder("packageP").Build(),
+		//puan.NewSelectionBuilder("itemX").Build(),
+		//puan.NewSelectionBuilder("itemX").WithAction(puan.REMOVE).Build(),
+	}
+
+	query, _ := ruleSet.NewQuery(selections)
+	client := glpk.NewClient(url)
+	solution, _ := client.Solve(query)
+	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"packageP": 0,
+			"itemA":    0,
+			"itemB":    0,
+			"itemX":    0,
+			"itemY":    0,
+			"itemZ":    1,
+		},
+		primitiveSolution,
+	)
+}
+
+// Test_
+// Ref: test_will_delete_package_from_selected_actions_when_new_conflicting_package
+// Description: Following rules are applied
+// a -> !(b & c)
+// b -> !(a & c)
+// c -> !(a & b)
+// a -> xor(n,m)
+// a -> xor(x,y,z)
+// b -> xor(x,y)
+// c -> xor(x)
+// A variant of 'a' is pre selected and we select 'c'.
+// We expect the variant of 'a' to disappear from selected actions
+func Test_(t *testing.T) {
+	creator := puan.NewRuleSetCreator()
+	creator.PLDAG().SetPrimitives("itemA", "itemB", "itemC", "itemN", "itemM", "itemX", "itemY", "itemZ")
+
+	itemBAndC, _ := creator.PLDAG().SetAnd("itemB", "itemC")
+	notItemBAndC, _ := creator.PLDAG().SetNot(itemBAndC)
+
+	itemAAndC, _ := creator.PLDAG().SetAnd("itemA", "itemC")
+	notItemAAndC, _ := creator.PLDAG().SetNot(itemAAndC)
+
+	itemAAndB, _ := creator.PLDAG().SetAnd("itemA", "itemB")
+	notItemAAndB, _ := creator.PLDAG().SetNot(itemAAndB)
+
+	itemAForbidsItemBAndC, _ := creator.PLDAG().SetImply("itemA", notItemBAndC)
+	itemBForbidsItemAAndC, _ := creator.PLDAG().SetImply("itemB", notItemAAndC)
+	itemCForbidsItemAAndB, _ := creator.PLDAG().SetImply("itemC", notItemAAndB)
+
+	exactlyOneOfTheItemsNM, _ := creator.PLDAG().SetXor("itemN", "itemM")
+	exactlyOneOfTheItemsXYZ, _ := creator.PLDAG().SetXor("itemX", "itemY", "itemZ")
+	exactlyOneOfTheItemsXY, _ := creator.PLDAG().SetXor("itemX", "itemY")
+	exactlyOneOfTheItemsX, _ := creator.PLDAG().SetXor("itemX")
+
+	itemARequiresExactlyOneOfTheItemsNM, _ := creator.PLDAG().SetImply("itemA", exactlyOneOfTheItemsNM)
+	itemARequiresExactlyOneOfTheItemsXYZ, _ := creator.PLDAG().SetImply("itemA", exactlyOneOfTheItemsXYZ)
+	itemBRequiresExactlyOneOfTheItemsXY, _ := creator.PLDAG().SetImply("itemB", exactlyOneOfTheItemsXY)
+	itemCRequiresExactlyOneOfTheItemsX, _ := creator.PLDAG().SetImply("itemC", exactlyOneOfTheItemsX)
+
+	root, _ := creator.PLDAG().SetAnd(
+		itemAForbidsItemBAndC,
+		itemBForbidsItemAAndC,
+		itemCForbidsItemAAndB,
+		itemARequiresExactlyOneOfTheItemsNM,
+		itemARequiresExactlyOneOfTheItemsXYZ,
+		itemBRequiresExactlyOneOfTheItemsXY,
+		itemCRequiresExactlyOneOfTheItemsX,
+	)
+
+	_ = creator.PLDAG().Assume(root)
+
+	ruleSet := creator.Create()
+
+	selections := puan.Selections{
+		puan.NewSelectionBuilder("itemA").WithSubSelectionID("itemN").Build(),
+		puan.NewSelectionBuilder("itemC").Build(),
+	}
+
+	query, _ := ruleSet.NewQuery(selections)
+	client := glpk.NewClient(url)
+	solution, _ := client.Solve(query)
+	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"itemA": 0,
+			"itemB": 0,
+			"itemC": 1,
+			"itemM": 0,
+			"itemN": 0,
+			"itemX": 1,
+			"itemY": 0,
+			"itemZ": 0,
+		},
+		primitiveSolution,
+	)
+
+}
