@@ -191,7 +191,7 @@ func (m *Model) setAtLeast(variables []string, amount int) (string, error) {
 }
 
 func (m *Model) setAtMost(variables []string, amount int) (string, error) {
-	constraint, err := newAtMostConstraint(variables, amount)
+	constraint, err := NewAtMostConstraint(variables, amount)
 	if err != nil {
 		return "", err
 	}

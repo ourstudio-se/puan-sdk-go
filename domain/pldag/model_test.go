@@ -300,7 +300,7 @@ func Test_newAtMostConstraint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newAtMostConstraint(tt.variables, tt.amount)
+			got, err := NewAtMostConstraint(tt.variables, tt.amount)
 			if tt.wantErr && err == nil {
 				t.Errorf("newAtMostConstraint() error = %v, wantErr %v", err, tt.wantErr)
 			}

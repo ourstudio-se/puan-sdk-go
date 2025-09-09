@@ -142,7 +142,7 @@ func Test_CalculateObjective(t *testing.T) {
 	selectedPrimitives := []string{"a"}
 	preferredIDs := []string{"e"}
 
-	actual := CalculateObjective(primitives, selectedPrimitives, preferredIDs)
+	actual := calculateObjective(primitives, selectedPrimitives, preferredIDs)
 	expected := Weights{
 		"a": 8,
 		"b": -2,

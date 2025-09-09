@@ -44,7 +44,7 @@ func NewAtLeastConstraint(variables []string, amount int) (Constraint, error) {
 	return constraint, nil
 }
 
-func newAtMostConstraint(variables []string, amount int) (Constraint, error) {
+func NewAtMostConstraint(variables []string, amount int) (Constraint, error) {
 	if utils.ContainsDuplicates(variables) {
 		return Constraint{}, errors.New("duplicated variables")
 	}

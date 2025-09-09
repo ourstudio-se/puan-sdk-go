@@ -103,7 +103,7 @@ func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
 		return nil, err
 	}
 
-	objective := CalculateObjective(
+	objective := calculateObjective(
 		specification.ruleSet.primitiveVariables,
 		selectedIDs,
 		specification.ruleSet.preferredVariables,
@@ -207,8 +207,10 @@ func (r *RuleSet) newIDLookup(selections Selections) (map[string]string, error) 
 }
 
 func (r *RuleSet) obtainSelectionID(selection Selection) (string, error) {
+	id := selection.id
+	var err error
 	if selection.isComposite() {
-		id, err := r.setCompositeSelectionConstraint(selection.IDs())
+		id, err = r.setCompositeSelectionConstraint(selection.IDs())
 		if err != nil {
 			return "", err
 		}
@@ -216,7 +218,14 @@ func (r *RuleSet) obtainSelectionID(selection Selection) (string, error) {
 		return id, nil
 	}
 
-	return selection.id, nil
+	if selection.action == REMOVE {
+		id, err = r.setRemoveSelectionConstraint(selection.id)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return id, nil
 }
 
 func (r *RuleSet) setCompositeSelectionConstraint(ids []string) (string, error) {
@@ -294,4 +303,22 @@ func (r *RuleSet) newRow(coefficients pldag.CoefficientValues) ([]int, error) {
 	}
 
 	return row, nil
+}
+
+func (r *RuleSet) setRemoveSelectionConstraint(id string) (string, error) {
+	constraint, err := newRemoveSelectionConstraint(id)
+	if err != nil {
+		return "", err
+	}
+
+	err = r.setConstraintIfNotExist(constraint)
+	if err != nil {
+		return "", err
+	}
+
+	return constraint.ID(), nil
+}
+
+func newRemoveSelectionConstraint(id string) (pldag.Constraint, error) {
+	return pldag.NewAtMostConstraint([]string{id}, 0)
 }

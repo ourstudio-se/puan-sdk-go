@@ -52,8 +52,7 @@ func (s Selection) Key() string {
 func getImpactingSelections(selectionsOrderedByOccurrence Selections) Selections {
 	selectionsOrderedByPriority := utils.Reverse(selectionsOrderedByOccurrence)
 	impactingSelectionsOrderedByPriority := filterOutRedundantSelections(selectionsOrderedByPriority)
-	addSelectionsOrderedByPriority := impactingSelectionsOrderedByPriority.filterOutRemoveSelections()
-	impactingSelections := utils.Reverse(addSelectionsOrderedByPriority)
+	impactingSelections := utils.Reverse(impactingSelectionsOrderedByPriority)
 
 	return impactingSelections
 }
