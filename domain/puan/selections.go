@@ -1,6 +1,9 @@
 package puan
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/ourstudio-se/puan-sdk-go/utils"
 )
 
@@ -10,27 +13,40 @@ const REMOVE Action = "REMOVE"
 type Action string
 
 type Selection struct {
-	id             string
-	subSelectionID *string
-	action         Action
+	id              string
+	subSelectionIDs []string
+	action          Action
 }
 
 type Selections []Selection
 
 func (s Selection) isComposite() bool {
-	return s.subSelectionID != nil
+	return len(s.subSelectionIDs) > 0
 }
 
-func newSelection(action Action, id string, subSelectionID *string) Selection {
+func newSelection(action Action, id string, subSelectionIDs []string) Selection {
 	return Selection{
-		id:             id,
-		subSelectionID: subSelectionID,
-		action:         action,
+		id:              id,
+		subSelectionIDs: subSelectionIDs,
+		action:          action,
 	}
 }
 
 func (s Selection) ID() string {
 	return s.id
+}
+
+func (s Selection) IDs() []string {
+	ids := make([]string, len(s.subSelectionIDs)+1)
+	ids[0] = s.id
+	copy(ids[1:], s.subSelectionIDs)
+	return ids
+}
+
+func (s Selection) Key() string {
+	ids := s.IDs()
+	key := fmt.Sprintf("%s:%s", s.action, strings.Join(ids, ","))
+	return key
 }
 
 func getImpactingSelections(selectionsOrderedByOccurrence Selections) Selections {
@@ -80,19 +96,27 @@ func (s Selection) isRedundant(existingSelections Selections) bool {
 }
 
 func (s Selection) makesRedundant(other Selection) bool {
+	if s.action == REMOVE && utils.ContainsAll(other.IDs(), s.IDs()) {
+		return true
+	}
+
+	if s.action == REMOVE && utils.ContainsAny(other.IDs(), s.subSelectionIDs) {
+		return true
+	}
+
 	if s.id != other.id {
 		return false
 	}
 
-	if s.subSelectionID == nil {
+	if len(s.subSelectionIDs) == 0 {
 		return true
 	}
 
-	if other.subSelectionID == nil {
+	if len(other.subSelectionIDs) == 0 {
 		return false
 	}
 
-	if *other.subSelectionID == *s.subSelectionID {
+	if utils.ContainsAny(other.subSelectionIDs, s.subSelectionIDs) {
 		return true
 	}
 

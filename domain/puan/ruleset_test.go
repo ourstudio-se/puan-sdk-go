@@ -82,7 +82,7 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintDoesNotExist_sh
 	creator.PLDAG().SetPrimitives(primaryID, subID)
 	ruleSet := creator.Create()
 
-	id, err := ruleSet.setCompositeSelectionConstraint(primaryID, subID)
+	id, err := ruleSet.setCompositeSelectionConstraint([]string{primaryID, subID})
 
 	assert.NoError(t, err)
 	assert.Equal(t, id, ruleSet.variables[2])
@@ -106,7 +106,7 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintExists_shouldNo
 	wantVariables := ruleSet.variables
 	wantPolyhedron := ruleSet.polyhedron
 
-	_, err := ruleSet.setCompositeSelectionConstraint(primaryID, subID)
+	_, err := ruleSet.setCompositeSelectionConstraint([]string{primaryID, subID})
 
 	assert.NoError(t, err)
 	assert.Equal(t, wantVariables, ruleSet.variables)
@@ -133,7 +133,7 @@ func Test_newCompositeSelectionConstraint_shouldCreateConstraint(
 	primaryID := uuid.New().String()
 	subID := uuid.New().String()
 
-	got, err := newCompositeSelectionConstraint(primaryID, subID)
+	got, err := newCompositeSelectionConstraint([]string{primaryID, subID})
 
 	want, _ := pldag.NewAtLeastConstraint([]string{primaryID, subID}, 2)
 	assert.NoError(t, err)

@@ -1,20 +1,21 @@
 package puan
 
 type SelectionBuilder struct {
-	id             string
-	subSelectionID *string
-	action         Action
+	id              string
+	subSelectionIDs []string
+	action          Action
 }
 
 func NewSelectionBuilder(id string) *SelectionBuilder {
 	return &SelectionBuilder{
-		id:     id,
-		action: ADD,
+		id:              id,
+		action:          ADD,
+		subSelectionIDs: []string{},
 	}
 }
 
 func (b *SelectionBuilder) WithSubSelectionID(subSelectionID string) *SelectionBuilder {
-	b.subSelectionID = &subSelectionID
+	b.subSelectionIDs = append(b.subSelectionIDs, subSelectionID)
 	return b
 }
 
@@ -24,5 +25,5 @@ func (b *SelectionBuilder) WithAction(action Action) *SelectionBuilder {
 }
 
 func (b *SelectionBuilder) Build() Selection {
-	return newSelection(b.action, b.id, b.subSelectionID)
+	return newSelection(b.action, b.id, b.subSelectionIDs)
 }

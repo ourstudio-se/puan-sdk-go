@@ -88,7 +88,7 @@ func (r *RuleSet) PreferredVariables() []string {
 
 type querySpecification struct {
 	ruleSet           *RuleSet
-	selectionIDLookUp map[Selection]string
+	selectionIDLookUp map[string]string
 }
 
 func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
@@ -118,10 +118,10 @@ func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
 	return query, nil
 }
 
-func getSelectedIDs(selections Selections, idLookUp map[Selection]string) ([]string, error) {
+func getSelectedIDs(selections Selections, idLookUp map[string]string) ([]string, error) {
 	ids := make([]string, len(selections))
 	for i, selection := range selections {
-		id, ok := idLookUp[selection]
+		id, ok := idLookUp[selection.Key()]
 		if !ok {
 			return nil, errors.New("selection not found")
 		}
@@ -137,9 +137,8 @@ func (r *RuleSet) CalculateSelectedIDs(selections Selections) ([]string, error) 
 
 	var selectedIDs []string
 	for _, selection := range impactingSelections {
-		hasSubselection := selection.subSelectionID != nil
-		if hasSubselection {
-			auxiliaryID, err := r.setCompositeSelectionConstraint(selection.id, *selection.subSelectionID)
+		if selection.isComposite() {
+			auxiliaryID, err := r.setCompositeSelectionConstraint(selection.IDs())
 			if err != nil {
 				return nil, err
 			}
@@ -193,15 +192,15 @@ func (r *RuleSet) newQuerySpecification(selections Selections) (*querySpecificat
 	}, nil
 }
 
-func (r *RuleSet) newIDLookup(selections Selections) (map[Selection]string, error) {
-	lookup := make(map[Selection]string)
+func (r *RuleSet) newIDLookup(selections Selections) (map[string]string, error) {
+	lookup := make(map[string]string)
 	for _, selection := range selections {
 		id, err := r.obtainSelectionID(selection)
 		if err != nil {
 			return nil, err
 		}
 
-		lookup[selection] = id
+		lookup[selection.Key()] = id
 	}
 
 	return lookup, nil
@@ -209,7 +208,7 @@ func (r *RuleSet) newIDLookup(selections Selections) (map[Selection]string, erro
 
 func (r *RuleSet) obtainSelectionID(selection Selection) (string, error) {
 	if selection.isComposite() {
-		id, err := r.setCompositeSelectionConstraint(selection.id, *selection.subSelectionID)
+		id, err := r.setCompositeSelectionConstraint(selection.IDs())
 		if err != nil {
 			return "", err
 		}
@@ -220,8 +219,8 @@ func (r *RuleSet) obtainSelectionID(selection Selection) (string, error) {
 	return selection.id, nil
 }
 
-func (r *RuleSet) setCompositeSelectionConstraint(id, subID string) (string, error) {
-	constraint, err := newCompositeSelectionConstraint(id, subID)
+func (r *RuleSet) setCompositeSelectionConstraint(ids []string) (string, error) {
+	constraint, err := newCompositeSelectionConstraint(ids)
 	if err != nil {
 		return "", err
 	}
@@ -234,8 +233,8 @@ func (r *RuleSet) setCompositeSelectionConstraint(id, subID string) (string, err
 	return constraint.ID(), nil
 }
 
-func newCompositeSelectionConstraint(id, subID string) (pldag.Constraint, error) {
-	return pldag.NewAtLeastConstraint([]string{id, subID}, 2)
+func newCompositeSelectionConstraint(ids []string) (pldag.Constraint, error) {
+	return pldag.NewAtLeastConstraint(ids, len(ids))
 }
 
 func (r *RuleSet) setConstraintIfNotExist(constraint pldag.Constraint) error {

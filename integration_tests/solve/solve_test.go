@@ -708,9 +708,11 @@ func Test_notPreferPackage_whenXorComponentsInVariantsHasBeenSelected(t *testing
 	ruleSet := creator.Create()
 
 	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageP").Build(),
-		//puan.NewSelectionBuilder("itemX").Build(),
-		//puan.NewSelectionBuilder("itemX").WithAction(puan.REMOVE).Build(),
+		puan.NewSelectionBuilder("packageP").
+			WithSubSelectionID("itemX").
+			WithSubSelectionID("itemA").
+			Build(),
+		puan.NewSelectionBuilder("itemX").WithAction(puan.REMOVE).Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)

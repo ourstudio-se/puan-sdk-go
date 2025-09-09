@@ -196,46 +196,70 @@ func Test_filterOutRedundantSelections(t *testing.T) {
 
 func Test_makesRedundant(t *testing.T) {
 	theories := []struct {
-		name      string
-		selection Selection
-		other     Selection
-		expected  bool
+		name        string
+		prioritised Selection
+		other       Selection
+		expected    bool
 	}{
 		{
-			name:      "not redundant different ids",
-			selection: NewSelectionBuilder("x").Build(),
-			other:     NewSelectionBuilder("y").Build(),
-			expected:  false,
+			name:        "not redundant different ids",
+			prioritised: NewSelectionBuilder("x").Build(),
+			other:       NewSelectionBuilder("y").Build(),
+			expected:    false,
 		},
 		{
-			name:      "not redundant different sub ids",
-			selection: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
-			other:     NewSelectionBuilder("x").WithSubSelectionID("z").Build(),
-			expected:  false,
+			name:        "not redundant different sub ids",
+			prioritised: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			other:       NewSelectionBuilder("x").WithSubSelectionID("z").Build(),
+			expected:    false,
 		},
 		{
-			name:      "redundant same sub ids",
-			selection: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
-			other:     NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
-			expected:  true,
+			name:        "redundant same sub ids",
+			prioritised: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			other:       NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			expected:    true,
 		},
 		{
-			name:      "redundant selection has no sub ids",
-			selection: NewSelectionBuilder("x").Build(),
-			other:     NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
-			expected:  true,
+			name:        "re-select same variable, but without sub ids",
+			prioritised: NewSelectionBuilder("x").Build(),
+			other:       NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			expected:    true,
 		},
 		{
-			name:      "redundant selection has sub ids",
-			selection: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
-			other:     NewSelectionBuilder("x").Build(),
-			expected:  false,
+			name:        "redundant selection has sub ids",
+			prioritised: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			other:       NewSelectionBuilder("x").Build(),
+			expected:    false,
+		},
+		{
+			name:        "Remove prior sub-selection",
+			prioritised: NewSelectionBuilder("y").WithAction(REMOVE).Build(),
+			other:       NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			expected:    true,
+		},
+		{
+			name:        "Remove prior composite selection",
+			prioritised: NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(REMOVE).Build(),
+			other:       NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			expected:    true,
+		},
+		{
+			name:        "Remove composite selection, with same primary id",
+			prioritised: NewSelectionBuilder("x").WithSubSelectionID("z").WithAction(REMOVE).Build(),
+			other:       NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			expected:    false,
+		},
+		{
+			name:        "Remove composite selection, with same sub-selection id",
+			prioritised: NewSelectionBuilder("a").WithSubSelectionID("y").WithAction(REMOVE).Build(),
+			other:       NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			expected:    true,
 		},
 	}
 
 	for _, tt := range theories {
-		actual := tt.selection.makesRedundant(tt.other)
-		assert.Equal(t, tt.expected, actual)
+		actual := tt.prioritised.makesRedundant(tt.other)
+		assert.Equal(t, tt.expected, actual, tt.name)
 	}
 }
 
