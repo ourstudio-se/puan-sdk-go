@@ -98,14 +98,14 @@ func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
 		return nil, err
 	}
 
-	selectedIDs, err := getSelectedIDs(impactingSelections, specification.selectionIDLookUp)
+	s, err := getSelections2(impactingSelections, specification.selectionIDLookUp)
 	if err != nil {
 		return nil, err
 	}
 
 	objective := calculateObjective(
 		specification.ruleSet.primitiveVariables,
-		selectedIDs,
+		s,
 		specification.ruleSet.preferredVariables,
 	)
 
@@ -118,18 +118,21 @@ func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
 	return query, nil
 }
 
-func getSelectedIDs(selections Selections, idLookUp map[string]string) ([]string, error) {
-	ids := make([]string, len(selections))
+func getSelections2(selections Selections, idLookUp map[string]string) (selections2, error) {
+	s := make(selections2, len(selections))
 	for i, selection := range selections {
 		id, ok := idLookUp[selection.Key()]
 		if !ok {
 			return nil, errors.New("selection not found")
 		}
 
-		ids[i] = id
+		s[i] = selection2{
+			id:     id,
+			action: selection.action,
+		}
 	}
 
-	return ids, nil
+	return s, nil
 }
 
 func (r *RuleSet) copy() *RuleSet {
@@ -198,21 +201,10 @@ func (r *RuleSet) obtainSelectionID(selection Selection) (string, error) {
 		return id, nil
 	}
 
-	if selection.action == REMOVE {
-		id, err = r.setRemoveSelectionConstraint(selection.id)
-		if err != nil {
-			return "", err
-		}
-	}
-
 	return id, nil
 }
 
 func (r *RuleSet) setCompositeSelectionConstraint(selection Selection) (string, error) {
-	if selection.action == REMOVE {
-		return r.setCompositeSelectionRemoveConstraint(selection.IDs())
-	}
-
 	return r.setCompositeSelectionAddConstraint(selection.IDs())
 }
 

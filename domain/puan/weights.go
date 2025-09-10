@@ -28,17 +28,17 @@ func (w Weights) sum() int {
 }
 
 func calculateObjective(
-	primitives,
-	selectedIDs,
+	primitives []string,
+	selections selections2,
 	preferredIDs []string,
 ) Weights {
-	notSelectedPrimitives := utils.Without(primitives, selectedIDs)
+	notSelectedPrimitives := utils.Without(primitives, selections.ids())
 	notSelectedWeights := calculatedNotSelectedWeights(notSelectedPrimitives)
 	notSelectedSum := notSelectedWeights.sum()
 	preferenceWeights := calculatePreferredWeights(preferredIDs, notSelectedSum)
 	sumOfPreferredWeights := preferenceWeights.sum()
 	selectedWeights := calculateSelectedWeights(
-		selectedIDs,
+		selections,
 		notSelectedSum,
 		sumOfPreferredWeights,
 	)
@@ -78,16 +78,21 @@ func calculatePreferredWeights(
 }
 
 func calculateSelectedWeights(
-	selectedPrimitives []string,
+	selections []selection2,
 	notSelectedSum,
 	preferredWeightsSum int,
 ) Weights {
 	selectedWeights := make(Weights)
 	selectionThreshold := -(notSelectedSum + preferredWeightsSum)
 	selectionWeightSum := selectionThreshold
-	for _, selectedPrimitive := range selectedPrimitives {
+	for _, selection := range selections {
 		weight := selectionWeightSum + 1
-		selectedWeights[selectedPrimitive] = weight
+		if selection.action == ADD {
+			selectedWeights[selection.id] = weight
+		} else {
+			selectedWeights[selection.id] = -weight
+		}
+
 		selectionWeightSum += weight
 	}
 

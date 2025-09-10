@@ -18,6 +18,22 @@ type Selection struct {
 	action          Action
 }
 
+type selection2 struct {
+	id     string
+	action Action
+}
+
+type selections2 []selection2
+
+func (s selections2) ids() []string {
+	ids := make([]string, len(s))
+	for i, selection := range s {
+		ids[i] = selection.id
+	}
+
+	return ids
+}
+
 type Selections []Selection
 
 func (s Selection) isComposite() bool {
