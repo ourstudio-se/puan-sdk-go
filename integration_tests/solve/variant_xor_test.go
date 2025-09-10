@@ -77,10 +77,8 @@ func Test_exactlyOneVariant_deselecting_shouldReturnCheapestSolution(t *testing.
 	ruleSet := exactlyOnePackageVariantWithXORBetweenItems()
 
 	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").Build(),
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemZ").Build(),
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithAction(puan.REMOVE).Build(),
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemZ").WithAction(puan.REMOVE).Build(),
+		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
+		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").WithAction(puan.REMOVE).Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)

@@ -189,7 +189,7 @@ func Test_filterOutRedundantSelections(t *testing.T) {
 	for _, tt := range theories {
 		t.Run(tt.name, func(t *testing.T) {
 			actual := filterOutRedundantSelections(tt.selections)
-			assert.Equal(t, tt.expected, actual)
+			assert.Equal(t, tt.expected, actual, tt.name)
 		})
 	}
 }
