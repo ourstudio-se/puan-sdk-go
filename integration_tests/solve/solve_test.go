@@ -1086,6 +1086,38 @@ func Test_will_perform_action_where_component_is_removed_and_is_outside_action_s
 	t.Skip()
 }
 
+func Test_(t *testing.T) {
+	creator := puan.NewRuleSetCreator()
+	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY")
+
+	itemXAndY, _ := creator.PLDAG().SetAnd("itemX", "itemY")
+	packageARequiresItemXAndY, _ := creator.PLDAG().SetImply("packageA", itemXAndY)
+
+	root, _ := creator.PLDAG().SetAnd(packageARequiresItemXAndY)
+	_ = creator.PLDAG().Assume(root)
+
+	ruleSet := creator.Create()
+
+	selections := puan.Selections{
+		puan.NewSelectionBuilder("packageA").Build(),
+		puan.NewSelectionBuilder("itemX").WithAction(puan.REMOVE).Build(),
+	}
+
+	query, _ := ruleSet.NewQuery(selections)
+	client := glpk.NewClient(url)
+	solution, _ := client.Solve(query)
+	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"packageA": 0,
+			"itemX":    0,
+			"itemY":    0,
+		},
+		primitiveSolution,
+	)
+}
+
 func forbidsBetweenItemsWithAdditionalXORsSetup() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("itemA", "itemB", "itemC", "itemN", "itemM", "itemX", "itemY", "itemZ")
