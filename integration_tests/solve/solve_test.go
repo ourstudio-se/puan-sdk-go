@@ -21,9 +21,10 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred_shouldReturnNotPrefe
 
 	creator.PLDAG().SetPrimitives("packageA", "packageB", "packageC", "itemX")
 	exactlyOnePackage, _ := creator.PLDAG().SetXor("packageA", "packageB", "packageC")
-	packageB, _ := creator.PLDAG().SetEquivalent("packageB", "itemX")
 
-	root, _ := creator.PLDAG().SetAnd(exactlyOnePackage, packageB)
+	packageBRequiresItemX, _ := creator.PLDAG().SetImply("packageB", "itemX")
+
+	root, _ := creator.PLDAG().SetAnd(exactlyOnePackage, packageBRequiresItemX)
 	_ = creator.PLDAG().Assume(root)
 
 	invertedPreferred, _ := creator.PLDAG().SetNot("packageA")
@@ -232,7 +233,7 @@ func Test_implicationChain_shouldReturnAllAsTrue(t *testing.T) {
 // and we select single variable itemN, then we will change into the other
 // package variant (A, itemX, itemY, itemZ, itemN) (and not select single itemN)
 // Note: package A is mandatory according to rule set.
-func Test_variantsWithXORBetweenTwoItems_selectedPreferredXOR_shouldReturnPreferred(t *testing.T) {
+func Test_variantsWithXORBetweenTwoItems_selectXORItemAfterAnotherVariant_shouldReturnNewVariant(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemZ", "itemN", "itemM")
@@ -240,8 +241,8 @@ func Test_variantsWithXORBetweenTwoItems_selectedPreferredXOR_shouldReturnPrefer
 	sharedItems, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemZ")
 	packageRequiresItems, _ := creator.PLDAG().SetImply("packageA", sharedItems)
 
-	exactlyOneOfTheItems, _ := creator.PLDAG().SetXor("itemN", "itemM")
-	variants, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfTheItems)
+	exactlyOneOfItemNAndM, _ := creator.PLDAG().SetXor("itemN", "itemM")
+	packageRequiresExactlyOneOfItemNAndM, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfItemNAndM)
 
 	includedItemsInVariantOne, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemZ", "itemN")
 	includedItemsInVariantTwo, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemZ", "itemM")
@@ -249,12 +250,12 @@ func Test_variantsWithXORBetweenTwoItems_selectedPreferredXOR_shouldReturnPrefer
 	reversedPackageVariantOne, _ := creator.PLDAG().SetImply(includedItemsInVariantOne, "packageA")
 	reversedPackageVariantTwo, _ := creator.PLDAG().SetImply(includedItemsInVariantTwo, "packageA")
 
-	root, _ := creator.PLDAG().SetAnd("packageA", packageRequiresItems, variants, reversedPackageVariantOne, reversedPackageVariantTwo)
+	root, _ := creator.PLDAG().SetAnd("packageA", packageRequiresItems, packageRequiresExactlyOneOfItemNAndM, reversedPackageVariantOne, reversedPackageVariantTwo)
 
 	_ = creator.PLDAG().Assume(root)
 
-	negatedPreferred, _ := creator.PLDAG().SetNot("itemN")
-	invertedPreferred, _ := creator.PLDAG().SetAnd("packageA", negatedPreferred)
+	preferred, _ := creator.PLDAG().SetImply("packageA", "itemN")
+	invertedPreferred, _ := creator.PLDAG().SetNot(preferred)
 
 	_ = creator.SetPreferreds(invertedPreferred)
 
