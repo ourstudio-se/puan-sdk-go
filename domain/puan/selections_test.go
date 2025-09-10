@@ -1,3 +1,4 @@
+//nolint:lll
 package puan
 
 import (
@@ -18,7 +19,9 @@ func Test_getImpactingSelections(t *testing.T) {
 				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
 				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
 			},
-			expected: Selections{},
+			expected: Selections{
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+			},
 		},
 		{
 			name: "subselection two different sub ids",
@@ -78,7 +81,9 @@ func Test_getImpactingSelections(t *testing.T) {
 			selections: Selections{
 				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
 			},
-			expected: Selections{},
+			expected: Selections{
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+			},
 		},
 		{
 			name:       "Empty selections",
@@ -91,7 +96,7 @@ func Test_getImpactingSelections(t *testing.T) {
 				NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(ADD).Build(),
 				NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(REMOVE).Build(),
 			},
-			expected: Selections{},
+			expected: Selections{NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(REMOVE).Build()},
 		},
 		{
 			name: "Add sub-selection, then add another",
@@ -112,6 +117,7 @@ func Test_getImpactingSelections(t *testing.T) {
 			},
 			expected: Selections{
 				NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(ADD).Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("z").WithAction(REMOVE).Build(),
 			},
 		},
 		{
@@ -123,6 +129,7 @@ func Test_getImpactingSelections(t *testing.T) {
 			},
 			expected: Selections{
 				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("z").WithAction(REMOVE).Build(),
 			},
 		},
 	}

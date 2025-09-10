@@ -132,26 +132,6 @@ func getSelectedIDs(selections Selections, idLookUp map[string]string) ([]string
 	return ids, nil
 }
 
-func (r *RuleSet) CalculateSelectedIDs(selections Selections) ([]string, error) {
-	impactingSelections := getImpactingSelections(selections)
-
-	var selectedIDs []string
-	for _, selection := range impactingSelections {
-		if selection.isComposite() {
-			auxiliaryID, err := r.setCompositeSelectionConstraint(selection.IDs())
-			if err != nil {
-				return nil, err
-			}
-			r.variables = append(r.variables, auxiliaryID)
-			selectedIDs = append(selectedIDs, auxiliaryID)
-		} else {
-			selectedIDs = append(selectedIDs, selection.id)
-		}
-	}
-
-	return selectedIDs, nil
-}
-
 func (r *RuleSet) copy() *RuleSet {
 	aMatrix := make([][]int, len(r.polyhedron.A()))
 	copy(aMatrix, r.polyhedron.A())
@@ -210,7 +190,7 @@ func (r *RuleSet) obtainSelectionID(selection Selection) (string, error) {
 	id := selection.id
 	var err error
 	if selection.isComposite() {
-		id, err = r.setCompositeSelectionConstraint(selection.IDs())
+		id, err = r.setCompositeSelectionConstraint(selection)
 		if err != nil {
 			return "", err
 		}
@@ -228,7 +208,29 @@ func (r *RuleSet) obtainSelectionID(selection Selection) (string, error) {
 	return id, nil
 }
 
-func (r *RuleSet) setCompositeSelectionConstraint(ids []string) (string, error) {
+func (r *RuleSet) setCompositeSelectionConstraint(selection Selection) (string, error) {
+	if selection.action == REMOVE {
+		return r.setCompositeSelectionRemoveConstraint(selection.IDs())
+	}
+
+	return r.setCompositeSelectionAddConstraint(selection.IDs())
+}
+
+func (r *RuleSet) setCompositeSelectionRemoveConstraint(ids []string) (string, error) {
+	constraint, err := newCompositeSelectionRemoveConstraint(ids)
+	if err != nil {
+		return "", err
+	}
+
+	err = r.setConstraintIfNotExist(constraint)
+	if err != nil {
+		return "", err
+	}
+
+	return constraint.ID(), nil
+}
+
+func (r *RuleSet) setCompositeSelectionAddConstraint(ids []string) (string, error) {
 	constraint, err := newCompositeSelectionConstraint(ids)
 	if err != nil {
 		return "", err
@@ -240,6 +242,10 @@ func (r *RuleSet) setCompositeSelectionConstraint(ids []string) (string, error) 
 	}
 
 	return constraint.ID(), nil
+}
+
+func newCompositeSelectionRemoveConstraint(ids []string) (pldag.Constraint, error) {
+	return pldag.NewAtMostConstraint(ids, 0)
 }
 
 func newCompositeSelectionConstraint(ids []string) (pldag.Constraint, error) {

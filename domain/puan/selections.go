@@ -94,6 +94,7 @@ func (s Selection) isRedundant(existingSelections Selections) bool {
 	return false
 }
 
+//nolint:gocyclo
 func (s Selection) makesRedundant(other Selection) bool {
 	if s.action == REMOVE && utils.ContainsAll(other.IDs(), s.IDs()) {
 		return true
