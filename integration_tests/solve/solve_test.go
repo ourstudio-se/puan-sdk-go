@@ -136,6 +136,15 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldReturnPreferred(t *testing.T
 	creator := puan.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemM", "itemN", "itemO")
 
+	itemsXAndY, _ := creator.PLDAG().SetAnd("itemX", "itemY")
+	packageARequiresItems, _ := creator.PLDAG().SetImply("packageA", itemsXAndY)
+
+	exactlyOneOfItemMAndM, _ := creator.PLDAG().SetXor("itemN", "itemM")
+	packageARequiresExactlyOneOfItemMAndN, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfItemMAndM)
+
+	exactlyOneOfItemOAndM, _ := creator.PLDAG().SetXor("itemN", "itemO")
+	packageARequiresExactlyOneOfItemOAndN, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfItemOAndM)
+
 	includedItemsInVariantOne, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemN")
 	includedItemsInVariantTwo, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemM", "itemO")
 
@@ -147,7 +156,7 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldReturnPreferred(t *testing.T
 	reversedPackageVariantOne, _ := creator.PLDAG().SetImply(includedItemsInVariantOne, "packageA")
 	reversedPackageVariantTwo, _ := creator.PLDAG().SetImply(includedItemsInVariantTwo, "packageA")
 
-	root, _ := creator.PLDAG().SetAnd(exactlyOnePackage, reversedPackageVariantOne, reversedPackageVariantTwo)
+	root, _ := creator.PLDAG().SetAnd("packageA", exactlyOnePackage, reversedPackageVariantOne, reversedPackageVariantTwo)
 	_ = creator.PLDAG().Assume(root)
 
 	invertedPreferred, _ := creator.PLDAG().SetNot(packageVariantOne)

@@ -240,12 +240,12 @@ func Test_exactlyOnePackage_downgrade_case3(t *testing.T) {
 	)
 }
 
-// Test_exactlyOnePackage_downgrade_case4
-// Ref: test_downgrade_package_when_xor_between_multiple_packages
+// Test_exactlyOnePackage_shouldGivePreferred
+// Ref:
 // Description: Here are three packages, A, B and C, exist.
 // C is larger than B, and B is larger than A.
 // Nothing is selected, expect the preferred package.
-func Test_exactlyOnePackage_downgrade_case4(t *testing.T) {
+func Test_exactlyOnePackage_shouldGivePreferred(t *testing.T) {
 	ruleSet := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
 
 	selections := puan.Selections{}
