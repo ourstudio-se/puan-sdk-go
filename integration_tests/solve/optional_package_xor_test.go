@@ -29,8 +29,7 @@ func Test_optionalVariantWithXORsBetweenItemsAndForbids_shouldReturnPreferred(t 
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("itemA").Build(),
-		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemC").Build(),
-		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemD").Build(),
+		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemC").WithSubSelectionID("itemD").Build(),
 	}
 
 	query, _ := ruleset.NewQuery(selections)
@@ -69,8 +68,7 @@ func Test_optionalVariantWithXORsBetweenItemsAndForbids_shouldReturnNOTPreferred
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("itemC").Build(),
-		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemA").Build(),
-		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemB").Build(),
+		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemA").WithSubSelectionID("itemB").Build(),
 	}
 
 	query, _ := ruleset.NewQuery(selections)
@@ -125,11 +123,13 @@ func optionalPackageWithItemsWithXORsAndForbids() *puan.RuleSet {
 
 	_ = creator.PLDAG().Assume(root)
 
-	preferredVariant, _ := creator.PLDAG().SetAnd("itemC", "itemD")
-	notPreferredVariant, _ := creator.PLDAG().SetNot(preferredVariant)
-	invertedPreferred, _ := creator.PLDAG().SetAnd("packageX", notPreferredVariant)
+	preferredPackageXItemC, _ := creator.PLDAG().SetImply("packageX", "itemC")
+	preferredPackageXItemD, _ := creator.PLDAG().SetImply("packageX", "itemD")
 
-	_ = creator.SetPreferreds(invertedPreferred)
+	invertedPreferredItemC, _ := creator.PLDAG().SetNot(preferredPackageXItemC)
+	invertedPreferredItemD, _ := creator.PLDAG().SetNot(preferredPackageXItemD)
+
+	_ = creator.SetPreferreds(invertedPreferredItemC, invertedPreferredItemD)
 
 	ruleSet := creator.Create()
 

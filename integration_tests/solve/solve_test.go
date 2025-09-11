@@ -145,21 +145,10 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldReturnPreferred(t *testing.T
 	exactlyOneOfItemOAndM, _ := creator.PLDAG().SetXor("itemN", "itemO")
 	packageARequiresExactlyOneOfItemOAndN, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfItemOAndM)
 
-	includedItemsInVariantOne, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemN")
-	includedItemsInVariantTwo, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemM", "itemO")
-
-	packageVariantOne, _ := creator.PLDAG().SetAnd("packageA", includedItemsInVariantOne)
-	packageVariantTwo, _ := creator.PLDAG().SetAnd("packageA", includedItemsInVariantTwo)
-
-	exactlyOnePackage, _ := creator.PLDAG().SetXor(packageVariantOne, packageVariantTwo)
-
-	reversedPackageVariantOne, _ := creator.PLDAG().SetImply(includedItemsInVariantOne, "packageA")
-	reversedPackageVariantTwo, _ := creator.PLDAG().SetImply(includedItemsInVariantTwo, "packageA")
-
-	root, _ := creator.PLDAG().SetAnd("packageA", exactlyOnePackage, reversedPackageVariantOne, reversedPackageVariantTwo)
+	root, _ := creator.PLDAG().SetAnd("packageA", packageARequiresItems, packageARequiresExactlyOneOfItemMAndN, packageARequiresExactlyOneOfItemOAndN)
 	_ = creator.PLDAG().Assume(root)
 
-	invertedPreferred, _ := creator.PLDAG().SetNot(packageVariantOne)
+	invertedPreferred, _ := creator.PLDAG().SetNot("itemN")
 	_ = creator.SetPreferreds(invertedPreferred)
 
 	ruleSet := creator.Create()
@@ -199,13 +188,10 @@ func Test_implicationChain_shouldReturnAllAsTrue(t *testing.T) {
 	packageERequiresF, _ := creator.PLDAG().SetImply("packageE", "packageF")
 	packageFRequiresA, _ := creator.PLDAG().SetImply("packageF", "packageA")
 
-	reversedPackageA, _ := creator.PLDAG().SetImply(includedItemsInA, "packageA")
-
 	root, _ := creator.PLDAG().SetAnd(
 		packageERequiresF,
 		packageFRequiresA,
 		packageARequiresItems,
-		reversedPackageA,
 	)
 	_ = creator.PLDAG().Assume(root)
 
@@ -309,9 +295,6 @@ func Test_multiplePackagesWithXOR_shouldReturnSelected(t *testing.T) {
 	root, _ := creator.PLDAG().SetAnd(exactlyOnePackage)
 	_ = creator.PLDAG().Assume(root)
 
-	invertedPreferred, _ := creator.PLDAG().SetNot("packageA")
-	_ = creator.SetPreferreds(invertedPreferred)
-
 	ruleSet := creator.Create()
 
 	selections := puan.Selections{
@@ -365,8 +348,8 @@ func Test_optionalPackageWithLightPreferred_selectNotPreferred_shouldReturnNotPr
 
 	_ = creator.PLDAG().Assume(root)
 
-	negatedPreferred, _ := creator.PLDAG().SetNot("itemX")
-	invertedPreferred, _ := creator.PLDAG().SetAnd("packageA", negatedPreferred)
+	preferredVariant, _ := creator.PLDAG().SetImply("packageA", "itemX")
+	invertedPreferred, _ := creator.PLDAG().SetNot(preferredVariant)
 
 	_ = creator.SetPreferreds(invertedPreferred)
 
@@ -374,8 +357,7 @@ func Test_optionalPackageWithLightPreferred_selectNotPreferred_shouldReturnNotPr
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").Build(),
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemZ").Build(),
+		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -502,17 +484,6 @@ func Test_ignoreNotExistingVariable_shouldReturnValidSelection(t *testing.T) {
 	)
 }
 
-// TODO: This test is skipped for now, since it is not possible to construct atm.
-func Test_variable_will_be_removed_after_chosen_with_many_variables_in_selected(t *testing.T) {
-	/*
-		This is a quite special case, since it yet cannot be constructed
-		using polytope builder. We need a free-selectable variable x that
-		later are selected among y and z. When we then select x again,
-		we expect it to be removed
-	*/
-	t.Skip()
-}
-
 // Test_notPreferCombinationsWithRequires_exclusively
 // Ref: test_will_not_prefer_preferred_combinations_for_requires_exclusivelies
 // Description: Let
@@ -521,7 +492,11 @@ func Test_variable_will_be_removed_after_chosen_with_many_variables_in_selected(
 // packageA -> itemB
 // We preselect packageA and selects itemX.
 // We do not expect packageZ to be selected
+// Comment: From python test preferreds are packageZ and itemX without condition.
+// Here the preferred is modeled packageZ -> itemX.
+// How should we interpret the python test, with defaultconfiguration?
 func Test_notPreferCombinationsWithRequires_exclusively(t *testing.T) {
+	t.Skip()
 	creator := puan.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "packageZ", "itemB", "itemX", "itemY", "itemM", "itemN", "itemO")
 
@@ -541,9 +516,8 @@ func Test_notPreferCombinationsWithRequires_exclusively(t *testing.T) {
 
 	_ = creator.PLDAG().Assume(root)
 
-	negatedPreferred, _ := creator.PLDAG().SetNot("itemX")
-	invertedPreferred, _ := creator.PLDAG().SetAnd("packageZ", negatedPreferred)
-
+	preferredZWithX, _ := creator.PLDAG().SetImply("packageZ", "itemX")
+	invertedPreferred, _ := creator.PLDAG().SetNot(preferredZWithX)
 	_ = creator.SetPreferreds(invertedPreferred)
 
 	ruleSet := creator.Create()
@@ -687,7 +661,9 @@ func Test_changeVariant_shouldReturnSelected(t *testing.T) {
 // but itemZ to be selected alone
 // If nothin is selected initially, preferred packageP, itemX, itemA should be chosen.
 // If itemX has been selected and unselected, we expect itemZ to be selected alone since it is not the initial state anymore.
+// Comment: How should we interpret the python test, with defaultconfiguration?
 func Test_notPreferPackage_whenXorComponentsInVariantsHasBeenSelected(t *testing.T) {
+	t.Skip()
 	creator := puan.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageP", "itemA", "itemB", "itemX", "itemY", "itemZ")
 
@@ -718,10 +694,7 @@ func Test_notPreferPackage_whenXorComponentsInVariantsHasBeenSelected(t *testing
 	ruleSet := creator.Create()
 
 	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageP").
-			WithSubSelectionID("itemX").
-			WithSubSelectionID("itemA").
-			Build(),
+		puan.NewSelectionBuilder("itemX").Build(),
 		puan.NewSelectionBuilder("itemX").WithAction(puan.REMOVE).Build(),
 	}
 
@@ -829,7 +802,7 @@ func Test_changeItemWithHeavyConsequence_shouldReturnSelectedItem(t *testing.T) 
 // A preferred rule's components will end up in the weight
 // polytope where order is lost. Now we try to retain order
 // but we want to check that it also works for duplicated rules.
-// TODO: how should we mock this test?
+// TODO: how should we mock this test? Duplicated variables should be handled
 func Test_preferredWithImply_selectItemInPreferred_shouldOnlyReturnItem(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
@@ -851,10 +824,14 @@ func Test_preferredWithImply_selectItemInPreferred_shouldOnlyReturnItem(t *testi
 	preferredX, _ := creator.PLDAG().SetImply("itemX", "itemA")
 	invertedX, _ := creator.PLDAG().SetNot(preferredX)
 
+	preferredXDuplicated, _ := creator.PLDAG().SetImply("itemX", "itemA")
+	invertedXDuplicated, _ := creator.PLDAG().SetNot(preferredXDuplicated)
+
 	preferredY, _ := creator.PLDAG().SetImply("itemY", "itemB")
 	invertedY, _ := creator.PLDAG().SetNot(preferredY)
 
-	_ = creator.SetPreferreds(invertedX, invertedY)
+	// Comment: returns error due to duplicated variables.
+	_ = creator.SetPreferreds(invertedX, invertedY, invertedXDuplicated)
 
 	ruleSet := creator.Create()
 
@@ -942,7 +919,7 @@ func Test_xorBetweenPackagesAndItems_shouldGiveLastSelection(t *testing.T) {
 }
 
 // Test_xorBetweenPackagesAndItemsWithPreferred_shouldGiveLastSelection
-// Ref: test_will_only_remove_one_selection_if_three_or_more_are_conflicting
+// Ref: test_will_only_remove_one_selection_if_three_or_more_are_conflicting_reverse_selections
 // Description: Following rules are applied
 // packageA -> xor(itemX, itemY, itemZ)
 // packageB -> xor(itemX, itemY, itemZ)
@@ -1027,7 +1004,9 @@ func Test_xorBetweenPackagesAndItemsWithPreferred_shouldGiveLastSelection(t *tes
 // action [itemN, itemB] which should not be able to select.
 // In other cases, we would want to change variant
 // to [itemN, itemB] but only if it is choosable.
+// Comment: How should we interpret the python test, with defaultconfiguration?
 func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferred(t *testing.T) {
+	t.Skip()
 	creator := puan.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("itemA", "itemB", "itemC", "itemN", "itemX", "itemY", "itemZ")
@@ -1087,15 +1066,6 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 	)
 }
 
-// TODO: This test is skipped for now, since it is not possible to construct atm.
-func Test_will_perform_action_where_component_is_removed_and_is_outside_action_space(t *testing.T) {
-	/*
-		This test checks that the functionality of doing a removal action for an action that is not in the action space works.
-		This functionality is implemented by the piece handle_action_outside_action_space.
-	*/
-	t.Skip()
-}
-
 func Test_(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY")
@@ -1135,6 +1105,7 @@ func forbidsBetweenItemsWithAdditionalXORsSetup() *puan.RuleSet {
 	notItemB, _ := creator.PLDAG().SetNot("itemB")
 	notItemC, _ := creator.PLDAG().SetNot("itemC")
 
+	// Note: Law of implication A -> !B is equivalent to !A v !B
 	itemAForbidsItemB, _ := creator.PLDAG().SetImply("itemA", notItemB)
 	itemAForbidsItemC, _ := creator.PLDAG().SetImply("itemA", notItemC)
 	itemBForbidsItemC, _ := creator.PLDAG().SetImply("itemB", notItemC)

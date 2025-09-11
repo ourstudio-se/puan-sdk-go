@@ -56,7 +56,6 @@ func Test_changeHeavyVariant_withVariantSelection_shouldReturnSelectedVariant(t 
 	ruleSet := heavyVariantSetup()
 
 	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").Build(),
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
 		puan.NewSelectionBuilder("itemY").Build(),
 	}

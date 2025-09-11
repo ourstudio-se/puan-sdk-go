@@ -47,8 +47,7 @@ func Test_exactlyOneVariant_selectPreferred_shouldReturnPreferred(t *testing.T) 
 	ruleSet := exactlyOnePackageVariantWithXORBetweenItems()
 
 	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").Build(),
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemZ").Build(),
+		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -102,12 +101,34 @@ func Test_exactlyOneVariant_deselecting_shouldReturnCheapestSolution(t *testing.
 // Ref: test_select_single_xor_component_when_xor_pair_is_already_selected
 // Description: Given rules package A -> xor(itemX, itemY), package A -> xor(itemX, itemZ). (itemY, itemZ) is preferred oved itemX.
 // If (A, itemY, itemZ) is already selected, check that we will select (A, itemX) variant when selecting itemX
+// Note: packagA is not optional here.
 func Test_exactlyOneVariant_selectItemXAfterPreferred_shouldReturnVariantWithItemX(t *testing.T) {
-	ruleSet := exactlyOnePackageVariantWithXORBetweenItems()
+	creator := puan.NewRuleSetCreator()
+	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemZ")
+
+	xorItem1Item2, _ := creator.PLDAG().SetXor("itemX", "itemY")
+	xorItem1Item3, _ := creator.PLDAG().SetXor("itemX", "itemZ")
+
+	packageExactlyOneOfItem1Item2, _ := creator.PLDAG().SetImply("packageA", xorItem1Item2)
+	packageExactlyOneOfItem1Item3, _ := creator.PLDAG().SetImply("packageA", xorItem1Item3)
+
+	root, _ := creator.PLDAG().SetAnd(
+		packageExactlyOneOfItem1Item2,
+		packageExactlyOneOfItem1Item3,
+	)
+
+	_ = creator.PLDAG().Assume("packageA", root)
+
+	preferredItems, _ := creator.PLDAG().SetAnd("itemY", "itemZ")
+	packagePreferredVariant, _ := creator.PLDAG().SetImply("packageA", preferredItems)
+	invertedPreferred, _ := creator.PLDAG().SetNot(packagePreferredVariant)
+
+	_ = creator.SetPreferreds(invertedPreferred)
+
+	ruleSet := creator.Create()
 
 	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").Build(),
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemZ").Build(),
+		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
 	}
 
@@ -165,6 +186,7 @@ func Test_exactlyOneVariant_selectPreferredItemAfterNotPreferredItem_shouldRetur
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
+		puan.NewSelectionBuilder("itemY").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -176,9 +198,9 @@ func Test_exactlyOneVariant_selectPreferredItemAfterNotPreferredItem_shouldRetur
 		t,
 		puan.Solution{
 			"packageA": 1,
-			"itemX":    1,
-			"itemY":    0,
-			"itemZ":    0,
+			"itemX":    0,
+			"itemY":    1,
+			"itemZ":    1,
 		},
 		primitiveSolution,
 	)
@@ -250,27 +272,16 @@ func exactlyOnePackageVariantWithXORBetweenItems() *puan.RuleSet {
 	packageExactlyOneOfItem1Item2, _ := creator.PLDAG().SetImply("packageA", xorItem1Item2)
 	packageExactlyOneOfItem1Item3, _ := creator.PLDAG().SetImply("packageA", xorItem1Item3)
 
-	includedItemsInVariantOne, _ := creator.PLDAG().SetAnd("itemY", "itemZ")
-	packageVariantOne, _ := creator.PLDAG().SetAnd("packageA", includedItemsInVariantOne)
-	packageVariantTwo, _ := creator.PLDAG().SetAnd("packageA", "itemX")
-	exactlyOneVariant, _ := creator.PLDAG().SetXor(packageVariantOne, packageVariantTwo)
-
-	packageA, _ := creator.PLDAG().SetImply("packageA", exactlyOneVariant)
-	reversePackageVariantOne, _ := creator.PLDAG().SetImply(includedItemsInVariantOne, "packageA")
-	reversePackageVariantTwo, _ := creator.PLDAG().SetImply("itemX", "packageA")
-
 	root, _ := creator.PLDAG().SetAnd(
-		packageA,
 		packageExactlyOneOfItem1Item2,
 		packageExactlyOneOfItem1Item3,
-		reversePackageVariantOne,
-		reversePackageVariantTwo,
 	)
 
 	_ = creator.PLDAG().Assume(root)
 
-	negatedPreferred, _ := creator.PLDAG().SetNot(packageVariantOne)
-	invertedPreferred, _ := creator.PLDAG().SetAnd("packageA", negatedPreferred)
+	preferredItems, _ := creator.PLDAG().SetAnd("itemY", "itemZ")
+	packagePreferredVariant, _ := creator.PLDAG().SetImply("packageA", preferredItems)
+	invertedPreferred, _ := creator.PLDAG().SetNot(packagePreferredVariant)
 
 	_ = creator.SetPreferreds(invertedPreferred)
 
