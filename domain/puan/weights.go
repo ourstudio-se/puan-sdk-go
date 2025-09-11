@@ -29,7 +29,7 @@ func (w Weights) sum() int {
 
 func calculateObjective(
 	primitives []string,
-	selections selections2,
+	selections querySelections,
 	preferredIDs []string,
 ) Weights {
 	notSelectedPrimitives := utils.Without(primitives, selections.ids())
@@ -78,7 +78,7 @@ func calculatePreferredWeights(
 }
 
 func calculateSelectedWeights(
-	selections []selection2,
+	selections []querySelection,
 	notSelectedSum,
 	preferredWeightsSum int,
 ) Weights {

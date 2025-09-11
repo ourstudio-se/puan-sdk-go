@@ -65,7 +65,7 @@ func Test_RuleSet_obtainSelectionID_givenStandaloneSelection_shouldReturnSelecti
 	selection := NewSelectionBuilder(want).Build()
 
 	ruleSet := &RuleSet{}
-	got, err := ruleSet.obtainSelectionID(selection)
+	got, err := ruleSet.obtainQuerySelectionID(selection)
 
 	assert.NoError(t, err)
 	assert.Equal(t, want, got)
@@ -84,7 +84,7 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintDoesNotExist_sh
 
 	selection := NewSelectionBuilder(primaryID).WithSubSelectionID(subID).Build()
 
-	id, err := ruleSet.setCompositeSelectionConstraint(selection)
+	id, err := ruleSet.setCompositeSelectionConstraint(selection.IDs())
 
 	assert.NoError(t, err)
 	assert.Equal(t, id, ruleSet.variables[2])
@@ -110,7 +110,7 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintExists_shouldNo
 
 	selection := NewSelectionBuilder(primaryID).WithSubSelectionID(subID).Build()
 
-	_, err := ruleSet.setCompositeSelectionConstraint(selection)
+	_, err := ruleSet.setCompositeSelectionConstraint(selection.IDs())
 
 	assert.NoError(t, err)
 	assert.Equal(t, wantVariables, ruleSet.variables)
