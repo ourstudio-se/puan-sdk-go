@@ -84,7 +84,7 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintDoesNotExist_sh
 
 	selection := NewSelectionBuilder(primaryID).WithSubSelectionID(subID).Build()
 
-	id, err := ruleSet.setCompositeSelectionConstraint(selection.IDs())
+	id, err := ruleSet.setCompositeSelectionConstraint(selection.ids())
 
 	assert.NoError(t, err)
 	assert.Equal(t, id, ruleSet.variables[2])
@@ -110,7 +110,7 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintExists_shouldNo
 
 	selection := NewSelectionBuilder(primaryID).WithSubSelectionID(subID).Build()
 
-	_, err := ruleSet.setCompositeSelectionConstraint(selection.IDs())
+	_, err := ruleSet.setCompositeSelectionConstraint(selection.ids())
 
 	assert.NoError(t, err)
 	assert.Equal(t, wantVariables, ruleSet.variables)

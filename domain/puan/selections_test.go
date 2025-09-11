@@ -14,7 +14,7 @@ func Test_getImpactingSelections(t *testing.T) {
 		expected   Selections
 	}{
 		{
-			name: "subselection than only id remove selection",
+			name: "Add primitive with sub-selection, then remove primary primitive",
 			selections: Selections{
 				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
 				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
@@ -35,7 +35,7 @@ func Test_getImpactingSelections(t *testing.T) {
 			},
 		},
 		{
-			name: "subselection than only id selection",
+			name: "Add primitive with sub-selection, then add primary primitive only",
 			selections: Selections{
 				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
 				NewSelectionBuilder("x").Build(),
@@ -72,7 +72,6 @@ func Test_getImpactingSelections(t *testing.T) {
 				NewSelectionBuilder("y").WithSubSelectionID("x").Build(),
 			},
 			expected: Selections{
-				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
 				NewSelectionBuilder("y").WithSubSelectionID("x").Build(),
 			},
 		},
@@ -262,6 +261,29 @@ func Test_makesRedundant(t *testing.T) {
 			other:       NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
 			expected:    true,
 		},
+		{
+			name:        "Remove two different primitives",
+			prioritised: NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+			other:       NewSelectionBuilder("y").WithAction(REMOVE).Build(),
+			expected:    false,
+		},
+		{
+			name: "Add composite selection, with a sub-set of sub ids",
+			prioritised: NewSelectionBuilder("a").
+				WithSubSelectionID("y").
+				Build(),
+			other: NewSelectionBuilder("a").
+				WithSubSelectionID("x").
+				WithSubSelectionID("y").
+				Build(),
+			expected: true,
+		},
+		{
+			name:        "Remove with sub-selection, then add with reversed order",
+			prioritised: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			other:       NewSelectionBuilder("y").WithSubSelectionID("x").WithAction(REMOVE).Build(),
+			expected:    true,
+		},
 	}
 
 	for _, tt := range theories {
@@ -270,47 +292,10 @@ func Test_makesRedundant(t *testing.T) {
 	}
 }
 
-func Test_filterOutRemoveSelections(t *testing.T) {
-	theories := []struct {
-		name       string
-		selections Selections
-		expected   Selections
-	}{
-		{
-			name: "remove all selections",
-			selections: Selections{
-				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
-				NewSelectionBuilder("y").WithAction(REMOVE).Build(),
-			},
-			expected: nil,
-		},
-		{
-			name: "remove only one selections",
-			selections: Selections{
-				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
-				NewSelectionBuilder("y").Build(),
-			},
-			expected: Selections{
-				NewSelectionBuilder("y").Build(),
-			},
-		},
-		{
-			name: "no remove selections",
-			selections: Selections{
-				NewSelectionBuilder("x").Build(),
-				NewSelectionBuilder("y").Build(),
-			},
-			expected: Selections{
-				NewSelectionBuilder("x").Build(),
-				NewSelectionBuilder("y").Build(),
-			},
-		},
-	}
-
-	for _, tt := range theories {
-		t.Run(tt.name, func(t *testing.T) {
-			actual := tt.selections.filterOutRemoveSelections()
-			assert.Equal(t, tt.expected, actual)
-		})
-	}
+func Test_Selection_ids(t *testing.T) {
+	selection := NewSelectionBuilder("x").
+		WithSubSelectionID("y").
+		WithSubSelectionID("z").
+		Build()
+	assert.Equal(t, []string{"x", "y", "z"}, selection.ids())
 }

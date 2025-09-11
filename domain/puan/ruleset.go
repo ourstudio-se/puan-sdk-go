@@ -193,7 +193,7 @@ func (r *RuleSet) newQuerySelection(selection Selection) (querySelection, error)
 
 func (r *RuleSet) obtainQuerySelectionID(selection Selection) (string, error) {
 	if selection.isComposite() {
-		return r.setCompositeSelectionConstraint(selection.IDs())
+		return r.setCompositeSelectionConstraint(selection.ids())
 	}
 
 	return selection.id, nil
