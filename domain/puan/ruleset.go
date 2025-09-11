@@ -92,18 +92,8 @@ type querySpecification struct {
 }
 
 func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
-	// TODO: Refactor this
-	moddedSelections := Selections{}
-	for _, selection := range selections {
-		if selection.isComposite() {
-			newS := newSelection(selection.action, selection.id, nil)
-			moddedSelections = append(moddedSelections, newS)
-		}
-
-		moddedSelections = append(moddedSelections, selection)
-	}
-
-	impactingSelections := getImpactingSelections(moddedSelections)
+	extendedSelections := selections.extendWithPrimaryPrimitiveSelections()
+	impactingSelections := getImpactingSelections(extendedSelections)
 	specification, err := r.newQuerySpecification(impactingSelections)
 	if err != nil {
 		return nil, err

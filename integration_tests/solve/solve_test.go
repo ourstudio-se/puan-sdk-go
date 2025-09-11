@@ -1066,7 +1066,7 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 	)
 }
 
-func Test_(t *testing.T) {
+func Test_removingItemInAddedPackage_shouldRemovePackageAsWell(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY")
 

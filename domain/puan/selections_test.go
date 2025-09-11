@@ -299,3 +299,22 @@ func Test_Selection_ids(t *testing.T) {
 		Build()
 	assert.Equal(t, []string{"x", "y", "z"}, selection.ids())
 }
+
+func Test_Selections_extendWithPrimaryPrimitiveSelections(t *testing.T) {
+	selections := Selections{
+		NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(ADD).Build(),
+		NewSelectionBuilder("z").Build(),
+		NewSelectionBuilder("z").WithSubSelectionID("w").WithAction(REMOVE).Build(),
+	}
+
+	exteneded := selections.extendWithPrimaryPrimitiveSelections()
+
+	want := Selections{
+		NewSelectionBuilder("x").WithAction(ADD).Build(),
+		NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(ADD).Build(),
+		NewSelectionBuilder("z").Build(),
+		NewSelectionBuilder("z").WithSubSelectionID("w").WithAction(REMOVE).Build(),
+	}
+
+	assert.Equal(t, want, exteneded)
+}

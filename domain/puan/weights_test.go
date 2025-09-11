@@ -140,6 +140,29 @@ func Test_calculateSelectedWeights_twoSelected_shouldReturnWeights(t *testing.T)
 	assert.Equal(t, expected, actual)
 }
 
+func Test_calculateSelectedWeights_twoSelected_withRemoveAction(t *testing.T) {
+	selections := querySelections{
+		{
+			id:     "a",
+			action: ADD,
+		},
+		{
+			id:     "b",
+			action: REMOVE,
+		},
+	}
+	notSelectedSum := -4
+	preferredWeightsSum := -2
+
+	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum)
+	expected := Weights{
+		"a": 7,
+		"b": -14,
+	}
+
+	assert.Equal(t, expected, actual)
+}
+
 func Test_calculateSelectedWeights_noSelection_shouldReturnEmptyWeights(t *testing.T) {
 	notSelectedSum := -1
 	preferredWeightsSum := -1
