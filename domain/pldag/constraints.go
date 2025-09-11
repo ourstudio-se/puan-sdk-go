@@ -20,16 +20,8 @@ type Constraint struct {
 type Constraints []Constraint
 
 func NewAtLeastConstraint(variables []string, amount int) (Constraint, error) {
-	if utils.ContainsDuplicates(variables) {
-		return Constraint{}, errors.New("duplicated variables")
-	}
-
-	if amount > len(variables) {
-		return Constraint{}, errors.New("amount cannot be greater than number of variables")
-	}
-
-	if amount < 0 {
-		return Constraint{}, errors.New("amount cannot be negative")
+	if err := validateConstraintInput(variables, amount); err != nil {
+		return Constraint{}, err
 	}
 
 	coefficients := make(CoefficientValues)
@@ -44,17 +36,25 @@ func NewAtLeastConstraint(variables []string, amount int) (Constraint, error) {
 	return constraint, nil
 }
 
-func NewAtMostConstraint(variables []string, amount int) (Constraint, error) {
+func validateConstraintInput(variables []string, amount int) error {
 	if utils.ContainsDuplicates(variables) {
-		return Constraint{}, errors.New("duplicated variables")
+		return errors.New("duplicated variables")
 	}
 
 	if amount > len(variables) {
-		return Constraint{}, errors.New("amount cannot be greater than number of variables")
+		return errors.New("amount cannot be greater than number of variables")
 	}
 
 	if amount < 0 {
-		return Constraint{}, errors.New("amount cannot be negative")
+		return errors.New("amount cannot be negative")
+	}
+
+	return nil
+}
+
+func NewAtMostConstraint(variables []string, amount int) (Constraint, error) {
+	if err := validateConstraintInput(variables, amount); err != nil {
+		return Constraint{}, err
 	}
 
 	coefficients := make(CoefficientValues)
