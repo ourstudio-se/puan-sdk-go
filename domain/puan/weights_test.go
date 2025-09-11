@@ -150,7 +150,7 @@ func Test_calculateSelectedWeights_noSelection_shouldReturnEmptyWeights(t *testi
 	assert.Equal(t, expected, actual)
 }
 
-func Test_CalculateObjective(t *testing.T) {
+func Test_calculateWeights(t *testing.T) {
 	primitives := []string{"a", "b", "c"}
 	preferredIDs := []string{"e"}
 	selections := querySelections{
@@ -160,7 +160,7 @@ func Test_CalculateObjective(t *testing.T) {
 		},
 	}
 
-	actual := calculateObjective(primitives, selections, preferredIDs)
+	actual := calculateWeights(primitives, selections, preferredIDs)
 	expected := Weights{
 		"a": 8,
 		"b": -2,

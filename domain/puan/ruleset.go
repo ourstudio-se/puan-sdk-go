@@ -109,7 +109,7 @@ func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
 		return nil, err
 	}
 
-	objective := calculateObjective(
+	weights := calculateWeights(
 		specification.ruleSet.primitiveVariables,
 		specification.querySelections,
 		specification.ruleSet.preferredVariables,
@@ -118,7 +118,7 @@ func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
 	query := NewQuery(
 		specification.ruleSet.polyhedron,
 		specification.ruleSet.variables,
-		objective,
+		weights,
 	)
 
 	return query, nil

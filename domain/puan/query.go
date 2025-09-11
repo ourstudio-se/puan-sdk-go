@@ -5,14 +5,14 @@ import "github.com/ourstudio-se/puan-sdk-go/domain/pldag"
 type Query struct {
 	polyhedron *pldag.Polyhedron
 	variables  []string
-	objective  Weights
+	weights    Weights
 }
 
-func NewQuery(polyhedron *pldag.Polyhedron, variables []string, objective Weights) *Query {
+func NewQuery(polyhedron *pldag.Polyhedron, variables []string, weights Weights) *Query {
 	return &Query{
 		polyhedron: polyhedron,
 		variables:  variables,
-		objective:  objective,
+		weights:    weights,
 	}
 }
 
@@ -24,6 +24,6 @@ func (q *Query) Variables() []string {
 	return q.variables
 }
 
-func (q *Query) Objective() Weights {
-	return q.objective
+func (q *Query) Weights() Weights {
+	return q.weights
 }
