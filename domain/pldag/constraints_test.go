@@ -63,7 +63,7 @@ func Test_newAtLeastConstraint(t *testing.T) {
 			amount:    2,
 			want: Constraint{
 				id: "id",
-				coefficients: CoefficientValues{
+				coefficients: Coefficients{
 					"a": -1,
 					"b": -1,
 					"c": -1,
@@ -77,7 +77,7 @@ func Test_newAtLeastConstraint(t *testing.T) {
 			amount:    2,
 			want: Constraint{
 				id: "id",
-				coefficients: CoefficientValues{
+				coefficients: Coefficients{
 					"a": -1,
 					"b": -1,
 				},
@@ -90,7 +90,7 @@ func Test_newAtLeastConstraint(t *testing.T) {
 			amount:    0,
 			want: Constraint{
 				id:           "id",
-				coefficients: CoefficientValues{},
+				coefficients: Coefficients{},
 				bias:         Bias(0),
 			},
 		},
@@ -100,7 +100,7 @@ func Test_newAtLeastConstraint(t *testing.T) {
 			amount:    0,
 			want: Constraint{
 				id:           "id",
-				coefficients: CoefficientValues{},
+				coefficients: Coefficients{},
 				bias:         Bias(0),
 			},
 		},
@@ -129,7 +129,7 @@ func Test_newAtMostConstraint(t *testing.T) {
 			amount:    2,
 			want: Constraint{
 				id: "id",
-				coefficients: CoefficientValues{
+				coefficients: Coefficients{
 					"a": 1,
 					"b": 1,
 					"c": 1,
@@ -143,7 +143,7 @@ func Test_newAtMostConstraint(t *testing.T) {
 			amount:    2,
 			want: Constraint{
 				id: "id",
-				coefficients: CoefficientValues{
+				coefficients: Coefficients{
 					"a": 1,
 					"b": 1,
 				},
@@ -156,7 +156,7 @@ func Test_newAtMostConstraint(t *testing.T) {
 			amount:    0,
 			want: Constraint{
 				id:           "id",
-				coefficients: CoefficientValues{},
+				coefficients: Coefficients{},
 				bias:         Bias(0),
 			},
 		},
@@ -166,7 +166,7 @@ func Test_newAtMostConstraint(t *testing.T) {
 			amount:    0,
 			want: Constraint{
 				id:           "id",
-				coefficients: CoefficientValues{},
+				coefficients: Coefficients{},
 				bias:         Bias(0),
 			},
 		},
@@ -185,13 +185,13 @@ func Test_newAtMostConstraint(t *testing.T) {
 func Test_newConstraintID(t *testing.T) {
 	tests := []struct {
 		name         string
-		coefficients CoefficientValues
+		coefficients Coefficients
 		bias         Bias
 		want         string
 	}{
 		{
 			name: "should create id",
-			coefficients: CoefficientValues{
+			coefficients: Coefficients{
 				"a": 1,
 				"b": 2,
 				"c": 3,
@@ -201,7 +201,7 @@ func Test_newConstraintID(t *testing.T) {
 		},
 		{
 			name: "should create id",
-			coefficients: CoefficientValues{
+			coefficients: Coefficients{
 				"c": 3,
 				"b": 2,
 				"a": 1,
@@ -211,7 +211,7 @@ func Test_newConstraintID(t *testing.T) {
 		},
 		{
 			name: "should create id",
-			coefficients: CoefficientValues{
+			coefficients: Coefficients{
 				"x": 3,
 				"y": 2,
 				"z": 10,
@@ -222,7 +222,7 @@ func Test_newConstraintID(t *testing.T) {
 		},
 		{
 			name: "should create id",
-			coefficients: CoefficientValues{
+			coefficients: Coefficients{
 				"z": 10,
 				"x": 3,
 				"a": 5,
@@ -233,7 +233,7 @@ func Test_newConstraintID(t *testing.T) {
 		},
 		{
 			name:         "empty coefficients should create id",
-			coefficients: CoefficientValues{},
+			coefficients: Coefficients{},
 			bias:         0,
 			want:         "b6589fc6ab0dc82cf12099d1c2d40ab994e8410c",
 		},

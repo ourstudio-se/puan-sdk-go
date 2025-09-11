@@ -151,7 +151,7 @@ func Test_RuleSet_newRow(
 	id2 := uuid.New().String()
 	value1 := fake.New[int]()
 	value2 := fake.New[int]()
-	coefficients := pldag.CoefficientValues{
+	coefficients := pldag.Coefficients{
 		id1: value1,
 		id2: value2,
 	}

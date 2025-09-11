@@ -13,7 +13,7 @@ func TestPolyhedron_Shape(t *testing.T) {
 		want    Shape
 	}{
 		{
-			name: "valid polyhedron",
+			name: "populated polyhedron",
 			aMatrix: [][]int{
 				{1, 1},
 			},
@@ -30,7 +30,7 @@ func TestPolyhedron_Shape(t *testing.T) {
 			want:    Shape{},
 		},
 		{
-			name:    "empty polyhedron",
+			name:    "empty rows in polyhedron",
 			aMatrix: [][]int{{}, {}},
 			want:    Shape{2, 0},
 		},
@@ -52,7 +52,7 @@ func TestPolyhedron_SparseMatrix(t *testing.T) {
 		want    SparseMatrix
 	}{
 		{
-			name: "valid polyhedron",
+			name: "single row",
 			aMatrix: [][]int{
 				{1, 1},
 			},
@@ -64,7 +64,7 @@ func TestPolyhedron_SparseMatrix(t *testing.T) {
 			},
 		},
 		{
-			name: "valid polyhedron",
+			name: "many rows",
 			aMatrix: [][]int{
 				{1, 1, 2},
 				{1, 1, 0},
@@ -133,7 +133,7 @@ func Test_AddEmptyColumn_givenSingleRow(t *testing.T) {
 	}
 }
 
-func Test_Extend_extendToExistingPolyhedron(t *testing.T) {
+func Test_Extend_extendToPopulatedPolyhedron(t *testing.T) {
 	row := []int{0, 0, 1}
 	b := Bias(1)
 

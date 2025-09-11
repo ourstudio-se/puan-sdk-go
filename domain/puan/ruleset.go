@@ -58,7 +58,7 @@ func (c *RuleSetCreator) validatePreferredIDs(ids []string) error {
 }
 
 func (c *RuleSetCreator) Create() *RuleSet {
-	polyhedron := c.pldag.GeneratePolyhedron()
+	polyhedron := c.pldag.NewPolyhedron()
 	variables := c.pldag.Variables()
 	primitiveVariables := c.PLDAG().PrimitiveVariables()
 
@@ -298,7 +298,7 @@ func (r *RuleSet) setAuxiliaryConstraint(constraint pldag.AuxiliaryConstraint) e
 	return nil
 }
 
-func (r *RuleSet) newRow(coefficients pldag.CoefficientValues) ([]int, error) {
+func (r *RuleSet) newRow(coefficients pldag.Coefficients) ([]int, error) {
 	row := make([]int, len(r.variables))
 
 	for id, value := range coefficients {

@@ -8,34 +8,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_coefficientValues_negate(t *testing.T) {
+func Test_Coefficients_negate(t *testing.T) {
 	tests := []struct {
 		name string
-		c    CoefficientValues
-		want CoefficientValues
+		c    Coefficients
+		want Coefficients
 	}{
 		{
 			name: "should negate all values",
-			c: CoefficientValues{
+			c: Coefficients{
 				"a": 1,
 				"b": 2,
 				"c": 3,
 			},
-			want: CoefficientValues{
+			want: Coefficients{
 				"a": -1,
 				"b": -2,
 				"c": -3,
 			},
 		},
 		{
-			name: "empty CoefficientValues should return empty",
-			c:    CoefficientValues{},
-			want: CoefficientValues{},
+			name: "empty Coefficients should return empty",
+			c:    Coefficients{},
+			want: Coefficients{},
 		},
 		{
-			name: "nil CoefficientValues should return empty",
+			name: "nil Coefficients should return empty",
 			c:    nil,
-			want: CoefficientValues{},
+			want: Coefficients{},
 		},
 	}
 	for _, tt := range tests {
@@ -47,15 +47,15 @@ func Test_coefficientValues_negate(t *testing.T) {
 	}
 }
 
-func Test_coefficientValues_calculateMaxAbsInnerBound(t *testing.T) {
+func Test_Coefficients_calculateMaxAbsInnerBound(t *testing.T) {
 	tests := []struct {
 		name string
-		c    CoefficientValues
+		c    Coefficients
 		want int
 	}{
 		{
 			name: "given only positive values",
-			c: CoefficientValues{
+			c: Coefficients{
 				"a": 1,
 				"b": 2,
 				"c": 3,
@@ -64,7 +64,7 @@ func Test_coefficientValues_calculateMaxAbsInnerBound(t *testing.T) {
 		},
 		{
 			name: "given only negative values",
-			c: CoefficientValues{
+			c: Coefficients{
 				"a": -1,
 				"b": -2,
 				"c": -3,
@@ -73,7 +73,7 @@ func Test_coefficientValues_calculateMaxAbsInnerBound(t *testing.T) {
 		},
 		{
 			name: "given mixed signed values",
-			c: CoefficientValues{
+			c: Coefficients{
 				"a": -1,
 				"b": 2,
 				"c": -3,
@@ -82,7 +82,7 @@ func Test_coefficientValues_calculateMaxAbsInnerBound(t *testing.T) {
 		},
 		{
 			name: "empty values",
-			c:    CoefficientValues{},
+			c:    Coefficients{},
 			want: 0,
 		},
 		{
@@ -121,7 +121,7 @@ func TestBias_negate(t *testing.T) {
 	}
 }
 
-func TestModel_GeneratePolyhedron(t *testing.T) {
+func TestModel_NewPolyhedron(t *testing.T) {
 	model := New()
 	model.SetPrimitives([]string{"x", "y", "z", "k", "w"}...)
 
@@ -133,7 +133,7 @@ func TestModel_GeneratePolyhedron(t *testing.T) {
 	implyID, _ := model.SetImply("w", xorID)
 	_ = model.Assume(implyID)
 
-	lp := model.GeneratePolyhedron()
+	lp := model.NewPolyhedron()
 
 	expectedVector := []int{0, 1, 1, 2, 4, 0, 1, 1, 1, -1, 0, 0, -2, 1, -1, 0, -1}
 	expectedMatrix := [][]int{
@@ -205,7 +205,7 @@ func TestValidateAssumedVariables(t *testing.T) {
 			name: "invalid assumed variable again",
 			existingAssumedConstraints: AuxiliaryConstraints{
 				{
-					coefficients: CoefficientValues{
+					coefficients: Coefficients{
 						"a": 1,
 						"b": 1,
 					},
@@ -256,7 +256,7 @@ func TestModel_newAssumedConstraint(t *testing.T) {
 			name:      "valid constraint",
 			variables: []string{"a", "b"},
 			want: AuxiliaryConstraint{
-				coefficients: CoefficientValues{
+				coefficients: Coefficients{
 					"a": -1,
 					"b": -1,
 				},

@@ -104,7 +104,7 @@ func (m *Model) Assume(variables ...string) error {
 	return nil
 }
 
-func (m *Model) GeneratePolyhedron() *Polyhedron {
+func (m *Model) NewPolyhedron() *Polyhedron {
 	var aMatrix [][]int
 	var bVector []int
 
@@ -138,14 +138,14 @@ func (m *Model) Variables() []string {
 }
 
 func (m *Model) newAssumedConstraint(variables ...string) AuxiliaryConstraint {
-	coefficients := make(CoefficientValues, len(variables))
+	coefficients := make(Coefficients, len(variables))
 	for _, id := range variables {
 		coefficients[id] = -1
 	}
 
 	bias := Bias(-len(variables))
 
-	return NewAuxiliaryConstraint(coefficients, bias)
+	return newAuxiliaryConstraint(coefficients, bias)
 }
 
 func (m *Model) validateAssumedVariables(assumedVariables ...string) error {
