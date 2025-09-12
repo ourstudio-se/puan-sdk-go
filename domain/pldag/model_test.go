@@ -135,7 +135,7 @@ func TestModel_NewPolyhedron(t *testing.T) {
 
 	lp := model.NewPolyhedron()
 
-	expectedVector := []int{0, 1, 1, 2, 4, 0, 1, 1, 1, -1, 0, 0, -2, 1, -1, 0, -1}
+	expectedVector := []int{0, 1, 1, 2, 4, 0, 1, 1, 1, -1, 0, 0, -2, 1, -1, 0, -1, 1}
 	expectedMatrix := [][]int{
 		{-1, -1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0},
 		{0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0},
@@ -154,6 +154,41 @@ func TestModel_NewPolyhedron(t *testing.T) {
 		{0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, -2, 0},
 		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, -2},
 		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+	}
+
+	assertEqual(t, expectedMatrix, lp.aMatrix, expectedVector, lp.bVector)
+}
+
+func TestModel_NewPolyhedron_withImpliesOr(t *testing.T) {
+	model := New()
+	model.SetPrimitives([]string{"x", "y", "z"}...)
+
+	orID, err := model.SetOr([]string{"y", "z"}...)
+	if err != nil {
+		assert.NoError(t, err)
+	}
+	implyID, err := model.SetImply("x", orID)
+	if err != nil {
+		assert.NoError(t, err)
+	}
+	err = model.Assume(implyID)
+	if err != nil {
+		assert.NoError(t, err)
+	}
+
+	lp := model.NewPolyhedron()
+
+	expectedVector := []int{1, 1, 1, 0, -1, 0, -1, 1}
+	expectedMatrix := [][]int{
+		{0, -1, -1, 2, 0, 0},
+		{1, 0, 0, 0, 1, 0},
+		{0, 0, 0, -1, -1, 2},
+		{0, 1, 1, -2, 0, 0},
+		{-1, 0, 0, 0, -2, 0},
+		{0, 0, 0, 1, 1, -2},
+		{0, 0, 0, 0, 0, -1},
+		{0, 0, 0, 0, 0, 1},
 	}
 
 	assertEqual(t, expectedMatrix, lp.aMatrix, expectedVector, lp.bVector)
@@ -181,7 +216,8 @@ func assertEqual(
 			t.Errorf("Expected nrOfRows %v not found in actual matrix", row)
 		}
 	}
-
+	assert.Len(t, expectedMatrix, len(actualMatrix))
+	assert.Len(t, expectedVector, len(actualVector))
 	assert.Equal(t, expectedMatrix, sortedActualMatrix)
 	assert.Equal(t, expectedVector, sortedActualVector)
 }
@@ -267,7 +303,7 @@ func TestModel_newAssumedConstraint(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &Model{}
-			constraint := m.newAssumedConstraint(tt.variables...)
+			constraint, _ := m.newAssumedConstraints(tt.variables...)
 			assert.Equal(t, tt.want, constraint, "Constraint should match")
 		})
 	}

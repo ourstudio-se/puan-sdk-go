@@ -10,12 +10,12 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
 )
 
-// Test_exactlyOneVariant_selectNotPreferred_shouldReturnSelected
+// Test_exactlyOneVariant_selectNotPreferred
 // Ref: test_select_single_xor_component_when_another_xor_pair_is_preferred
 // Description: Package A has two variants: (A, itemX) and (A, itemY, itemZ) with the latter
 // being preferred. We select (A, itemX) and expect the result configuration (A, itemX)
-func Test_exactlyOneVariant_selectNotPreferred_shouldReturnSelected(t *testing.T) {
-	ruleSet := exactlyOnePackageVariantWithXORBetweenItems()
+func Test_exactlyOneVariant_selectNotPreferred(t *testing.T) {
+	ruleSet := optionalVariantsWithXORBetweenItemsLargerVariantPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
@@ -38,13 +38,13 @@ func Test_exactlyOneVariant_selectNotPreferred_shouldReturnSelected(t *testing.T
 	)
 }
 
-// Test_exactlyOneVariant_selectPreferred_shouldReturnPreferred
+// Test_exactlyOneVariant_selectPreferred
 // Ref: test_select_xor_pair_when_xor_pair_is_preferred
 // Description: Package A has two variants: (A, itemX) and (A, itemY, itemZ) with the latter
 // being preferred. We select (A, itemY, itemZ) and expect the result configuration
-// (A, itemY, itemZ). This test is just to make sure that there is no weird behavior.
-func Test_exactlyOneVariant_selectPreferred_shouldReturnPreferred(t *testing.T) {
-	ruleSet := exactlyOnePackageVariantWithXORBetweenItems()
+// (A, itemY, itemZ).
+func Test_exactlyOneVariant_selectPreferred(t *testing.T) {
+	ruleSet := optionalVariantsWithXORBetweenItemsLargerVariantPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
@@ -67,16 +67,15 @@ func Test_exactlyOneVariant_selectPreferred_shouldReturnPreferred(t *testing.T) 
 	)
 }
 
-// Test_exactlyOneVariant_deselecting_shouldReturnCheapestSolution
+// Test_exactlyOneVariant_deselectingVariant_shouldGiveEmptySolution
 // Ref: test_deselect_package_when_xor_pair_is_preferred_over_single_xor_component
 // Description: Given rules package A -> xor(itemX, itemY),
 // package A -> xor(itemX, itemZ). (itemY, itemZ) is preferred oved itemX.
 // If (A, itemY, itemZ) is already selected, check that we will remove package A when deselecting A.
 // Comment: this test fails. We get another variant of packageA instead of nothing.
-func Test_exactlyOneVariant_deselecting_shouldReturnCheapestSolution(t *testing.T) {
+func Test_exactlyOneVariant_deselectingVariant_shouldGiveEmptySolution(t *testing.T) {
 	t.Skip()
-	ruleSet := exactlyOnePackageVariantWithXORBetweenItems()
-
+	ruleSet := optionalVariantsWithXORBetweenItemsLargerVariantPreferred()
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").WithAction(puan.REMOVE).Build(),
@@ -99,12 +98,11 @@ func Test_exactlyOneVariant_deselecting_shouldReturnCheapestSolution(t *testing.
 	)
 }
 
-// Test_exactlyOneVariant_selectItemXAfterPreferred_shouldReturnVariantWithItemX
+// Test_exactlyOneVariant_changeVariant
 // Ref: test_select_single_xor_component_when_xor_pair_is_already_selected
 // Description: Given rules package A -> xor(itemX, itemY), package A -> xor(itemX, itemZ). (itemY, itemZ) is preferred oved itemX.
-// If (A, itemY, itemZ) is already selected, check that we will select (A, itemX) variant when selecting itemX
-// Note: packagA is not optional here.
-func Test_exactlyOneVariant_selectItemXAfterPreferred_shouldReturnVariantWithItemX(t *testing.T) {
+// If (A, itemY, itemZ) is already selected, check that we will select (A, itemX) variant when selecting (A, itemX)
+func Test_exactlyOneVariant_changeVariant(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemZ")
 
@@ -151,40 +149,12 @@ func Test_exactlyOneVariant_selectItemXAfterPreferred_shouldReturnVariantWithIte
 	)
 }
 
-// Test_exactlyOneVariant_onlySelectedPackage_shouldReturnPreferredVariant
-// Ref:
-// Description: Given rules package A -> xor(itemX, itemY), package A -> xor(itemX, itemZ). (itemY, itemZ) is preferred oved itemX.
-// If package A is selected, check that we get the preferred variant.
-func Test_exactlyOneVariant_onlySelectedPackage_shouldReturnPreferredVariant(t *testing.T) {
-	ruleSet := exactlyOnePackageVariantWithXORBetweenItems()
-
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
-	}
-
-	query, _ := ruleSet.NewQuery(selections)
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
-	assert.Equal(
-		t,
-		puan.Solution{
-			"packageA": 1,
-			"itemX":    1,
-			"itemY":    0,
-			"itemZ":    0,
-		},
-		primitiveSolution,
-	)
-}
-
-// Test_exactlyOneVariant_selectPreferredItemAfterNotPreferredItem_shouldReturnPreferredVariant
+// Test_exactlyOneVariant_selectItemInAnotherVariant_shouldChangeVariant
 // Ref: test_select_one_component_in_xor_pair_when_single_xor_component_is_already_selected
 // Description: Given rules package A -> xor(itemX, itemY), package A -> xor(itemX, itemZ). (itemY, itemZ) is preferred oved itemX.
-// If package A and itemX are selected, check that we will get (A, itemY, itemZ) config when selecting itemY (or itemZ).
-func Test_exactlyOneVariant_selectPreferredItemAfterNotPreferredItem_shouldReturnPreferredVariant(t *testing.T) {
-	ruleSet := exactlyOnePackageVariantWithXORBetweenItems()
+// If package A and itemX are selected, check that we will get (A, itemY, itemZ) config when selecting itemY (or itemZ) independently.
+func Test_exactlyOneVariant_selectItemInAnotherVariant_shouldChangeVariant(t *testing.T) {
+	ruleSet := optionalVariantsWithXORBetweenItemsLargerVariantPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
@@ -208,16 +178,11 @@ func Test_exactlyOneVariant_selectPreferredItemAfterNotPreferredItem_shouldRetur
 	)
 }
 
-// Test_exactlyOneVariant_selectEverythingWithPreferredItemLast_shouldReturnPreferredVariant
-// Ref:
-// Description: Given rules package A -> xor(itemX, itemY), package A -> xor(itemX, itemZ). (itemY, itemZ) is preferred oved itemX.
-// If everything is selected with itemY last, check that we will get (A, itemY, itemZ).
-func Test_exactlyOneVariant_selectEverythingWithPreferredItemLast_shouldReturnPreferredVariant(t *testing.T) {
-	ruleSet := exactlyOnePackageVariantWithXORBetweenItems()
+// Test_exactlyOneVariant_noSelection_shouldGivePreferred
+func Test_exactlyOneVariant_noSelection_shouldEmptySolution(t *testing.T) {
+	ruleSet := optionalVariantsWithXORBetweenItemsLargerVariantPreferred()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
-	}
+	selections := puan.Selections{}
 
 	query, _ := ruleSet.NewQuery(selections)
 
@@ -227,8 +192,8 @@ func Test_exactlyOneVariant_selectEverythingWithPreferredItemLast_shouldReturnPr
 	assert.Equal(
 		t,
 		puan.Solution{
-			"packageA": 1,
-			"itemX":    1,
+			"packageA": 0,
+			"itemX":    0,
 			"itemY":    0,
 			"itemZ":    0,
 		},
@@ -236,35 +201,7 @@ func Test_exactlyOneVariant_selectEverythingWithPreferredItemLast_shouldReturnPr
 	)
 }
 
-// Test_exactlyOneVariant_nothingIsSelected_shouldReturnCheapestSolution
-// Ref:
-// Description: Given rules package A -> xor(itemX, itemY), package A -> xor(itemX, itemZ). (itemY, itemZ) is preferred oved itemX.
-// If nothing is selected, check that we get the cheapest solution.
-func Test_exactlyOneVariant_nothingIsSelected_shouldReturnCheapestSolution(t *testing.T) {
-	ruleSet := exactlyOnePackageVariantWithXORBetweenItems()
-
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
-	}
-
-	query, _ := ruleSet.NewQuery(selections)
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
-	assert.Equal(
-		t,
-		puan.Solution{
-			"packageA": 1,
-			"itemX":    1,
-			"itemY":    0,
-			"itemZ":    0,
-		},
-		primitiveSolution,
-	)
-}
-
-func exactlyOnePackageVariantWithXORBetweenItems() *puan.RuleSet {
+func optionalVariantsWithXORBetweenItemsLargerVariantPreferred() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemZ")
 

@@ -10,13 +10,13 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
 )
 
-// Test_exactlyOnePackage_upgrade_case1
+// Test_exactlyOnePackage_selectSmallestPackage
 // Ref: test_upgrade_package_when_xor_between_multiple_packages
 // Description: Here are three packages, A, B and C, exist.
 // C is larger than B, and B is larger than A.
 // Selected package is only A.
-func Test_exactlyOnePackage_upgrade_case1(t *testing.T) {
-	ruleSet := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
+func Test_exactlyOnePackage_selectSmallestPackage(t *testing.T) {
+	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").Build(),
@@ -42,13 +42,13 @@ func Test_exactlyOnePackage_upgrade_case1(t *testing.T) {
 	)
 }
 
-// Test_exactlyOnePackage_upgrade_case2
+// Test_exactlyOnePackage_upgradeToLargerPackage_case2
 // Ref: test_upgrade_package_when_xor_between_multiple_packages
 // Description: Here are three packages, A, B and C, exist.
 // C is larger than B, and B is larger than A.
 // Selected package is A, then B.
-func Test_exactlyOnePackage_upgrade_case2(t *testing.T) {
-	ruleSet := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
+func Test_exactlyOnePackage_upgradeToLargerPackage_case2(t *testing.T) {
+	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").Build(),
@@ -75,13 +75,13 @@ func Test_exactlyOnePackage_upgrade_case2(t *testing.T) {
 	)
 }
 
-// Test_exactlyOnePackage_upgrade_case3
+// Test_exactlyOnePackage_upgradeToLargerPackage_case3
 // Ref: test_upgrade_package_when_xor_between_multiple_packages
 // Description: Here are three packages, A, B and C, exist.
 // C is larger than B, and B is larger than A.
 // Selected package is A, then C.
-func Test_exactlyOnePackage_upgrade_case3(t *testing.T) {
-	ruleSet := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
+func Test_exactlyOnePackage_upgradeToLargerPackage_case3(t *testing.T) {
+	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").Build(),
@@ -108,13 +108,13 @@ func Test_exactlyOnePackage_upgrade_case3(t *testing.T) {
 	)
 }
 
-// Test_exactlyOnePackage_upgrade_case4
+// Test_exactlyOnePackage_upgradeToLargerPackage_case4
 // Ref: test_upgrade_package_when_xor_between_multiple_packages
 // Description: Here are three packages, A, B and C, exist.
 // C is larger than B, and B is larger than A.
 // Selected package is B, then C.
-func Test_exactlyOnePackage_upgrade_case4(t *testing.T) {
-	ruleSet := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
+func Test_exactlyOnePackage_upgradeToLargerPackage_case4(t *testing.T) {
+	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageB").Build(),
@@ -141,13 +141,13 @@ func Test_exactlyOnePackage_upgrade_case4(t *testing.T) {
 	)
 }
 
-// Test_exactlyOnePackage_downgrade_case1
+// Test_exactlyOnePackage_downgradeToSmallerPackage_case1
 // Ref: test_downgrade_package_when_xor_between_multiple_packages
 // Description: Here are three packages, A, B and C, exist.
 // C is larger than B, and B is larger than A.
 // Selected package is C, then A.
-func Test_exactlyOnePackage_downgrade_case1(t *testing.T) {
-	ruleSet := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
+func Test_exactlyOnePackage_downgradeToSmallerPackage_case1(t *testing.T) {
+	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageC").Build(),
@@ -174,13 +174,13 @@ func Test_exactlyOnePackage_downgrade_case1(t *testing.T) {
 	)
 }
 
-// Test_exactlyOnePackage_downgrade_case2
+// Test_exactlyOnePackage_downgradeToSmallerPackage_case2
 // Ref: test_downgrade_package_when_xor_between_multiple_packages
 // Description: Here are three packages, A, B and C, exist.
 // C is larger than B, and B is larger than A.
 // Selected package is B, then A.
-func Test_exactlyOnePackage_downgrade_case2(t *testing.T) {
-	ruleSet := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
+func Test_exactlyOnePackage_downgradeToSmallerPackage_case2(t *testing.T) {
+	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageB").Build(),
@@ -207,13 +207,13 @@ func Test_exactlyOnePackage_downgrade_case2(t *testing.T) {
 	)
 }
 
-// Test_exactlyOnePackage_downgrade_case3
+// Test_exactlyOnePackage_downgradeToSmallerPackage_case3
 // Ref: test_downgrade_package_when_xor_between_multiple_packages
 // Description: Here are three packages, A, B and C, exist.
 // C is larger than B, and B is larger than A.
 // Selected package is C, then B.
-func Test_exactlyOnePackage_downgrade_case3(t *testing.T) {
-	ruleSet := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
+func Test_exactlyOnePackage_downgradeToSmallerPackage_case3(t *testing.T) {
+	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageC").Build(),
@@ -240,13 +240,13 @@ func Test_exactlyOnePackage_downgrade_case3(t *testing.T) {
 	)
 }
 
-// Test_exactlyOnePackage_shouldGivePreferred
+// Test_exactlyOnePackage_noSelection_shouldGivePreferred
 // Ref:
 // Description: Here are three packages, A, B and C, exist.
 // C is larger than B, and B is larger than A.
 // Nothing is selected, expect the preferred package.
-func Test_exactlyOnePackage_shouldGivePreferred(t *testing.T) {
-	ruleSet := exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest()
+func Test_exactlyOnePackage_noSelection_shouldGivePreferred(t *testing.T) {
+	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
 	selections := puan.Selections{}
 
@@ -270,7 +270,7 @@ func Test_exactlyOnePackage_shouldGivePreferred(t *testing.T) {
 	)
 }
 
-func exactlyOnePackageOfThreeAvailableWithPreferredAsSmallest() *puan.RuleSet {
+func upgradeDowngradePackageWithSharedItemsSmallestPreferred() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "packageB", "packageC", "itemX", "itemY", "itemZ", "itemK")
 

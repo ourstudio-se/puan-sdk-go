@@ -98,8 +98,8 @@ func (m *Model) Assume(variables ...string) error {
 		return err
 	}
 
-	constraint := m.newAssumedConstraint(variables...)
-	m.assumeConstraints = append(m.assumeConstraints, constraint)
+	negative, positive := m.newAssumedConstraints(variables...)
+	m.assumeConstraints = append(m.assumeConstraints, negative, positive)
 
 	return nil
 }
@@ -137,15 +137,25 @@ func (m *Model) Variables() []string {
 	return m.variables
 }
 
-func (m *Model) newAssumedConstraint(variables ...string) AuxiliaryConstraint {
+func (m *Model) newAssumedConstraints(variables ...string) (AuxiliaryConstraint, AuxiliaryConstraint) {
 	coefficients := make(Coefficients, len(variables))
 	for _, id := range variables {
 		coefficients[id] = -1
 	}
 
 	bias := Bias(-len(variables))
+	negativeCoefficients := newAuxiliaryConstraint(coefficients, bias)
 
-	return newAuxiliaryConstraint(coefficients, bias)
+	coefficients = make(Coefficients, len(variables))
+	for _, id := range variables {
+		coefficients[id] = 1
+	}
+
+	bias = Bias(len(variables))
+
+	positiveCoefficients := newAuxiliaryConstraint(coefficients, bias)
+
+	return negativeCoefficients, positiveCoefficients
 }
 
 func (m *Model) validateAssumedVariables(assumedVariables ...string) error {

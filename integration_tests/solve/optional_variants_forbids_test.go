@@ -25,7 +25,7 @@ import (
 // package X with its preferred components itemC and itemD
 // Then we select (X, itemC, itemD) and we expect itemA to be replaced
 func Test_optionalVariantWithXORsBetweenItemsAndForbids_shouldReturnPreferred(t *testing.T) {
-	ruleset := optionalPackageWithItemsWithXORsAndForbids()
+	ruleset := optionalPackageWithVariantsWithForbids()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("itemA").Build(),
@@ -64,7 +64,7 @@ func Test_optionalVariantWithXORsBetweenItemsAndForbids_shouldReturnPreferred(t 
 // package X with its preferred components itemC and itemD
 // Then we select (X, itemC, itemD) and we expect itemA to be replaced
 func Test_optionalVariantWithXORsBetweenItemsAndForbids_shouldReturnNOTPreferred(t *testing.T) {
-	ruleset := optionalPackageWithItemsWithXORsAndForbids()
+	ruleset := optionalPackageWithVariantsWithForbids()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("itemC").Build(),
@@ -88,7 +88,7 @@ func Test_optionalVariantWithXORsBetweenItemsAndForbids_shouldReturnNOTPreferred
 	)
 }
 
-func optionalPackageWithItemsWithXORsAndForbids() *puan.RuleSet {
+func optionalPackageWithVariantsWithForbids() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("itemA", "itemB", "itemC", "itemD", "packageX")
