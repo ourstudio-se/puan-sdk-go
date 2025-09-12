@@ -190,6 +190,46 @@ func Test_filterOutRedundantSelections(t *testing.T) {
 				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
 			},
 		},
+		{
+			name: "remove multiple duplicated selections",
+			selections: Selections{
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("x").Build(),
+			},
+			expected: Selections{
+				NewSelectionBuilder("x").Build(),
+			},
+		},
+		{
+			name: "should not remove selections",
+			selections: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("z").WithAction(REMOVE).Build(),
+			},
+			expected: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("z").WithAction(REMOVE).Build(),
+			},
+		},
+		{
+			name: "remove duplicated independent of action",
+			selections: Selections{
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+				NewSelectionBuilder("x").Build(),
+			},
+			expected: Selections{
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+			},
+		},
+	}
+
+	for _, tt := range theories {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := filterOutRedundantSelections(tt.selections)
+			assert.Equal(t, tt.expected, actual)
+		})
 	}
 
 	for _, tt := range theories {
