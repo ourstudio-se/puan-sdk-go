@@ -307,14 +307,14 @@ func Test_Selections_extendWithPrimaryPrimitiveSelections(t *testing.T) {
 		NewSelectionBuilder("z").WithSubSelectionID("w").WithAction(REMOVE).Build(),
 	}
 
-	exteneded := selections.extendWithPrimaryPrimitiveSelections()
+	extended := selections.modifySelections()
 
 	want := Selections{
 		NewSelectionBuilder("x").WithAction(ADD).Build(),
 		NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(ADD).Build(),
 		NewSelectionBuilder("z").Build(),
-		NewSelectionBuilder("z").WithSubSelectionID("w").WithAction(REMOVE).Build(),
+		NewSelectionBuilder("z").WithAction(REMOVE).Build(),
 	}
 
-	assert.Equal(t, want, exteneded)
+	assert.Equal(t, want, extended)
 }

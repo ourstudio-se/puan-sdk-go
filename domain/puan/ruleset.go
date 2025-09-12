@@ -92,7 +92,7 @@ type querySpecification struct {
 }
 
 func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
-	extendedSelections := selections.extendWithPrimaryPrimitiveSelections()
+	extendedSelections := selections.modifySelections()
 	impactingSelections := getImpactingSelections(extendedSelections)
 	specification, err := r.newQuerySpecification(impactingSelections)
 	if err != nil {

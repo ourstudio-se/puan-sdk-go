@@ -111,18 +111,30 @@ func (s Selection) makesRedundant(other Selection) bool {
 	return prioritisedIsNotComposite
 }
 
-func (s Selections) extendWithPrimaryPrimitiveSelections() Selections {
-	extendedSelections := Selections{}
+func (s Selections) modifySelections() Selections {
+	modifiedSelections := Selections{}
 	for _, selection := range s {
-		if selection.isComposite() && selection.action == ADD {
-			primaryPrimitiveSelection := NewSelectionBuilder(selection.id).
-				WithAction(selection.action).
-				Build()
-			extendedSelections = append(extendedSelections, primaryPrimitiveSelection)
-		}
-
-		extendedSelections = append(extendedSelections, selection)
+		modifiedSelections = append(modifiedSelections, selection.modifySelection()...)
 	}
 
-	return extendedSelections
+	return modifiedSelections
+}
+
+func (s Selection) modifySelection() Selections {
+	if s.action == REMOVE {
+		removeSelection := NewSelectionBuilder(s.id).
+			WithAction(REMOVE).
+			Build()
+
+		return Selections{removeSelection}
+	}
+
+	if s.isComposite() {
+		primaryPrimitiveSelection := NewSelectionBuilder(s.id).
+			WithAction(s.action).
+			Build()
+		return Selections{primaryPrimitiveSelection, s}
+	}
+
+	return Selections{s}
 }

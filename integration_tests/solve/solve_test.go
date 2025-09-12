@@ -1130,8 +1130,8 @@ func Test_(t *testing.T) {
 	assert.Equal(
 		t,
 		puan.Solution{
-			"packageA": 1,
-			"itemX":    1,
+			"packageA": 0,
+			"itemX":    0,
 			"itemY":    0,
 			"itemZ":    0,
 			"itemM":    0,

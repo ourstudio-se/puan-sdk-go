@@ -74,7 +74,6 @@ func Test_exactlyOneVariant_selectPreferred(t *testing.T) {
 // If (A, itemY, itemZ) is already selected, check that we will remove package A when deselecting A.
 // Comment: this test fails. We get another variant of packageA instead of nothing.
 func Test_exactlyOneVariant_deselectingVariant_shouldGiveEmptySolution(t *testing.T) {
-	t.Skip()
 	ruleSet := optionalVariantsWithXORBetweenItemsLargerVariantPreferred()
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
