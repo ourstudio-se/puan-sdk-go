@@ -10,7 +10,7 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
 )
 
-// Test_optionalVariantWithXORsBetweenItemsAndForbids_shouldReturnPreferred
+// Test_optionalVariantsWithForbids_shouldReturnPreferred
 // Ref: test_will_change_package_variant_when_package_is_preselected_with_component_requiring_package
 // Description: Following rules are applied (with preferreds on the left xor-component)
 // itemA -> packageX
@@ -23,9 +23,9 @@ import (
 // packageX -> xor(itemD, itemB)
 // Our case is that itemA is already selected, which indirectly will add
 // package X with its preferred components itemC and itemD
-// Then we select (X, itemC, itemD) and we expect itemA to be replaced
-func Test_optionalVariantWithXORsBetweenItemsAndForbids_shouldReturnPreferred(t *testing.T) {
-	ruleset := optionalPackageWithVariantsWithForbids()
+// Then we select (X, itemC, itemD) and we expect itemA to be removed from solution.
+func Test_optionalVariantsWithForbids_shouldReturnPreferred(t *testing.T) {
+	ruleset := optionalVariantsWithForbids()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("itemA").Build(),
@@ -49,7 +49,7 @@ func Test_optionalVariantWithXORsBetweenItemsAndForbids_shouldReturnPreferred(t 
 	)
 }
 
-// Test_optionalVariantWithXORsBetweenItemsAndForbids_shouldReturnNotPreferred
+// Test_optionalVariantsWithForbids_shouldReturnNOTPreferred
 // Ref: test_will_change_package_variant_when_single_component_is_preselected
 // Description: Following rules are applied (with preferreds on the left xor-component)
 // itemA -> packageX
@@ -60,11 +60,10 @@ func Test_optionalVariantWithXORsBetweenItemsAndForbids_shouldReturnPreferred(t 
 // itemB -> xor(itemC, itemA)
 // packageX -> xor(itemC, itemA)
 // packageX -> xor(itemD, itemB)
-// Our case is that itemA is already selected, which indirectly will add
-// package X with its preferred components itemC and itemD
-// Then we select (X, itemC, itemD) and we expect itemA to be replaced
-func Test_optionalVariantWithXORsBetweenItemsAndForbids_shouldReturnNOTPreferred(t *testing.T) {
-	ruleset := optionalPackageWithVariantsWithForbids()
+// Our case is that itemC is already selected.
+// Then we select (X, itemC, itemB) and we expect itemC to be removed from solution.
+func Test_optionalVariantsWithForbids_shouldReturnNOTPreferred(t *testing.T) {
+	ruleset := optionalVariantsWithForbids()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("itemC").Build(),
@@ -88,7 +87,7 @@ func Test_optionalVariantWithXORsBetweenItemsAndForbids_shouldReturnNOTPreferred
 	)
 }
 
-func optionalPackageWithVariantsWithForbids() *puan.RuleSet {
+func optionalVariantsWithForbids() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("itemA", "itemB", "itemC", "itemD", "packageX")
