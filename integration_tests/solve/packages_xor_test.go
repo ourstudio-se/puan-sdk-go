@@ -10,14 +10,14 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
 )
 
-// Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldReturnPreferred
+// Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldGivePreferred
 // Ref: test_select_package_when_xor_between_packages_and_larger_package_is_selected
 // Description: Two packages A and B exists, with B being the larger one
 // and exactly one of them has to be selected.
 // B has been preselected and we select A. We know expect
 // A to be selected without nothing left from B.
-func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldReturnPreferred(t *testing.T) {
-	ruleSet := exactlyOnePackageOfTwoAvailableWithLargerNotPreferred()
+func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldGivePreferred(t *testing.T) {
+	ruleSet := packagesWithSharedItemsSmallerPackagePreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageB").Build(),
@@ -41,14 +41,14 @@ func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldReturnPreferre
 	)
 }
 
-// Test_exactlyOnePackage_selectNotPreferred_shouldReturnNotPreferred
+// Test_exactlyOnePackage_selectNotPreferred
 // Ref: test_select_package_when_xor_between_packages
 // Description: Two packages, A and B, exist with B being the larger one.
 // They both share a subset of variables, and exactly one
 // of A and B must be selected, but with A as preferred.
 // With nothing being preselected, we select B and expect to get B.
-func Test_exactlyOnePackage_selectNotPreferred_shouldReturnNotPreferred(t *testing.T) {
-	ruleSet := exactlyOnePackageOfTwoAvailableWithLargerNotPreferred()
+func Test_exactlyOnePackage_selectNotPreferred(t *testing.T) {
+	ruleSet := packagesWithSharedItemsSmallerPackagePreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageB").Build(),
@@ -71,7 +71,7 @@ func Test_exactlyOnePackage_selectNotPreferred_shouldReturnNotPreferred(t *testi
 	)
 }
 
-func exactlyOnePackageOfTwoAvailableWithLargerNotPreferred() *puan.RuleSet {
+func packagesWithSharedItemsSmallerPackagePreferred() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 
@@ -79,7 +79,7 @@ func exactlyOnePackageOfTwoAvailableWithLargerNotPreferred() *puan.RuleSet {
 	includedItemsInB, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemZ")
 
 	packageARequiredItems, _ := creator.PLDAG().SetImply("packageA", includedItemsInA)
-	packageBRequiredItems, _ := creator.PLDAG().SetEquivalent("packageB", includedItemsInB)
+	packageBRequiredItems, _ := creator.PLDAG().SetImply("packageB", includedItemsInB)
 
 	exactlyOnePackage, _ := creator.PLDAG().SetXor("packageA", "packageB")
 

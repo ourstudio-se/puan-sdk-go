@@ -65,7 +65,7 @@ func Test_RuleSet_obtainSelectionID_givenStandaloneSelection_shouldReturnSelecti
 	selection := NewSelectionBuilder(want).Build()
 
 	ruleSet := &RuleSet{}
-	got, err := ruleSet.obtainSelectionID(selection)
+	got, err := ruleSet.obtainQuerySelectionID(selection)
 
 	assert.NoError(t, err)
 	assert.Equal(t, want, got)
@@ -82,7 +82,9 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintDoesNotExist_sh
 	creator.PLDAG().SetPrimitives(primaryID, subID)
 	ruleSet := creator.Create()
 
-	id, err := ruleSet.setCompositeSelectionConstraint(primaryID, subID)
+	selection := NewSelectionBuilder(primaryID).WithSubSelectionID(subID).Build()
+
+	id, err := ruleSet.setCompositeSelectionConstraint(selection.ids())
 
 	assert.NoError(t, err)
 	assert.Equal(t, id, ruleSet.variables[2])
@@ -106,7 +108,9 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintExists_shouldNo
 	wantVariables := ruleSet.variables
 	wantPolyhedron := ruleSet.polyhedron
 
-	_, err := ruleSet.setCompositeSelectionConstraint(primaryID, subID)
+	selection := NewSelectionBuilder(primaryID).WithSubSelectionID(subID).Build()
+
+	_, err := ruleSet.setCompositeSelectionConstraint(selection.ids())
 
 	assert.NoError(t, err)
 	assert.Equal(t, wantVariables, ruleSet.variables)
@@ -133,7 +137,7 @@ func Test_newCompositeSelectionConstraint_shouldCreateConstraint(
 	primaryID := uuid.New().String()
 	subID := uuid.New().String()
 
-	got, err := newCompositeSelectionConstraint(primaryID, subID)
+	got, err := newCompositeSelectionConstraint([]string{primaryID, subID})
 
 	want, _ := pldag.NewAtLeastConstraint([]string{primaryID, subID}, 2)
 	assert.NoError(t, err)
@@ -147,7 +151,7 @@ func Test_RuleSet_newRow(
 	id2 := uuid.New().String()
 	value1 := fake.New[int]()
 	value2 := fake.New[int]()
-	coefficients := pldag.CoefficientValues{
+	coefficients := pldag.Coefficients{
 		id1: value1,
 		id2: value2,
 	}

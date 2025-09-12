@@ -10,22 +10,38 @@ const REMOVE Action = "REMOVE"
 type Action string
 
 type Selection struct {
-	id             string
-	subSelectionID *string
-	action         Action
+	id              string
+	subSelectionIDs []string
+	action          Action
+}
+
+type querySelection struct {
+	id     string
+	action Action
+}
+
+type querySelections []querySelection
+
+func (s querySelections) ids() []string {
+	ids := make([]string, len(s))
+	for i, selection := range s {
+		ids[i] = selection.id
+	}
+
+	return ids
 }
 
 type Selections []Selection
 
 func (s Selection) isComposite() bool {
-	return s.subSelectionID != nil
+	return len(s.subSelectionIDs) > 0
 }
 
-func newSelection(action Action, id string, subSelectionID *string) Selection {
+func newSelection(action Action, id string, subSelectionIDs []string) Selection {
 	return Selection{
-		id:             id,
-		subSelectionID: subSelectionID,
-		action:         action,
+		id:              id,
+		subSelectionIDs: subSelectionIDs,
+		action:          action,
 	}
 }
 
@@ -33,11 +49,17 @@ func (s Selection) ID() string {
 	return s.id
 }
 
+func (s Selection) ids() []string {
+	ids := make([]string, len(s.subSelectionIDs)+1)
+	ids[0] = s.id
+	copy(ids[1:], s.subSelectionIDs)
+	return ids
+}
+
 func getImpactingSelections(selectionsOrderedByOccurrence Selections) Selections {
 	selectionsOrderedByPriority := utils.Reverse(selectionsOrderedByOccurrence)
 	impactingSelectionsOrderedByPriority := filterOutRedundantSelections(selectionsOrderedByPriority)
-	addSelectionsOrderedByPriority := impactingSelectionsOrderedByPriority.filterOutRemoveSelections()
-	impactingSelections := utils.Reverse(addSelectionsOrderedByPriority)
+	impactingSelections := utils.Reverse(impactingSelectionsOrderedByPriority)
 
 	return impactingSelections
 }
@@ -57,18 +79,6 @@ func filterOutRedundantSelections(
 	return filtered
 }
 
-func (s Selections) filterOutRemoveSelections() Selections {
-	var filtered Selections
-	for _, selection := range s {
-		isRemove := selection.action == REMOVE
-		if !isRemove {
-			filtered = append(filtered, selection)
-		}
-	}
-
-	return filtered
-}
-
 func (s Selection) isRedundant(existingSelections Selections) bool {
 	for _, existingSelection := range existingSelections {
 		if existingSelection.makesRedundant(s) {
@@ -80,21 +90,51 @@ func (s Selection) isRedundant(existingSelections Selections) bool {
 }
 
 func (s Selection) makesRedundant(other Selection) bool {
+	if utils.ContainsAll(other.ids(), s.ids()) {
+		return true
+	}
+
+	if s.action == REMOVE && utils.ContainsAny(other.ids(), s.subSelectionIDs) {
+		return true
+	}
+
 	if s.id != other.id {
 		return false
 	}
 
-	if s.subSelectionID == nil {
+	if utils.ContainsAll(other.ids(), s.subSelectionIDs) {
 		return true
 	}
 
-	if other.subSelectionID == nil {
-		return false
+	prioritisedIsNotComposite := !s.isComposite()
+
+	return prioritisedIsNotComposite
+}
+
+func (s Selections) modifySelections() Selections {
+	modifiedSelections := Selections{}
+	for _, selection := range s {
+		modifiedSelections = append(modifiedSelections, selection.modifySelection()...)
 	}
 
-	if *other.subSelectionID == *s.subSelectionID {
-		return true
+	return modifiedSelections
+}
+
+func (s Selection) modifySelection() Selections {
+	if s.action == REMOVE {
+		removeSelection := NewSelectionBuilder(s.id).
+			WithAction(REMOVE).
+			Build()
+
+		return Selections{removeSelection}
 	}
 
-	return false
+	if s.isComposite() {
+		primaryPrimitiveSelection := NewSelectionBuilder(s.id).
+			WithAction(s.action).
+			Build()
+		return Selections{primaryPrimitiveSelection, s}
+	}
+
+	return Selections{s}
 }

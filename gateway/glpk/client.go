@@ -62,7 +62,7 @@ func newRequestPayload(
 	A := toSparseMatrix(query.Polyhedron().SparseMatrix())
 	b := query.Polyhedron().B()
 	variables := toBooleanVariables(query.Variables())
-	objective := Objective(query.Objective())
+	objective := Objective(query.Weights())
 	objectives := []Objective{objective}
 
 	request := SolveRequest{

@@ -98,13 +98,13 @@ func (m *Model) Assume(variables ...string) error {
 		return err
 	}
 
-	constraint := m.newAssumedConstraint(variables...)
-	m.assumeConstraints = append(m.assumeConstraints, constraint)
+	constraints := m.newAssumedConstraints(variables...)
+	m.assumeConstraints = append(m.assumeConstraints, constraints...)
 
 	return nil
 }
 
-func (m *Model) GeneratePolyhedron() *Polyhedron {
+func (m *Model) NewPolyhedron() *Polyhedron {
 	var aMatrix [][]int
 	var bVector []int
 
@@ -137,15 +137,35 @@ func (m *Model) Variables() []string {
 	return m.variables
 }
 
-func (m *Model) newAssumedConstraint(variables ...string) AuxiliaryConstraint {
-	coefficients := make(CoefficientValues, len(variables))
+func (m *Model) newAssumedConstraints(variables ...string) AuxiliaryConstraints {
+	negativeCoefficient := m.newNegativeAssumedConstraint(variables...)
+	positiveCoefficient := m.newPositiveAssumedConstraint(variables...)
+
+	return AuxiliaryConstraints{negativeCoefficient, positiveCoefficient}
+}
+
+func (m *Model) newNegativeAssumedConstraint(variables ...string) AuxiliaryConstraint {
+	coefficients := make(Coefficients, len(variables))
 	for _, id := range variables {
 		coefficients[id] = -1
 	}
 
 	bias := Bias(-len(variables))
+	constraint := newAuxiliaryConstraint(coefficients, bias)
 
-	return NewAuxiliaryConstraint(coefficients, bias)
+	return constraint
+}
+
+func (m *Model) newPositiveAssumedConstraint(variables ...string) AuxiliaryConstraint {
+	coefficients := make(Coefficients, len(variables))
+	for _, id := range variables {
+		coefficients[id] = 1
+	}
+
+	bias := Bias(len(variables))
+	constraint := newAuxiliaryConstraint(coefficients, bias)
+
+	return constraint
 }
 
 func (m *Model) validateAssumedVariables(assumedVariables ...string) error {
@@ -191,7 +211,7 @@ func (m *Model) setAtLeast(variables []string, amount int) (string, error) {
 }
 
 func (m *Model) setAtMost(variables []string, amount int) (string, error) {
-	constraint, err := newAtMostConstraint(variables, amount)
+	constraint, err := NewAtMostConstraint(variables, amount)
 	if err != nil {
 		return "", err
 	}

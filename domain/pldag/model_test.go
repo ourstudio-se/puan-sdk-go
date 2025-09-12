@@ -8,34 +8,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_coefficientValues_negate(t *testing.T) {
+func Test_Coefficients_negate(t *testing.T) {
 	tests := []struct {
 		name string
-		c    CoefficientValues
-		want CoefficientValues
+		c    Coefficients
+		want Coefficients
 	}{
 		{
 			name: "should negate all values",
-			c: CoefficientValues{
+			c: Coefficients{
 				"a": 1,
 				"b": 2,
 				"c": 3,
 			},
-			want: CoefficientValues{
+			want: Coefficients{
 				"a": -1,
 				"b": -2,
 				"c": -3,
 			},
 		},
 		{
-			name: "empty CoefficientValues should return empty",
-			c:    CoefficientValues{},
-			want: CoefficientValues{},
+			name: "empty Coefficients should return empty",
+			c:    Coefficients{},
+			want: Coefficients{},
 		},
 		{
-			name: "nil CoefficientValues should return empty",
+			name: "nil Coefficients should return empty",
 			c:    nil,
-			want: CoefficientValues{},
+			want: Coefficients{},
 		},
 	}
 	for _, tt := range tests {
@@ -47,15 +47,15 @@ func Test_coefficientValues_negate(t *testing.T) {
 	}
 }
 
-func Test_coefficientValues_calculateMaxAbsInnerBound(t *testing.T) {
+func Test_Coefficients_calculateMaxAbsInnerBound(t *testing.T) {
 	tests := []struct {
 		name string
-		c    CoefficientValues
+		c    Coefficients
 		want int
 	}{
 		{
 			name: "given only positive values",
-			c: CoefficientValues{
+			c: Coefficients{
 				"a": 1,
 				"b": 2,
 				"c": 3,
@@ -64,7 +64,7 @@ func Test_coefficientValues_calculateMaxAbsInnerBound(t *testing.T) {
 		},
 		{
 			name: "given only negative values",
-			c: CoefficientValues{
+			c: Coefficients{
 				"a": -1,
 				"b": -2,
 				"c": -3,
@@ -73,7 +73,7 @@ func Test_coefficientValues_calculateMaxAbsInnerBound(t *testing.T) {
 		},
 		{
 			name: "given mixed signed values",
-			c: CoefficientValues{
+			c: Coefficients{
 				"a": -1,
 				"b": 2,
 				"c": -3,
@@ -82,7 +82,7 @@ func Test_coefficientValues_calculateMaxAbsInnerBound(t *testing.T) {
 		},
 		{
 			name: "empty values",
-			c:    CoefficientValues{},
+			c:    Coefficients{},
 			want: 0,
 		},
 		{
@@ -121,275 +121,7 @@ func TestBias_negate(t *testing.T) {
 	}
 }
 
-func Test_newAtLeastConstraint(t *testing.T) {
-	tests := []struct {
-		name      string
-		variables []string
-		amount    int
-		want      Constraint
-		wantErr   bool
-	}{
-		{
-			name:      "should create constraint",
-			variables: []string{"a", "b", "c"},
-			amount:    2,
-			want: Constraint{
-				id: "id",
-				coefficients: CoefficientValues{
-					"a": -1,
-					"b": -1,
-					"c": -1,
-				},
-				bias: Bias(-2),
-			},
-			wantErr: false,
-		},
-		{
-			name:      "amount larger than number of variables should return error",
-			variables: []string{"a"},
-			amount:    2,
-			want:      Constraint{},
-			wantErr:   true,
-		},
-		{
-			name:      "amount equal to the number of variables should return constraint",
-			variables: []string{"a", "b"},
-			amount:    2,
-			want: Constraint{
-				id: "id",
-				coefficients: CoefficientValues{
-					"a": -1,
-					"b": -1,
-				},
-				bias: Bias(-2),
-			},
-			wantErr: false,
-		},
-		{
-			name:      "no variables should return constraint",
-			variables: []string{},
-			amount:    0,
-			want: Constraint{
-				id:           "id",
-				coefficients: CoefficientValues{},
-				bias:         Bias(0),
-			},
-			wantErr: false,
-		},
-		{
-			name:      "nil variables should return constraint",
-			variables: nil,
-			amount:    0,
-			want: Constraint{
-				id:           "id",
-				coefficients: CoefficientValues{},
-				bias:         Bias(0),
-			},
-			wantErr: false,
-		},
-		{
-			name:      "negative amount should return error",
-			variables: nil,
-			amount:    -1,
-			want:      Constraint{},
-			wantErr:   true,
-		},
-		{
-			name:      "duplicated variables should return error",
-			variables: []string{"a", "a"},
-			amount:    2,
-			want:      Constraint{},
-			wantErr:   true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewAtLeastConstraint(tt.variables, tt.amount)
-			if tt.wantErr && err == nil {
-				t.Errorf("NewAtLeastConstraint() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if !tt.wantErr && err != nil {
-				t.Errorf("NewAtLeastConstraint() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			assert.Equal(t, tt.want.bias, got.bias, "Bias should match")
-			assert.Equal(t, tt.want.coefficients, got.coefficients, "Coefficients should match")
-		})
-	}
-}
-
-func Test_newAtMostConstraint(t *testing.T) {
-	tests := []struct {
-		name      string
-		variables []string
-		amount    int
-		want      Constraint
-		wantErr   bool
-	}{
-		{
-			name:      "should create constraint",
-			variables: []string{"a", "b", "c"},
-			amount:    2,
-			want: Constraint{
-				id: "id",
-				coefficients: CoefficientValues{
-					"a": 1,
-					"b": 1,
-					"c": 1,
-				},
-				bias: Bias(2),
-			},
-			wantErr: false,
-		},
-		{
-			name:      "amount larger than number of variables should return error",
-			variables: []string{"a"},
-			amount:    2,
-			want:      Constraint{},
-			wantErr:   true,
-		},
-		{
-			name:      "amount equal to the number of variables should return constraint",
-			variables: []string{"a", "b"},
-			amount:    2,
-			want: Constraint{
-				id: "id",
-				coefficients: CoefficientValues{
-					"a": 1,
-					"b": 1,
-				},
-				bias: Bias(2),
-			},
-			wantErr: false,
-		},
-		{
-			name:      "no variables should return constraint",
-			variables: []string{},
-			amount:    0,
-			want: Constraint{
-				id:           "id",
-				coefficients: CoefficientValues{},
-				bias:         Bias(0),
-			},
-			wantErr: false,
-		},
-		{
-			name:      "nil variables should return constraint",
-			variables: nil,
-			amount:    0,
-			want: Constraint{
-				id:           "id",
-				coefficients: CoefficientValues{},
-				bias:         Bias(0),
-			},
-			wantErr: false,
-		},
-		{
-			name:      "negative amount should return error",
-			variables: nil,
-			amount:    -1,
-			want:      Constraint{},
-			wantErr:   true,
-		},
-		{
-			name:      "duplicated variables should return error",
-			variables: []string{"a", "a"},
-			amount:    2,
-			want:      Constraint{},
-			wantErr:   true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := newAtMostConstraint(tt.variables, tt.amount)
-			if tt.wantErr && err == nil {
-				t.Errorf("newAtMostConstraint() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if !tt.wantErr && err != nil {
-				t.Errorf("newAtMostConstraint() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			assert.Equal(t, tt.want.bias, got.bias, "Bias should match")
-			assert.Equal(t, tt.want.coefficients, got.coefficients, "Coefficients should match")
-		})
-	}
-}
-
-func Test_newConstraintID(t *testing.T) {
-	tests := []struct {
-		name         string
-		coefficients CoefficientValues
-		bias         Bias
-		want         string
-	}{
-		{
-			name: "should create id",
-			coefficients: CoefficientValues{
-				"a": 1,
-				"b": 2,
-				"c": 3,
-			},
-			bias: 1,
-			want: "faba03a1732d697d527760d2c395b1ef6b842115",
-		},
-		{
-			name: "should create id",
-			coefficients: CoefficientValues{
-				"c": 3,
-				"b": 2,
-				"a": 1,
-			},
-			bias: 1,
-			want: "faba03a1732d697d527760d2c395b1ef6b842115",
-		},
-		{
-			name: "should create id",
-			coefficients: CoefficientValues{
-				"x": 3,
-				"y": 2,
-				"z": 10,
-				"a": 5,
-			},
-			bias: 20,
-			want: "46e3905695e1a101bb46ff5580774c5eb92601a1",
-		},
-		{
-			name: "should create id",
-			coefficients: CoefficientValues{
-				"z": 10,
-				"x": 3,
-				"a": 5,
-				"y": 2,
-			},
-			bias: 20,
-			want: "46e3905695e1a101bb46ff5580774c5eb92601a1",
-		},
-		{
-			name:         "empty coefficients should create id",
-			coefficients: CoefficientValues{},
-			bias:         0,
-			want:         "b6589fc6ab0dc82cf12099d1c2d40ab994e8410c",
-		},
-		{
-			name:         "nil coefficients should create id",
-			coefficients: nil,
-			bias:         0,
-			want:         "b6589fc6ab0dc82cf12099d1c2d40ab994e8410c",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(
-				t,
-				tt.want,
-				newConstraintID(tt.coefficients, tt.bias),
-				"newConstraintID(%v, %v)",
-				tt.coefficients,
-				tt.bias,
-			)
-		})
-	}
-}
-
-func TestModel_GeneratePolyhedron(t *testing.T) {
+func TestModel_NewPolyhedron(t *testing.T) {
 	model := New()
 	model.SetPrimitives([]string{"x", "y", "z", "k", "w"}...)
 
@@ -401,9 +133,9 @@ func TestModel_GeneratePolyhedron(t *testing.T) {
 	implyID, _ := model.SetImply("w", xorID)
 	_ = model.Assume(implyID)
 
-	lp := model.GeneratePolyhedron()
+	lp := model.NewPolyhedron()
 
-	expectedVector := []int{0, 1, 1, 2, 4, 0, 1, 1, 1, -1, 0, 0, -2, 1, -1, 0, -1}
+	expectedVector := []int{0, 1, 1, 2, 4, 0, 1, 1, 1, -1, 0, 0, -2, 1, -1, 0, -1, 1}
 	expectedMatrix := [][]int{
 		{-1, -1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0},
 		{0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0},
@@ -422,6 +154,41 @@ func TestModel_GeneratePolyhedron(t *testing.T) {
 		{0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, -2, 0},
 		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, -2},
 		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+	}
+
+	assertEqual(t, expectedMatrix, lp.aMatrix, expectedVector, lp.bVector)
+}
+
+func TestModel_NewPolyhedron_withImpliesOr(t *testing.T) {
+	model := New()
+	model.SetPrimitives([]string{"x", "y", "z"}...)
+
+	orID, err := model.SetOr([]string{"y", "z"}...)
+	if err != nil {
+		assert.NoError(t, err)
+	}
+	implyID, err := model.SetImply("x", orID)
+	if err != nil {
+		assert.NoError(t, err)
+	}
+	err = model.Assume(implyID)
+	if err != nil {
+		assert.NoError(t, err)
+	}
+
+	lp := model.NewPolyhedron()
+
+	expectedVector := []int{1, 1, 1, 0, -1, 0, -1, 1}
+	expectedMatrix := [][]int{
+		{0, -1, -1, 2, 0, 0},
+		{1, 0, 0, 0, 1, 0},
+		{0, 0, 0, -1, -1, 2},
+		{0, 1, 1, -2, 0, 0},
+		{-1, 0, 0, 0, -2, 0},
+		{0, 0, 0, 1, 1, -2},
+		{0, 0, 0, 0, 0, -1},
+		{0, 0, 0, 0, 0, 1},
 	}
 
 	assertEqual(t, expectedMatrix, lp.aMatrix, expectedVector, lp.bVector)
@@ -449,7 +216,8 @@ func assertEqual(
 			t.Errorf("Expected nrOfRows %v not found in actual matrix", row)
 		}
 	}
-
+	assert.Len(t, expectedMatrix, len(actualMatrix))
+	assert.Len(t, expectedVector, len(actualVector))
 	assert.Equal(t, expectedMatrix, sortedActualMatrix)
 	assert.Equal(t, expectedVector, sortedActualVector)
 }
@@ -473,7 +241,7 @@ func TestValidateAssumedVariables(t *testing.T) {
 			name: "invalid assumed variable again",
 			existingAssumedConstraints: AuxiliaryConstraints{
 				{
-					coefficients: CoefficientValues{
+					coefficients: Coefficients{
 						"a": 1,
 						"b": 1,
 					},
@@ -518,25 +286,34 @@ func TestModel_newAssumedConstraint(t *testing.T) {
 	tests := []struct {
 		name      string
 		variables []string
-		want      AuxiliaryConstraint
+		want      AuxiliaryConstraints
 	}{
 		{
 			name:      "valid constraint",
 			variables: []string{"a", "b"},
-			want: AuxiliaryConstraint{
-				coefficients: CoefficientValues{
-					"a": -1,
-					"b": -1,
+			want: AuxiliaryConstraints{
+				{
+					coefficients: Coefficients{
+						"a": -1,
+						"b": -1,
+					},
+					bias: Bias(-2),
 				},
-				bias: Bias(-2),
+				{
+					coefficients: Coefficients{
+						"a": 1,
+						"b": 1,
+					},
+					bias: Bias(2),
+				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &Model{}
-			constraint := m.newAssumedConstraint(tt.variables...)
-			assert.Equal(t, tt.want, constraint, "Constraint should match")
+			constraints := m.newAssumedConstraints(tt.variables...)
+			assert.Equal(t, tt.want, constraints, "Constraint should match")
 		})
 	}
 }

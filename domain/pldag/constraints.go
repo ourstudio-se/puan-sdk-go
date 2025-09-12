@@ -14,25 +14,17 @@ import (
 
 type Constraint struct {
 	id           string
-	coefficients CoefficientValues
+	coefficients Coefficients
 	bias         Bias
 }
 type Constraints []Constraint
 
 func NewAtLeastConstraint(variables []string, amount int) (Constraint, error) {
-	if utils.ContainsDuplicates(variables) {
-		return Constraint{}, errors.New("duplicated variables")
+	if err := validateConstraintInput(variables, amount); err != nil {
+		return Constraint{}, err
 	}
 
-	if amount > len(variables) {
-		return Constraint{}, errors.New("amount cannot be greater than number of variables")
-	}
-
-	if amount < 0 {
-		return Constraint{}, errors.New("amount cannot be negative")
-	}
-
-	coefficients := make(CoefficientValues)
+	coefficients := make(Coefficients)
 	for _, v := range variables {
 		coefficients[v] = -1
 	}
@@ -44,20 +36,28 @@ func NewAtLeastConstraint(variables []string, amount int) (Constraint, error) {
 	return constraint, nil
 }
 
-func newAtMostConstraint(variables []string, amount int) (Constraint, error) {
+func validateConstraintInput(variables []string, amount int) error {
 	if utils.ContainsDuplicates(variables) {
-		return Constraint{}, errors.New("duplicated variables")
+		return errors.New("duplicated variables")
 	}
 
 	if amount > len(variables) {
-		return Constraint{}, errors.New("amount cannot be greater than number of variables")
+		return errors.New("amount cannot be greater than number of variables")
 	}
 
 	if amount < 0 {
-		return Constraint{}, errors.New("amount cannot be negative")
+		return errors.New("amount cannot be negative")
 	}
 
-	coefficients := make(CoefficientValues)
+	return nil
+}
+
+func NewAtMostConstraint(variables []string, amount int) (Constraint, error) {
+	if err := validateConstraintInput(variables, amount); err != nil {
+		return Constraint{}, err
+	}
+
+	coefficients := make(Coefficients)
 	for _, v := range variables {
 		coefficients[v] = 1
 	}
@@ -69,7 +69,7 @@ func newAtMostConstraint(variables []string, amount int) (Constraint, error) {
 	return constraint, nil
 }
 
-func newConstraint(coefficients CoefficientValues, bias Bias) Constraint {
+func newConstraint(coefficients Coefficients, bias Bias) Constraint {
 	id := newConstraintID(coefficients, bias)
 	constraint := Constraint{
 		id:           id,
@@ -87,7 +87,7 @@ func (c Constraint) Bias() Bias {
 	return c.bias
 }
 
-func (c Constraint) Coefficients() CoefficientValues {
+func (c Constraint) Coefficients() Coefficients {
 	return c.coefficients
 }
 
@@ -103,7 +103,7 @@ func (c Constraint) newConstraintImpliesSupport() AuxiliaryConstraint {
 	innerBound := negatedCoefficients.calculateMaxAbsInnerBound()
 	negatedBias := c.bias.negate()
 
-	newCoefficients := make(CoefficientValues, len(c.coefficients)+1)
+	newCoefficients := make(Coefficients, len(c.coefficients)+1)
 	for coefficientID, value := range negatedCoefficients {
 		newCoefficients[coefficientID] = value
 	}
@@ -120,7 +120,7 @@ func (c Constraint) newSupportImpliesConstraint() AuxiliaryConstraint {
 	innerBound := c.coefficients.calculateMaxAbsInnerBound()
 	bias := Bias(int(c.bias) + innerBound)
 
-	newCoefficients := make(CoefficientValues, len(c.coefficients)+1)
+	newCoefficients := make(Coefficients, len(c.coefficients)+1)
 	for coefficientID, value := range c.coefficients {
 		newCoefficients[coefficientID] = value
 	}
@@ -134,12 +134,12 @@ func (c Constraint) newSupportImpliesConstraint() AuxiliaryConstraint {
 }
 
 type AuxiliaryConstraint struct {
-	coefficients CoefficientValues
+	coefficients Coefficients
 	bias         Bias
 }
 type AuxiliaryConstraints []AuxiliaryConstraint
 
-func NewAuxiliaryConstraint(coefficients CoefficientValues, bias Bias) AuxiliaryConstraint {
+func newAuxiliaryConstraint(coefficients Coefficients, bias Bias) AuxiliaryConstraint {
 	constraint := AuxiliaryConstraint{
 		coefficients: coefficients,
 		bias:         bias,
@@ -147,7 +147,7 @@ func NewAuxiliaryConstraint(coefficients CoefficientValues, bias Bias) Auxiliary
 	return constraint
 }
 
-func (c AuxiliaryConstraint) Coefficients() CoefficientValues {
+func (c AuxiliaryConstraint) Coefficients() Coefficients {
 	return c.coefficients
 }
 
@@ -184,7 +184,7 @@ func (c AuxiliaryConstraint) asMatrixRow(variables []string) []int {
 	return row
 }
 
-func newConstraintID(coefficients CoefficientValues, bias Bias) string {
+func newConstraintID(coefficients Coefficients, bias Bias) string {
 	keys := slices.Sorted(maps.Keys(coefficients))
 
 	h := sha1.New()
@@ -197,9 +197,9 @@ func newConstraintID(coefficients CoefficientValues, bias Bias) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-type CoefficientValues map[string]int
+type Coefficients map[string]int
 
-func (c CoefficientValues) negate() CoefficientValues {
+func (c Coefficients) negate() Coefficients {
 	negated := make(map[string]int, len(c))
 	for key, value := range c {
 		negated[key] = -value
@@ -208,7 +208,7 @@ func (c CoefficientValues) negate() CoefficientValues {
 	return negated
 }
 
-func (c CoefficientValues) calculateMaxAbsInnerBound() int {
+func (c Coefficients) calculateMaxAbsInnerBound() int {
 	sumNegatives, sumPositives := 0, 0
 	for _, value := range c {
 		if value < 0 {

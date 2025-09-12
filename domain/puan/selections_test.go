@@ -1,3 +1,4 @@
+//nolint:lll
 package puan
 
 import (
@@ -13,12 +14,14 @@ func Test_getImpactingSelections(t *testing.T) {
 		expected   Selections
 	}{
 		{
-			name: "subselection than only id remove selection",
+			name: "Add primitive with sub-selection, then remove primary primitive",
 			selections: Selections{
 				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
 				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
 			},
-			expected: Selections{},
+			expected: Selections{
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+			},
 		},
 		{
 			name: "subselection two different sub ids",
@@ -32,7 +35,7 @@ func Test_getImpactingSelections(t *testing.T) {
 			},
 		},
 		{
-			name: "subselection than only id selection",
+			name: "Add primitive with sub-selection, then add primary primitive only",
 			selections: Selections{
 				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
 				NewSelectionBuilder("x").Build(),
@@ -69,7 +72,6 @@ func Test_getImpactingSelections(t *testing.T) {
 				NewSelectionBuilder("y").WithSubSelectionID("x").Build(),
 			},
 			expected: Selections{
-				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
 				NewSelectionBuilder("y").WithSubSelectionID("x").Build(),
 			},
 		},
@@ -78,7 +80,9 @@ func Test_getImpactingSelections(t *testing.T) {
 			selections: Selections{
 				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
 			},
-			expected: Selections{},
+			expected: Selections{
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+			},
 		},
 		{
 			name:       "Empty selections",
@@ -91,7 +95,7 @@ func Test_getImpactingSelections(t *testing.T) {
 				NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(ADD).Build(),
 				NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(REMOVE).Build(),
 			},
-			expected: Selections{},
+			expected: Selections{NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(REMOVE).Build()},
 		},
 		{
 			name: "Add sub-selection, then add another",
@@ -112,6 +116,7 @@ func Test_getImpactingSelections(t *testing.T) {
 			},
 			expected: Selections{
 				NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(ADD).Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("z").WithAction(REMOVE).Build(),
 			},
 		},
 		{
@@ -123,6 +128,7 @@ func Test_getImpactingSelections(t *testing.T) {
 			},
 			expected: Selections{
 				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("z").WithAction(REMOVE).Build(),
 			},
 		},
 	}
@@ -184,6 +190,39 @@ func Test_filterOutRedundantSelections(t *testing.T) {
 				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
 			},
 		},
+		{
+			name: "remove multiple duplicated selections",
+			selections: Selections{
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("x").Build(),
+			},
+			expected: Selections{
+				NewSelectionBuilder("x").Build(),
+			},
+		},
+		{
+			name: "should not remove selections",
+			selections: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("z").WithAction(REMOVE).Build(),
+			},
+			expected: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+				NewSelectionBuilder("x").WithSubSelectionID("z").WithAction(REMOVE).Build(),
+			},
+		},
+		{
+			name: "remove duplicated independent of action",
+			selections: Selections{
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+				NewSelectionBuilder("x").Build(),
+			},
+			expected: Selections{
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+			},
+		},
 	}
 
 	for _, tt := range theories {
@@ -192,94 +231,130 @@ func Test_filterOutRedundantSelections(t *testing.T) {
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
+
+	for _, tt := range theories {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := filterOutRedundantSelections(tt.selections)
+			assert.Equal(t, tt.expected, actual, tt.name)
+		})
+	}
 }
 
 func Test_makesRedundant(t *testing.T) {
 	theories := []struct {
-		name      string
-		selection Selection
-		other     Selection
-		expected  bool
+		name        string
+		prioritised Selection
+		other       Selection
+		expected    bool
 	}{
 		{
-			name:      "not redundant different ids",
-			selection: NewSelectionBuilder("x").Build(),
-			other:     NewSelectionBuilder("y").Build(),
-			expected:  false,
+			name:        "not redundant different ids",
+			prioritised: NewSelectionBuilder("x").Build(),
+			other:       NewSelectionBuilder("y").Build(),
+			expected:    false,
 		},
 		{
-			name:      "not redundant different sub ids",
-			selection: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
-			other:     NewSelectionBuilder("x").WithSubSelectionID("z").Build(),
-			expected:  false,
+			name:        "not redundant different sub ids",
+			prioritised: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			other:       NewSelectionBuilder("x").WithSubSelectionID("z").Build(),
+			expected:    false,
 		},
 		{
-			name:      "redundant same sub ids",
-			selection: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
-			other:     NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
-			expected:  true,
+			name:        "redundant same sub ids",
+			prioritised: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			other:       NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			expected:    true,
 		},
 		{
-			name:      "redundant selection has no sub ids",
-			selection: NewSelectionBuilder("x").Build(),
-			other:     NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
-			expected:  true,
+			name:        "re-select same variable, but without sub ids",
+			prioritised: NewSelectionBuilder("x").Build(),
+			other:       NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			expected:    true,
 		},
 		{
-			name:      "redundant selection has sub ids",
-			selection: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
-			other:     NewSelectionBuilder("x").Build(),
-			expected:  false,
+			name:        "redundant selection has sub ids",
+			prioritised: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			other:       NewSelectionBuilder("x").Build(),
+			expected:    false,
+		},
+		{
+			name:        "Remove prior sub-selection",
+			prioritised: NewSelectionBuilder("y").WithAction(REMOVE).Build(),
+			other:       NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			expected:    true,
+		},
+		{
+			name:        "Remove prior composite selection",
+			prioritised: NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(REMOVE).Build(),
+			other:       NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			expected:    true,
+		},
+		{
+			name:        "Remove composite selection, with same primary id",
+			prioritised: NewSelectionBuilder("x").WithSubSelectionID("z").WithAction(REMOVE).Build(),
+			other:       NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			expected:    false,
+		},
+		{
+			name:        "Remove composite selection, with same sub-selection id",
+			prioritised: NewSelectionBuilder("a").WithSubSelectionID("y").WithAction(REMOVE).Build(),
+			other:       NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			expected:    true,
+		},
+		{
+			name:        "Remove two different primitives",
+			prioritised: NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+			other:       NewSelectionBuilder("y").WithAction(REMOVE).Build(),
+			expected:    false,
+		},
+		{
+			name: "Add composite selection, with a sub-set of sub ids",
+			prioritised: NewSelectionBuilder("a").
+				WithSubSelectionID("y").
+				Build(),
+			other: NewSelectionBuilder("a").
+				WithSubSelectionID("x").
+				WithSubSelectionID("y").
+				Build(),
+			expected: true,
+		},
+		{
+			name:        "Remove with sub-selection, then add with reversed order",
+			prioritised: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			other:       NewSelectionBuilder("y").WithSubSelectionID("x").WithAction(REMOVE).Build(),
+			expected:    true,
 		},
 	}
 
 	for _, tt := range theories {
-		actual := tt.selection.makesRedundant(tt.other)
-		assert.Equal(t, tt.expected, actual)
+		actual := tt.prioritised.makesRedundant(tt.other)
+		assert.Equal(t, tt.expected, actual, tt.name)
 	}
 }
 
-func Test_filterOutRemoveSelections(t *testing.T) {
-	theories := []struct {
-		name       string
-		selections Selections
-		expected   Selections
-	}{
-		{
-			name: "remove all selections",
-			selections: Selections{
-				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
-				NewSelectionBuilder("y").WithAction(REMOVE).Build(),
-			},
-			expected: nil,
-		},
-		{
-			name: "remove only one selections",
-			selections: Selections{
-				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
-				NewSelectionBuilder("y").Build(),
-			},
-			expected: Selections{
-				NewSelectionBuilder("y").Build(),
-			},
-		},
-		{
-			name: "no remove selections",
-			selections: Selections{
-				NewSelectionBuilder("x").Build(),
-				NewSelectionBuilder("y").Build(),
-			},
-			expected: Selections{
-				NewSelectionBuilder("x").Build(),
-				NewSelectionBuilder("y").Build(),
-			},
-		},
+func Test_Selection_ids(t *testing.T) {
+	selection := NewSelectionBuilder("x").
+		WithSubSelectionID("y").
+		WithSubSelectionID("z").
+		Build()
+	assert.Equal(t, []string{"x", "y", "z"}, selection.ids())
+}
+
+func Test_Selections_extendWithPrimaryPrimitiveSelections(t *testing.T) {
+	selections := Selections{
+		NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(ADD).Build(),
+		NewSelectionBuilder("z").Build(),
+		NewSelectionBuilder("z").WithSubSelectionID("w").WithAction(REMOVE).Build(),
 	}
 
-	for _, tt := range theories {
-		t.Run(tt.name, func(t *testing.T) {
-			actual := tt.selections.filterOutRemoveSelections()
-			assert.Equal(t, tt.expected, actual)
-		})
+	extended := selections.modifySelections()
+
+	want := Selections{
+		NewSelectionBuilder("x").WithAction(ADD).Build(),
+		NewSelectionBuilder("x").WithSubSelectionID("y").WithAction(ADD).Build(),
+		NewSelectionBuilder("z").Build(),
+		NewSelectionBuilder("z").WithAction(REMOVE).Build(),
 	}
+
+	assert.Equal(t, want, extended)
 }

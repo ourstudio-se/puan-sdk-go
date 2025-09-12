@@ -100,11 +100,16 @@ func Test_calculatePreferredWeights_givenNoPreferredIDs_shouldReturnEmptyWeights
 }
 
 func Test_calculateSelectedWeights_oneSelected_shouldReturnWeights(t *testing.T) {
-	selectedPrimitives := []string{"a"}
+	selections := querySelections{
+		{
+			id:     "a",
+			action: ADD,
+		},
+	}
 	notSelectedSum := -2
 	preferredWeightsSum := -1
 
-	actual := calculateSelectedWeights(selectedPrimitives, notSelectedSum, preferredWeightsSum)
+	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum)
 	expected := Weights{
 		"a": 4,
 	}
@@ -113,11 +118,20 @@ func Test_calculateSelectedWeights_oneSelected_shouldReturnWeights(t *testing.T)
 }
 
 func Test_calculateSelectedWeights_twoSelected_shouldReturnWeights(t *testing.T) {
-	selectedPrimitives := []string{"a", "b"}
+	selections := querySelections{
+		{
+			id:     "a",
+			action: ADD,
+		},
+		{
+			id:     "b",
+			action: ADD,
+		},
+	}
 	notSelectedSum := -4
 	preferredWeightsSum := -2
 
-	actual := calculateSelectedWeights(selectedPrimitives, notSelectedSum, preferredWeightsSum)
+	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum)
 	expected := Weights{
 		"a": 7,
 		"b": 14,
@@ -126,23 +140,50 @@ func Test_calculateSelectedWeights_twoSelected_shouldReturnWeights(t *testing.T)
 	assert.Equal(t, expected, actual)
 }
 
+func Test_calculateSelectedWeights_twoSelected_withRemoveAction(t *testing.T) {
+	selections := querySelections{
+		{
+			id:     "a",
+			action: ADD,
+		},
+		{
+			id:     "b",
+			action: REMOVE,
+		},
+	}
+	notSelectedSum := -4
+	preferredWeightsSum := -2
+
+	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum)
+	expected := Weights{
+		"a": 7,
+		"b": -14,
+	}
+
+	assert.Equal(t, expected, actual)
+}
+
 func Test_calculateSelectedWeights_noSelection_shouldReturnEmptyWeights(t *testing.T) {
-	var selectedPrimitives []string
 	notSelectedSum := -1
 	preferredWeightsSum := -1
 
-	actual := calculateSelectedWeights(selectedPrimitives, notSelectedSum, preferredWeightsSum)
+	actual := calculateSelectedWeights(nil, notSelectedSum, preferredWeightsSum)
 	expected := Weights{}
 
 	assert.Equal(t, expected, actual)
 }
 
-func Test_CalculateObjective(t *testing.T) {
+func Test_calculateWeights(t *testing.T) {
 	primitives := []string{"a", "b", "c"}
-	selectedPrimitives := []string{"a"}
 	preferredIDs := []string{"e"}
+	selections := querySelections{
+		{
+			id:     "a",
+			action: ADD,
+		},
+	}
 
-	actual := CalculateObjective(primitives, selectedPrimitives, preferredIDs)
+	actual := calculateWeights(primitives, selections, preferredIDs)
 	expected := Weights{
 		"a": 8,
 		"b": -2,
