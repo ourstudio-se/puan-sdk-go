@@ -2,7 +2,6 @@
 package solve
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -1105,7 +1104,7 @@ func Test_(t *testing.T) {
 	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemZ", "itemM", "itemN")
 
 	exactlyOneOfItemXYZ, _ := creator.PLDAG().SetXor("itemX", "itemY", "itemZ")
-	anyOfItems, _ := creator.PLDAG().SetOr("itemM, itemN")
+	anyOfItems, _ := creator.PLDAG().SetOr("itemM", "itemN")
 	itemARequiresAnyOfItems, _ := creator.PLDAG().SetImply("packageA", anyOfItems)
 	packageARequiresExactlyOneOfItemXYZ, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfItemXYZ)
 
@@ -1118,17 +1117,16 @@ func Test_(t *testing.T) {
 	ruleSet := creator.Create()
 
 	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").Build(),
-		//puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemM").Build(),
-		//puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemZ").Build(),
-		//puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemZ").WithAction(puan.REMOVE).Build(),
+		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").Build(),
+		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemZ").Build(),
+		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemZ").WithAction(puan.REMOVE).Build(),
 	}
 
 	query, err := ruleSet.NewQuery(selections)
 
 	client := glpk.NewClient(url)
-	solution, err := client.Solve(query)
-	primitiveSolution, err := solution.Extract(ruleSet.PrimitiveVariables()...)
+	solution, _ := client.Solve(query)
+	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -1136,47 +1134,6 @@ func Test_(t *testing.T) {
 			"itemX":    1,
 			"itemY":    0,
 			"itemZ":    0,
-			"itemM":    0,
-			"itemN":    0,
-		},
-		primitiveSolution,
-	)
-}
-
-func Test_2(t *testing.T) {
-	var err error
-	creator := puan.NewRuleSetCreator()
-	creator.PLDAG().SetPrimitives("packageA", "itemM", "itemN")
-
-	anyOfItems, _ := creator.PLDAG().SetOr("itemM", "itemN")
-	itemARequiresAnyOfItems, _ := creator.PLDAG().SetImply("packageA", anyOfItems)
-
-	err = creator.PLDAG().Assume(itemARequiresAnyOfItems)
-	poly := creator.PLDAG().NewPolyhedron()
-	_ = poly.B()
-
-	ruleSet := creator.Create()
-	polyhedron := ruleSet.Polyhedron()
-	fmt.Println(polyhedron.A())
-	fmt.Println()
-	fmt.Println(polyhedron.B())
-
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").Build(),
-		//puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemM").Build(),
-		//puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemZ").Build(),
-		//puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemZ").WithAction(puan.REMOVE).Build(),
-	}
-	_ = err
-	query, err := ruleSet.NewQuery(selections)
-
-	client := glpk.NewClient(url)
-	solution, err := client.Solve(query)
-	primitiveSolution, err := solution.Extract(ruleSet.PrimitiveVariables()...)
-	assert.Equal(
-		t,
-		puan.Solution{
-			"packageA": 1,
 			"itemM":    0,
 			"itemN":    0,
 		},

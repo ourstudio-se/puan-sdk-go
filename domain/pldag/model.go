@@ -98,8 +98,8 @@ func (m *Model) Assume(variables ...string) error {
 		return err
 	}
 
-	negative, positive := m.newAssumedConstraints(variables...)
-	m.assumeConstraints = append(m.assumeConstraints, negative, positive)
+	constraints := m.newAssumedConstraints(variables...)
+	m.assumeConstraints = append(m.assumeConstraints, constraints...)
 
 	return nil
 }
@@ -137,25 +137,35 @@ func (m *Model) Variables() []string {
 	return m.variables
 }
 
-func (m *Model) newAssumedConstraints(variables ...string) (AuxiliaryConstraint, AuxiliaryConstraint) {
+func (m *Model) newAssumedConstraints(variables ...string) AuxiliaryConstraints {
+	negativeCoefficient := m.newNegativeAssumedConstraint(variables...)
+	positiveCoefficient := m.newPositiveAssumedConstraint(variables...)
+
+	return AuxiliaryConstraints{negativeCoefficient, positiveCoefficient}
+}
+
+func (m *Model) newNegativeAssumedConstraint(variables ...string) AuxiliaryConstraint {
 	coefficients := make(Coefficients, len(variables))
 	for _, id := range variables {
 		coefficients[id] = -1
 	}
 
 	bias := Bias(-len(variables))
-	negativeCoefficients := newAuxiliaryConstraint(coefficients, bias)
+	constraint := newAuxiliaryConstraint(coefficients, bias)
 
-	coefficients = make(Coefficients, len(variables))
+	return constraint
+}
+
+func (m *Model) newPositiveAssumedConstraint(variables ...string) AuxiliaryConstraint {
+	coefficients := make(Coefficients, len(variables))
 	for _, id := range variables {
 		coefficients[id] = 1
 	}
 
-	bias = Bias(len(variables))
+	bias := Bias(len(variables))
+	constraint := newAuxiliaryConstraint(coefficients, bias)
 
-	positiveCoefficients := newAuxiliaryConstraint(coefficients, bias)
-
-	return negativeCoefficients, positiveCoefficients
+	return constraint
 }
 
 func (m *Model) validateAssumedVariables(assumedVariables ...string) error {
