@@ -263,8 +263,8 @@ func Test_multiplePackagesWithXOR_shouldGiveLastSelected(t *testing.T) {
 // Ref: test_will_ignore_pre_selected_actions_not_existing_in_action_space
 // Description: Following rules are applied (with preferreds on the left xor-component)
 // packageA -> (itemX, itemY)
-// We give pre selected action ['notExistingID'], expects solution to ignore it
-func Test_ignoreNotExistingVariable_shouldGiveValidSolution(t *testing.T) {
+// We give pre selected action ['notExistingID'], expects error
+func Test_notExistingVariable_shouldGiveError(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY")
@@ -285,20 +285,8 @@ func Test_ignoreNotExistingVariable_shouldGiveValidSolution(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(selections)
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
-	assert.Equal(
-		t,
-		puan.Solution{
-			"packageA": 1,
-			"itemX":    1,
-			"itemY":    1,
-		},
-		primitiveSolution,
-	)
+	_, err := ruleSet.NewQuery(selections)
+	assert.Error(t, err)
 }
 
 // Test_packageInDefaultConfig

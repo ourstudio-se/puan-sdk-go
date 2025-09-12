@@ -33,6 +33,21 @@ func (s querySelections) ids() []string {
 
 type Selections []Selection
 
+func (s Selections) ids() []string {
+	var ids []string
+	seen := make(map[string]bool, len(s))
+	for _, selection := range s {
+		for _, id := range selection.ids() {
+			if !seen[id] {
+				seen[id] = true
+				ids = append(ids, id)
+			}
+		}
+	}
+
+	return ids
+}
+
 func (s Selection) isComposite() bool {
 	return len(s.subSelectionIDs) > 0
 }

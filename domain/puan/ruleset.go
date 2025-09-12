@@ -92,6 +92,11 @@ type querySpecification struct {
 }
 
 func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
+	err := r.validateSelectionIDs(selections.ids())
+	if err != nil {
+		return nil, err
+	}
+
 	extendedSelections := selections.modifySelections()
 	impactingSelections := getImpactingSelections(extendedSelections)
 	specification, err := r.newQuerySpecification(impactingSelections)
@@ -112,6 +117,18 @@ func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
 	)
 
 	return query, nil
+}
+
+func (r *RuleSet) validateSelectionIDs(ids []string) error {
+	for _, id := range ids {
+		if utils.Contains(r.variables, id) {
+			continue
+		}
+
+		return errors.Errorf("invalid selection id: %s", id)
+	}
+
+	return nil
 }
 
 func (r *RuleSet) copy() *RuleSet {
