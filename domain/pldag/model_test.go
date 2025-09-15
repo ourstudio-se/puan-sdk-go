@@ -238,7 +238,7 @@ func TestValidateAssumedVariables(t *testing.T) {
 			wantErr:                    false,
 		},
 		{
-			name: "invalid assumed variable again",
+			name: "assumed variable twice",
 			existingAssumedConstraints: AuxiliaryConstraints{
 				{
 					coefficients: Coefficients{
@@ -250,19 +250,13 @@ func TestValidateAssumedVariables(t *testing.T) {
 			},
 			existingVariables: []string{"a", "b", "c"},
 			assumedVariables:  []string{"a", "b"},
-			wantErr:           true,
+			wantErr:           false,
 		},
 		{
 			name:              "invalid assumed non-existing variable",
 			existingVariables: []string{"a", "b", "c"},
 			assumedVariables:  []string{"x"},
 			wantErr:           true,
-		},
-		{
-			name:              "duplicated assumed variable",
-			existingVariables: []string{"a", "b", "c"},
-			assumedVariables:  []string{"a", "a"},
-			wantErr:           false,
 		},
 	}
 	for _, tt := range tests {
@@ -316,4 +310,34 @@ func TestModel_newAssumedConstraint(t *testing.T) {
 			assert.Equal(t, tt.want, constraints, "Constraint should match")
 		})
 	}
+}
+
+func Test_getUnassumedVariables_givenAlreadyAssumedVariables(t *testing.T) {
+	model := &Model{
+		assumeConstraints: AuxiliaryConstraints{
+			{
+				coefficients: Coefficients{
+					"a": 1,
+					"b": 1,
+				},
+				bias: Bias(2),
+			},
+		},
+	}
+
+	assumed := []string{"a", "b", "c", "d"}
+	want := []string{"c", "d"}
+	got := model.getUnassumedVariables(assumed)
+
+	assert.Equal(t, want, got)
+}
+
+func Test_getUnassumedVariables_nothingAssumed(t *testing.T) {
+	model := &Model{}
+
+	assumed := []string{"a", "b", "c", "d"}
+	want := []string{"a", "b", "c", "d"}
+	got := model.getUnassumedVariables(assumed)
+
+	assert.Equal(t, want, got)
 }

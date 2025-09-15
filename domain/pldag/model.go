@@ -103,10 +103,19 @@ func (m *Model) Assume(variables ...string) error {
 		return err
 	}
 
-	constraints := m.newAssumedConstraints(deduped...)
+	unassumed := m.getUnassumedVariables(deduped)
+
+	constraints := m.newAssumedConstraints(unassumed...)
 	m.assumeConstraints = append(m.assumeConstraints, constraints...)
 
 	return nil
+}
+
+func (m *Model) getUnassumedVariables(variables []string) []string {
+	assumed := m.assumeConstraints.coefficientIDs()
+	unassumed := utils.Without(variables, assumed)
+
+	return unassumed
 }
 
 func (m *Model) NewPolyhedron() *Polyhedron {
@@ -174,13 +183,9 @@ func (m *Model) newPositiveAssumedConstraint(variables ...string) AuxiliaryConst
 }
 
 func (m *Model) validateAssumedVariables(assumedVariables ...string) error {
-	existingAssumedVariables := m.assumeConstraints.coefficientIDs()
 	for _, v := range assumedVariables {
-		if slices.Contains(existingAssumedVariables, v) {
-			return errors.New("variable already assumed")
-		}
-		if !slices.Contains(m.variables, v) {
-			return errors.New("variable not in model")
+		if !utils.Contains(m.variables, v) {
+			return errors.Errorf("variable %s not in model", v)
 		}
 	}
 
