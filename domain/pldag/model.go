@@ -79,8 +79,8 @@ func (m *Model) SetXor(variables ...string) (string, error) {
 }
 
 func (m *Model) SetOneOrNone(variables ...string) (string, error) {
-	dedupedVariables := utils.Dedupe(variables)
-	return m.setAtMost(dedupedVariables, 1)
+	deduped := utils.Dedupe(variables)
+	return m.setAtMost(deduped, 1)
 }
 
 func (m *Model) SetEquivalent(variableOne, variableTwo string) (string, error) {
@@ -98,7 +98,7 @@ func (m *Model) SetEquivalent(variableOne, variableTwo string) (string, error) {
 
 func (m *Model) Assume(variables ...string) error {
 	deduped := utils.Dedupe(variables)
-	err := m.validateAssumedVariables(deduped...)
+	err := m.ValidateVariables(deduped...)
 	if err != nil {
 		return err
 	}
@@ -182,8 +182,8 @@ func (m *Model) newPositiveAssumedConstraint(variables ...string) AuxiliaryConst
 	return constraint
 }
 
-func (m *Model) validateAssumedVariables(assumedVariables ...string) error {
-	for _, v := range assumedVariables {
+func (m *Model) ValidateVariables(variables ...string) error {
+	for _, v := range variables {
 		if !utils.Contains(m.variables, v) {
 			return errors.Errorf("variable %s not in model", v)
 		}

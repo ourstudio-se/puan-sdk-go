@@ -30,29 +30,15 @@ func (c *RuleSetCreator) PLDAG() *pldag.Model {
 }
 
 func (c *RuleSetCreator) SetPreferreds(id ...string) error {
-	err := c.validatePreferredIDs(id)
+	dedupedIDs := utils.Dedupe(id)
+	unpreferredIDs := utils.Without(dedupedIDs, c.preferredVariables)
+
+	err := c.pldag.ValidateVariables(unpreferredIDs...)
 	if err != nil {
 		return err
 	}
 
 	c.preferredVariables = append(c.preferredVariables, id...)
-
-	return nil
-}
-
-func (c *RuleSetCreator) validatePreferredIDs(ids []string) error {
-	if utils.ContainsDuplicates(ids) {
-		return errors.New("duplicated preferred variables")
-	}
-
-	if utils.ContainsAny(c.preferredVariables, ids) {
-		return errors.New("preferred variable already added")
-	}
-
-	missingIDs := !utils.ContainsAll(c.pldag.Variables(), ids)
-	if missingIDs {
-		return errors.New("preferred variable not in model")
-	}
 
 	return nil
 }

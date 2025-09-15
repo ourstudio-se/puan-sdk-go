@@ -341,3 +341,23 @@ func Test_getUnassumedVariables_nothingAssumed(t *testing.T) {
 
 	assert.Equal(t, want, got)
 }
+
+func Test_ValidateVariables_givenValidCase(t *testing.T) {
+	variables := []string{"a", "c"}
+	model := &Model{
+		variables: []string{"a", "b", "c", "d"},
+	}
+
+	err := model.ValidateVariables(variables...)
+	assert.NoError(t, err)
+}
+
+func Test_ValidateVariables_givenInvalidCase(t *testing.T) {
+	variables := []string{"k", "c"}
+	model := &Model{
+		variables: []string{"a", "b", "c", "d"},
+	}
+
+	err := model.ValidateVariables(variables...)
+	assert.Error(t, err)
+}
