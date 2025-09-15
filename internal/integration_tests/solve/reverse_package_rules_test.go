@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
-	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
+	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
+	puan2 "github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
 // Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_shouldGiveNewVariant
@@ -19,7 +19,7 @@ import (
 // package variant (A, itemX, itemY, itemZ, itemN) (and not select single itemN)
 // Note: package A is mandatory according to rule set.
 func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_shouldGiveNewVariant(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemZ", "itemN", "itemM")
 
@@ -46,9 +46,9 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemM").Build(),
-		puan.NewSelectionBuilder("itemN").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageA").WithSubSelectionID("itemM").Build(),
+		puan2.NewSelectionBuilder("itemN").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -58,7 +58,7 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 1,
 			"itemX":    1,
 			"itemY":    1,
@@ -75,7 +75,7 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 // Description: Given rules package A -> xor(itemX, itemY), package A -> xor(itemX, itemZ). itemX is preferred oved (itemY, itemZ).
 // We first select the preferred package variant and the change to the not preferred variant.
 func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemZ")
 
@@ -105,9 +105,9 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
+		puan2.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -117,7 +117,7 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 1,
 			"itemX":    0,
 			"itemY":    1,
@@ -138,7 +138,7 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 // (itemX, itemY, itemX) -> packageB
 // We have already selected packageA and now we select packageB. We expect packageB to be selected.
 func Test_twoPackagesWithSharedItems_selectLargestPackage(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 
@@ -167,9 +167,9 @@ func Test_twoPackagesWithSharedItems_selectLargestPackage(t *testing.T) {
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").Build(),
-		puan.NewSelectionBuilder("packageB").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageA").Build(),
+		puan2.NewSelectionBuilder("packageB").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -179,7 +179,7 @@ func Test_twoPackagesWithSharedItems_selectLargestPackage(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 0,
 			"packageB": 1,
 			"itemX":    1,

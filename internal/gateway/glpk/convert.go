@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
-	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
+	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
+	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
 var VALID_STATUSES = map[string]any{

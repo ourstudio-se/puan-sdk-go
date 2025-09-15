@@ -3,7 +3,7 @@ package puan
 import (
 	"maps"
 
-	"github.com/ourstudio-se/puan-sdk-go/utils"
+	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
 
 const NOT_SELECTED_WEIGHT = -2

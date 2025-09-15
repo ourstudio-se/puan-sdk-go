@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/fake"
+	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
 )
 
 func Test_Without(t *testing.T) {

@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
-	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
+	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
+	puan2 "github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
 // Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldGivePreferred
@@ -19,9 +19,9 @@ import (
 func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldGivePreferred(t *testing.T) {
 	ruleSet := packagesWithSharedItemsSmallerPackagePreferred()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageB").Build(),
-		puan.NewSelectionBuilder("packageA").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageB").Build(),
+		puan2.NewSelectionBuilder("packageA").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -30,7 +30,7 @@ func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldGivePreferred(
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 1,
 			"packageB": 0,
 			"itemX":    1,
@@ -50,8 +50,8 @@ func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldGivePreferred(
 func Test_exactlyOnePackage_selectNotPreferred(t *testing.T) {
 	ruleSet := packagesWithSharedItemsSmallerPackagePreferred()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageB").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageB").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -60,7 +60,7 @@ func Test_exactlyOnePackage_selectNotPreferred(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 0,
 			"packageB": 1,
 			"itemX":    1,
@@ -71,8 +71,8 @@ func Test_exactlyOnePackage_selectNotPreferred(t *testing.T) {
 	)
 }
 
-func packagesWithSharedItemsSmallerPackagePreferred() *puan.RuleSet {
-	creator := puan.NewRuleSetCreator()
+func packagesWithSharedItemsSmallerPackagePreferred() *puan2.RuleSet {
+	creator := puan2.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 
 	includedItemsInA, _ := creator.PLDAG().SetAnd("itemX", "itemY")

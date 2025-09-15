@@ -6,9 +6,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
-	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
-	"github.com/ourstudio-se/puan-sdk-go/fake"
+	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
+	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
+	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
 func Test_solutionResponse_asEntity_givenSingleSolution_shouldReturnThatSolution(

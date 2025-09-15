@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
-	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
+	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
+	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
 func Test_newRequestPayload(t *testing.T) {

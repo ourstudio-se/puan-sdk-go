@@ -6,14 +6,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
-	"github.com/ourstudio-se/puan-sdk-go/fake"
+	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
+	pldag2 "github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 )
 
 func Test_RuleSet_copy_shouldBeEqual(t *testing.T) {
 	aMatrix := fake.New[[][]int]()
 	bVector := fake.New[[]int]()
-	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
+	polyhedron := pldag2.NewPolyhedron(aMatrix, bVector)
 	variables := fake.New[[]string]()
 	primitiveVariables := fake.New[[]string]()
 	preferredVariables := fake.New[[]string]()
@@ -35,7 +35,7 @@ func Test_RuleSet_copy_shouldBeEqual(t *testing.T) {
 func Test_RuleSet_copy_givenChangeToCopy_shouldNotChangeOriginal(t *testing.T) {
 	aMatrix := fake.New[[][]int]()
 	bVector := fake.New[[]int]()
-	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
+	polyhedron := pldag2.NewPolyhedron(aMatrix, bVector)
 
 	original := &RuleSet{}
 	original.polyhedron = polyhedron
@@ -49,7 +49,7 @@ func Test_RuleSet_copy_givenChangeToCopy_shouldNotChangeOriginal(t *testing.T) {
 func Test_RuleSet_copy_givenChangeToOriginal_shouldNotChangeCopy(t *testing.T) {
 	aMatrix := fake.New[[][]int]()
 	bVector := fake.New[[]int]()
-	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
+	polyhedron := pldag2.NewPolyhedron(aMatrix, bVector)
 
 	original := &RuleSet{}
 	original.polyhedron = polyhedron
@@ -120,10 +120,10 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintExists_shouldNo
 func Test_RuleSet_constraintExists_givenVariablesExists_shouldReturnTrue(
 	t *testing.T,
 ) {
-	constraint, _ := pldag.NewAtLeastConstraint([]string{uuid.New().String()}, 1)
+	constraint, _ := pldag2.NewAtLeastConstraint([]string{uuid.New().String()}, 1)
 
 	ruleSet := &RuleSet{}
-	ruleSet.polyhedron = pldag.NewPolyhedron(nil, nil)
+	ruleSet.polyhedron = pldag2.NewPolyhedron(nil, nil)
 	ruleSet.variables = []string{constraint.ID()}
 
 	got := ruleSet.constraintExists(constraint)
@@ -139,7 +139,7 @@ func Test_newCompositeSelectionConstraint_shouldCreateConstraint(
 
 	got, err := newCompositeSelectionConstraint([]string{primaryID, subID})
 
-	want, _ := pldag.NewAtLeastConstraint([]string{primaryID, subID}, 2)
+	want, _ := pldag2.NewAtLeastConstraint([]string{primaryID, subID}, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, want, got)
 }
@@ -153,7 +153,7 @@ func Test_newCompositeSelectionConstraint_shouldCreateConstraintWithoutDuplicate
 
 	got, err := newCompositeSelectionConstraint([]string{primaryID, subID, subID2})
 
-	want, _ := pldag.NewAtLeastConstraint([]string{primaryID, subID}, 2)
+	want, _ := pldag2.NewAtLeastConstraint([]string{primaryID, subID}, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, want, got)
 }
@@ -165,7 +165,7 @@ func Test_RuleSet_newRow(
 	id2 := uuid.New().String()
 	value1 := fake.New[int]()
 	value2 := fake.New[int]()
-	coefficients := pldag.Coefficients{
+	coefficients := pldag2.Coefficients{
 		id1: value1,
 		id2: value2,
 	}
@@ -186,10 +186,10 @@ func Test_RuleSet_newRow(
 
 func Test_RuleSet_setConstraint_shouldAddColumnOnExistingRows(t *testing.T) {
 	primitiveID := uuid.New().String()
-	constraint, _ := pldag.NewAtLeastConstraint([]string{primitiveID}, 1)
+	constraint, _ := pldag2.NewAtLeastConstraint([]string{primitiveID}, 1)
 
 	ruleSet := &RuleSet{}
-	ruleSet.polyhedron = pldag.NewPolyhedron(nil, nil)
+	ruleSet.polyhedron = pldag2.NewPolyhedron(nil, nil)
 	ruleSet.variables = []string{primitiveID}
 
 	err := ruleSet.setConstraint(constraint)
@@ -200,10 +200,10 @@ func Test_RuleSet_setConstraint_shouldAddColumnOnExistingRows(t *testing.T) {
 
 func Test_RuleSet_setConstraint_shouldAddConstraintIDToVariables(t *testing.T) {
 	primitiveID := uuid.New().String()
-	constraint, _ := pldag.NewAtLeastConstraint([]string{primitiveID}, 1)
+	constraint, _ := pldag2.NewAtLeastConstraint([]string{primitiveID}, 1)
 
 	ruleSet := &RuleSet{}
-	ruleSet.polyhedron = pldag.NewPolyhedron(nil, nil)
+	ruleSet.polyhedron = pldag2.NewPolyhedron(nil, nil)
 	ruleSet.variables = []string{primitiveID}
 
 	err := ruleSet.setConstraint(constraint)
@@ -214,10 +214,10 @@ func Test_RuleSet_setConstraint_shouldAddConstraintIDToVariables(t *testing.T) {
 
 func Test_RuleSet_setConstraint_shouldAddTwoRowsToPolyhedron(t *testing.T) {
 	primitiveID := uuid.New().String()
-	constraint, _ := pldag.NewAtLeastConstraint([]string{primitiveID}, 1)
+	constraint, _ := pldag2.NewAtLeastConstraint([]string{primitiveID}, 1)
 
 	ruleSet := &RuleSet{}
-	ruleSet.polyhedron = pldag.NewPolyhedron(nil, nil)
+	ruleSet.polyhedron = pldag2.NewPolyhedron(nil, nil)
 	ruleSet.variables = []string{primitiveID}
 
 	err := ruleSet.setConstraint(constraint)
@@ -228,10 +228,10 @@ func Test_RuleSet_setConstraint_shouldAddTwoRowsToPolyhedron(t *testing.T) {
 
 func Test_RuleSet_setConstraint_shouldAddTwoBiases(t *testing.T) {
 	primitiveID := uuid.New().String()
-	constraint, _ := pldag.NewAtLeastConstraint([]string{primitiveID}, 1)
+	constraint, _ := pldag2.NewAtLeastConstraint([]string{primitiveID}, 1)
 
 	ruleSet := &RuleSet{}
-	ruleSet.polyhedron = pldag.NewPolyhedron(nil, nil)
+	ruleSet.polyhedron = pldag2.NewPolyhedron(nil, nil)
 	ruleSet.variables = []string{primitiveID}
 
 	err := ruleSet.setConstraint(constraint)

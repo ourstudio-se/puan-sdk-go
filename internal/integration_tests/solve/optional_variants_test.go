@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
-	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
+	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
+	puan2 "github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
 // Test_optionalVariant_selectNotPreferred
@@ -17,8 +17,8 @@ import (
 func Test_optionalVariant_selectNotPreferred(t *testing.T) {
 	ruleSet := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -28,7 +28,7 @@ func Test_optionalVariant_selectNotPreferred(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 1,
 			"itemX":    1,
 			"itemY":    0,
@@ -46,8 +46,8 @@ func Test_optionalVariant_selectNotPreferred(t *testing.T) {
 func Test_optionalVariant_selectPreferred(t *testing.T) {
 	ruleSet := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -57,7 +57,7 @@ func Test_optionalVariant_selectPreferred(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 1,
 			"itemX":    0,
 			"itemY":    1,
@@ -75,9 +75,9 @@ func Test_optionalVariant_selectPreferred(t *testing.T) {
 // Comment: this test fails. We get another variant of packageA instead of nothing.
 func Test_optionalVariant_deselectingVariant_shouldGiveEmptySolution(t *testing.T) {
 	ruleSet := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").WithAction(puan.REMOVE).Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
+		puan2.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").WithAction(puan2.REMOVE).Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -87,7 +87,7 @@ func Test_optionalVariant_deselectingVariant_shouldGiveEmptySolution(t *testing.
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 0,
 			"itemX":    0,
 			"itemY":    0,
@@ -104,9 +104,9 @@ func Test_optionalVariant_deselectingVariant_shouldGiveEmptySolution(t *testing.
 func Test_optionalVariant_changeVariant(t *testing.T) {
 	ruleSet := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
+		puan2.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -116,7 +116,7 @@ func Test_optionalVariant_changeVariant(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 1,
 			"itemX":    1,
 			"itemY":    0,
@@ -133,9 +133,9 @@ func Test_optionalVariant_changeVariant(t *testing.T) {
 func Test_optionalVariant_selectItemInAnotherVariant_shouldChangeVariant(t *testing.T) {
 	ruleSet := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
-		puan.NewSelectionBuilder("itemY").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
+		puan2.NewSelectionBuilder("itemY").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -145,7 +145,7 @@ func Test_optionalVariant_selectItemInAnotherVariant_shouldChangeVariant(t *test
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 1,
 			"itemX":    0,
 			"itemY":    1,
@@ -159,7 +159,7 @@ func Test_optionalVariant_selectItemInAnotherVariant_shouldChangeVariant(t *test
 func Test_optionalVariant_noSelection_shouldGiveEmptySolution(t *testing.T) {
 	ruleSet := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
 
-	selections := puan.Selections{}
+	selections := puan2.Selections{}
 
 	query, _ := ruleSet.NewQuery(selections)
 
@@ -168,7 +168,7 @@ func Test_optionalVariant_noSelection_shouldGiveEmptySolution(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 0,
 			"itemX":    0,
 			"itemY":    0,
@@ -178,8 +178,8 @@ func Test_optionalVariant_noSelection_shouldGiveEmptySolution(t *testing.T) {
 	)
 }
 
-func optionalVariantsWithXORBetweenItemsLargeVariantPreferred() *puan.RuleSet {
-	creator := puan.NewRuleSetCreator()
+func optionalVariantsWithXORBetweenItemsLargeVariantPreferred() *puan2.RuleSet {
+	creator := puan2.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemZ")
 
 	xorItem1Item2, _ := creator.PLDAG().SetXor("itemX", "itemY")

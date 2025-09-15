@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
-	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
+	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
+	puan2 "github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
 // Test_exactlyOnePackage_selectSmallestPackage
@@ -18,8 +18,8 @@ import (
 func Test_exactlyOnePackage_selectSmallestPackage(t *testing.T) {
 	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageA").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -29,7 +29,7 @@ func Test_exactlyOnePackage_selectSmallestPackage(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 1,
 			"packageB": 0,
 			"packageC": 0,
@@ -50,9 +50,9 @@ func Test_exactlyOnePackage_selectSmallestPackage(t *testing.T) {
 func Test_exactlyOnePackage_upgradeToLargerPackage_case2(t *testing.T) {
 	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").Build(),
-		puan.NewSelectionBuilder("packageB").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageA").Build(),
+		puan2.NewSelectionBuilder("packageB").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -62,7 +62,7 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case2(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 0,
 			"packageB": 1,
 			"packageC": 0,
@@ -83,9 +83,9 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case2(t *testing.T) {
 func Test_exactlyOnePackage_upgradeToLargerPackage_case3(t *testing.T) {
 	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").Build(),
-		puan.NewSelectionBuilder("packageC").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageA").Build(),
+		puan2.NewSelectionBuilder("packageC").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -95,7 +95,7 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case3(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 0,
 			"packageB": 0,
 			"packageC": 1,
@@ -116,9 +116,9 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case3(t *testing.T) {
 func Test_exactlyOnePackage_upgradeToLargerPackage_case4(t *testing.T) {
 	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageB").Build(),
-		puan.NewSelectionBuilder("packageC").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageB").Build(),
+		puan2.NewSelectionBuilder("packageC").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -128,7 +128,7 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case4(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 0,
 			"packageB": 0,
 			"packageC": 1,
@@ -149,9 +149,9 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case4(t *testing.T) {
 func Test_exactlyOnePackage_downgradeToSmallerPackage_case1(t *testing.T) {
 	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageC").Build(),
-		puan.NewSelectionBuilder("packageA").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageC").Build(),
+		puan2.NewSelectionBuilder("packageA").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -161,7 +161,7 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case1(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 1,
 			"packageB": 0,
 			"packageC": 0,
@@ -182,9 +182,9 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case1(t *testing.T) {
 func Test_exactlyOnePackage_downgradeToSmallerPackage_case2(t *testing.T) {
 	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageB").Build(),
-		puan.NewSelectionBuilder("packageA").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageB").Build(),
+		puan2.NewSelectionBuilder("packageA").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -194,7 +194,7 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case2(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 1,
 			"packageB": 0,
 			"packageC": 0,
@@ -215,9 +215,9 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case2(t *testing.T) {
 func Test_exactlyOnePackage_downgradeToSmallerPackage_case3(t *testing.T) {
 	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageC").Build(),
-		puan.NewSelectionBuilder("packageB").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageC").Build(),
+		puan2.NewSelectionBuilder("packageB").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -227,7 +227,7 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case3(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 0,
 			"packageB": 1,
 			"packageC": 0,
@@ -248,7 +248,7 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case3(t *testing.T) {
 func Test_exactlyOnePackage_noSelection_shouldGivePreferred(t *testing.T) {
 	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
-	selections := puan.Selections{}
+	selections := puan2.Selections{}
 
 	query, _ := ruleSet.NewQuery(selections)
 
@@ -257,7 +257,7 @@ func Test_exactlyOnePackage_noSelection_shouldGivePreferred(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 1,
 			"packageB": 0,
 			"packageC": 0,
@@ -270,8 +270,8 @@ func Test_exactlyOnePackage_noSelection_shouldGivePreferred(t *testing.T) {
 	)
 }
 
-func upgradeDowngradePackageWithSharedItemsSmallestPreferred() *puan.RuleSet {
-	creator := puan.NewRuleSetCreator()
+func upgradeDowngradePackageWithSharedItemsSmallestPreferred() *puan2.RuleSet {
+	creator := puan2.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "packageB", "packageC", "itemX", "itemY", "itemZ", "itemK")
 
 	includedItemsInA, _ := creator.PLDAG().SetAnd("itemX", "itemY")

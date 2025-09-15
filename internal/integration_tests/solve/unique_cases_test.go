@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
-	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
+	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
+	puan2 "github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
 const url = "http://127.0.0.1:9000"
@@ -17,7 +17,7 @@ const url = "http://127.0.0.1:9000"
 // Description: Exactly one of package A, B or C must be selected. A is preferred. B requires another
 // variable itemX. Now, A is preselected and we select B. We expect (B, itemX) as result.
 func Test_exactlyOnePackage_selectPreferredThenNotPreferred(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("packageA", "packageB", "packageC", "itemX")
 	exactlyOnePackage, _ := creator.PLDAG().SetXor("packageA", "packageB", "packageC")
@@ -32,9 +32,9 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred(t *testing.T) {
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").Build(),
-		puan.NewSelectionBuilder("packageB").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageA").Build(),
+		puan2.NewSelectionBuilder("packageB").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -44,7 +44,7 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 0,
 			"packageB": 1,
 			"packageC": 0,
@@ -58,7 +58,7 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred(t *testing.T) {
 // Ref: test_select_same_not_constrainted_selected_component
 // Description: package A requires B. B has been preselected and is then removed.
 func Test_packageImpliesAnotherPackage_addAndRemove_shouldGiveEmptySolution(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "packageB")
 	packageARequiredPackageB, _ := creator.PLDAG().SetImply("packageA", "packageB")
 
@@ -66,9 +66,9 @@ func Test_packageImpliesAnotherPackage_addAndRemove_shouldGiveEmptySolution(t *t
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageB").Build(),
-		puan.NewSelectionBuilder("packageB").WithAction(puan.REMOVE).Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageB").Build(),
+		puan2.NewSelectionBuilder("packageB").WithAction(puan2.REMOVE).Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -78,7 +78,7 @@ func Test_packageImpliesAnotherPackage_addAndRemove_shouldGiveEmptySolution(t *t
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 0,
 			"packageB": 0,
 		},
@@ -91,7 +91,7 @@ func Test_packageImpliesAnotherPackage_addAndRemove_shouldGiveEmptySolution(t *t
 // Description: Exactly one of package A, B or C must be selected, but A is preferred.
 // B has been preselected but is removed again. We now expect A to be selected.
 func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldGivePreferred(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("packageA", "packageB", "packageC")
 
@@ -105,9 +105,9 @@ func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldGivePreferred(t 
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageB").Build(),
-		puan.NewSelectionBuilder("packageB").WithAction(puan.REMOVE).Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageB").Build(),
+		puan2.NewSelectionBuilder("packageB").WithAction(puan2.REMOVE).Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -117,7 +117,7 @@ func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldGivePreferred(t 
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 1,
 			"packageB": 0,
 			"packageC": 0,
@@ -132,7 +132,7 @@ func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldGivePreferred(t 
 // with preferred on the former.
 // Nothing is preselected and we expect (A, itemX, itemY, itemN) as our result configuration.
 func Test_exactlyOnePackage_nothingIsSelected_shouldGivePreferred(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemM", "itemN", "itemO")
 
 	itemsXAndY, _ := creator.PLDAG().SetAnd("itemX", "itemY")
@@ -152,7 +152,7 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldGivePreferred(t *testing.T) 
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{}
+	selections := puan2.Selections{}
 
 	query, _ := ruleSet.NewQuery(selections)
 	client := glpk.NewClient(url)
@@ -160,7 +160,7 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldGivePreferred(t *testing.T) 
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 1,
 			"itemX":    1,
 			"itemY":    1,
@@ -177,7 +177,7 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldGivePreferred(t *testing.T) 
 // Description: There exists a chain of requirements: E -> F -> A -> (itemX, itemY,itemZ).
 // We select E and expect our result configuration to (E, F, A, itemX, itemY, itemZ)
 func Test_implicationChain_shouldGiveAll(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("packageA", "packageE", "packageF", "itemX", "itemY", "itemZ")
 
@@ -196,8 +196,8 @@ func Test_implicationChain_shouldGiveAll(t *testing.T) {
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageE").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageE").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -207,7 +207,7 @@ func Test_implicationChain_shouldGiveAll(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 1,
 			"packageE": 1,
 			"packageF": 1,
@@ -226,7 +226,7 @@ func Test_implicationChain_shouldGiveAll(t *testing.T) {
 // We have already selected packageA and now we select packageB.
 // We expect packageB to be the only one in configuration
 func Test_multiplePackagesWithXOR_shouldGiveLastSelected(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("packageA", "packageB", "packageC", "packageD", "packageE")
 	exactlyOnePackage, _ := creator.PLDAG().SetXor("packageA", "packageB", "packageC", "packageD", "packageE")
@@ -236,9 +236,9 @@ func Test_multiplePackagesWithXOR_shouldGiveLastSelected(t *testing.T) {
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").Build(),
-		puan.NewSelectionBuilder("packageB").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageA").Build(),
+		puan2.NewSelectionBuilder("packageB").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -248,7 +248,7 @@ func Test_multiplePackagesWithXOR_shouldGiveLastSelected(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 0,
 			"packageB": 1,
 			"packageC": 0,
@@ -265,7 +265,7 @@ func Test_multiplePackagesWithXOR_shouldGiveLastSelected(t *testing.T) {
 // packageA -> (itemX, itemY)
 // We give pre selected action ['notExistingID'], expects error
 func Test_notExistingVariable_shouldGiveError(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY")
 
@@ -280,9 +280,9 @@ func Test_notExistingVariable_shouldGiveError(t *testing.T) {
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("notExistingID").Build(),
-		puan.NewSelectionBuilder("packageA").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("notExistingID").Build(),
+		puan2.NewSelectionBuilder("packageA").Build(),
 	}
 
 	_, err := ruleSet.NewQuery(selections)
@@ -302,7 +302,7 @@ func Test_notExistingVariable_shouldGiveError(t *testing.T) {
 // Comment: How should we interpret the python test, with defaultconfiguration?
 func Test_packageInDefaultConfig(t *testing.T) {
 	t.Skip()
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "packageZ", "itemB", "itemX", "itemY", "itemM", "itemN", "itemO")
 
 	exactlyOneIfItemXAndY, _ := creator.PLDAG().SetXor("itemX", "itemY")
@@ -327,9 +327,9 @@ func Test_packageInDefaultConfig(t *testing.T) {
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").Build(),
-		puan.NewSelectionBuilder("itemX").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageA").Build(),
+		puan2.NewSelectionBuilder("itemX").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -339,7 +339,7 @@ func Test_packageInDefaultConfig(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 1,
 			"packageZ": 0,
 			"itemB":    1,
@@ -361,7 +361,7 @@ func Test_packageInDefaultConfig(t *testing.T) {
 // We preselect itemB and itemX then selects package P.
 // We expect (packageP, itemY) and itemB to be selected
 func Test_selectPackageWithItemAfterSingleConflictingItemSelection_shouldGivePackage(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "packageP", "itemB", "itemX", "itemY")
 
 	exactlyOneOfItemXAndY, _ := creator.PLDAG().SetXor("itemX", "itemY")
@@ -378,10 +378,10 @@ func Test_selectPackageWithItemAfterSingleConflictingItemSelection_shouldGivePac
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("itemB").Build(),
-		puan.NewSelectionBuilder("itemX").Build(),
-		puan.NewSelectionBuilder("packageP").WithSubSelectionID("itemY").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("itemB").Build(),
+		puan2.NewSelectionBuilder("itemX").Build(),
+		puan2.NewSelectionBuilder("packageP").WithSubSelectionID("itemY").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -391,7 +391,7 @@ func Test_selectPackageWithItemAfterSingleConflictingItemSelection_shouldGivePac
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 0,
 			"packageP": 1,
 			"itemB":    1,
@@ -410,7 +410,7 @@ func Test_selectPackageWithItemAfterSingleConflictingItemSelection_shouldGivePac
 // we preselect (packageP, itemY) and select (packageP, itemX). We
 // expects (packageP, itemY) to be removed from selected variants.
 func Test_changeVariant_shouldGiveLastSelected(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageP", "itemX", "itemY", "itemA", "itemB", "itemC")
 
 	includedItemsInPackage, _ := creator.PLDAG().SetAnd("itemA", "itemB", "itemC")
@@ -428,9 +428,9 @@ func Test_changeVariant_shouldGiveLastSelected(t *testing.T) {
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageP").WithSubSelectionID("itemY").Build(),
-		puan.NewSelectionBuilder("packageP").WithSubSelectionID("itemX").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageP").WithSubSelectionID("itemY").Build(),
+		puan2.NewSelectionBuilder("packageP").WithSubSelectionID("itemX").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -439,7 +439,7 @@ func Test_changeVariant_shouldGiveLastSelected(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageP": 1,
 			"itemX":    1,
 			"itemY":    0,
@@ -468,7 +468,7 @@ func Test_changeVariant_shouldGiveLastSelected(t *testing.T) {
 // Comment: How should we interpret the python test, with defaultconfiguration?
 func Test_subComponentsAndPackageInDefaultConfig(t *testing.T) {
 	t.Skip()
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageP", "itemA", "itemB", "itemX", "itemY", "itemZ")
 
 	exactlyOneOfTheItemsXYZ, _ := creator.PLDAG().SetXor("itemX", "itemY", "itemZ")
@@ -497,9 +497,9 @@ func Test_subComponentsAndPackageInDefaultConfig(t *testing.T) {
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("itemX").Build(),
-		puan.NewSelectionBuilder("itemX").WithAction(puan.REMOVE).Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("itemX").Build(),
+		puan2.NewSelectionBuilder("itemX").WithAction(puan2.REMOVE).Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -508,7 +508,7 @@ func Test_subComponentsAndPackageInDefaultConfig(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageP": 0,
 			"itemA":    0,
 			"itemB":    0,
@@ -528,7 +528,7 @@ func Test_subComponentsAndPackageInDefaultConfig(t *testing.T) {
 // but we want to check that it also works for duplicated rules.
 // Comment: returns error due to duplicated variables.
 func Test_duplicatedPreferred(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("itemA", "itemB", "itemC", "itemX", "itemY")
 
@@ -559,8 +559,8 @@ func Test_duplicatedPreferred(t *testing.T) {
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("itemA").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("itemA").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -569,7 +569,7 @@ func Test_duplicatedPreferred(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"itemA": 1,
 			"itemB": 0,
 			"itemC": 0,
@@ -594,7 +594,7 @@ func Test_duplicatedPreferred(t *testing.T) {
 // This is because itemX was selected firstly and has most less
 // priority.
 func Test_xorBetweenPackagesAndItems_shouldGiveLastSelection(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 
@@ -619,10 +619,10 @@ func Test_xorBetweenPackagesAndItems_shouldGiveLastSelection(t *testing.T) {
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("itemX").Build(),
-		puan.NewSelectionBuilder("packageA").Build(),
-		puan.NewSelectionBuilder("itemY").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("itemX").Build(),
+		puan2.NewSelectionBuilder("packageA").Build(),
+		puan2.NewSelectionBuilder("itemY").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -631,7 +631,7 @@ func Test_xorBetweenPackagesAndItems_shouldGiveLastSelection(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 1,
 			"packageB": 0,
 			"itemX":    0,
@@ -658,7 +658,7 @@ func Test_xorBetweenPackagesAndItems_shouldGiveLastSelection(t *testing.T) {
 // priority. The configuration is expected as (packageA, itemY), since
 // packageA is preferred over packageB, and itemY since it was later selected than itemX.
 func Test_xorBetweenPackagesAndItemsWithPreferred_shouldGiveLastSelection(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 
@@ -687,10 +687,10 @@ func Test_xorBetweenPackagesAndItemsWithPreferred_shouldGiveLastSelection(t *tes
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").Build(),
-		puan.NewSelectionBuilder("itemX").Build(),
-		puan.NewSelectionBuilder("itemY").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageA").Build(),
+		puan2.NewSelectionBuilder("itemX").Build(),
+		puan2.NewSelectionBuilder("itemY").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -699,7 +699,7 @@ func Test_xorBetweenPackagesAndItemsWithPreferred_shouldGiveLastSelection(t *tes
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 1,
 			"packageB": 0,
 			"itemX":    0,
@@ -731,7 +731,7 @@ func Test_xorBetweenPackagesAndItemsWithPreferred_shouldGiveLastSelection(t *tes
 // Comment: How should we interpret the python test, with defaultconfiguration?
 func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferred(t *testing.T) {
 	t.Skip()
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("itemA", "itemB", "itemC", "itemN", "itemX", "itemY", "itemZ")
 
@@ -766,9 +766,9 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("itemB").Build(),
-		puan.NewSelectionBuilder("itemN").Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("itemB").Build(),
+		puan2.NewSelectionBuilder("itemN").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -777,7 +777,7 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"itemA": 0,
 			"itemB": 1,
 			"itemC": 0,
@@ -791,7 +791,7 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 }
 
 func Test_removingItemInAddedPackage_shouldRemovePackageAsWell(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY")
 
 	itemXAndY, _ := creator.PLDAG().SetAnd("itemX", "itemY")
@@ -802,9 +802,9 @@ func Test_removingItemInAddedPackage_shouldRemovePackageAsWell(t *testing.T) {
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").Build(),
-		puan.NewSelectionBuilder("itemX").WithAction(puan.REMOVE).Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageA").Build(),
+		puan2.NewSelectionBuilder("itemX").WithAction(puan2.REMOVE).Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -813,7 +813,7 @@ func Test_removingItemInAddedPackage_shouldRemovePackageAsWell(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 0,
 			"itemX":    0,
 			"itemY":    0,
@@ -823,7 +823,7 @@ func Test_removingItemInAddedPackage_shouldRemovePackageAsWell(t *testing.T) {
 }
 
 func Test_removePackageWithSubselection_shouldGiveEmptySolution(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemZ", "itemM", "itemN")
 
 	exactlyOneOfItemXYZ, _ := creator.PLDAG().SetXor("itemX", "itemY", "itemZ")
@@ -839,10 +839,10 @@ func Test_removePackageWithSubselection_shouldGiveEmptySolution(t *testing.T) {
 
 	ruleSet := creator.Create()
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").Build(),
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemZ").Build(),
-		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemZ").WithAction(puan.REMOVE).Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").Build(),
+		puan2.NewSelectionBuilder("packageA").WithSubSelectionID("itemZ").Build(),
+		puan2.NewSelectionBuilder("packageA").WithSubSelectionID("itemZ").WithAction(puan2.REMOVE).Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -852,7 +852,7 @@ func Test_removePackageWithSubselection_shouldGiveEmptySolution(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan.Solution{
+		puan2.Solution{
 			"packageA": 0,
 			"itemX":    0,
 			"itemY":    0,

@@ -1,7 +1,7 @@
 package puan
 
 import (
-	"github.com/ourstudio-se/puan-sdk-go/utils"
+	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
 
 const ADD Action = "ADD"

@@ -3,13 +3,13 @@ package main
 import (
 	"fmt"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
-	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
+	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
+	puan2 "github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
 //nolint:gocyclo
 func main() {
-	creator := puan.NewRuleSetCreator()
+	creator := puan2.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives([]string{"a", "x", "y"}...)
 	variant1, _ := creator.PLDAG().SetAnd("a", "x")
 	variant2, _ := creator.PLDAG().SetAnd("a", "y")
@@ -32,8 +32,8 @@ func main() {
 	ruleSet := creator.Create()
 	x := "x"
 
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("a").WithSubSelectionID(x).Build(),
+	selections := puan2.Selections{
+		puan2.NewSelectionBuilder("a").WithSubSelectionID(x).Build(),
 	}
 
 	query, err := ruleSet.NewQuery(selections)
