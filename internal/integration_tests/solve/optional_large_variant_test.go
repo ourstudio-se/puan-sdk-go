@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
-	puan2 "github.com/ourstudio-se/puan-sdk-go/puan"
+	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
 // Test_optionalLargeVariantWithXOR_shouldReturnSelectedVariant
@@ -20,9 +20,9 @@ import (
 func Test_optionalLargeVariantWithXOR_removePreselectedItem(t *testing.T) {
 	ruleSet := optionalLargeVariantWithXOR()
 
-	selections := puan2.Selections{
-		puan2.NewSelectionBuilder("itemX").Build(),
-		puan2.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").Build(),
+	selections := puan.Selections{
+		puan.NewSelectionBuilder("itemX").Build(),
+		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -32,7 +32,7 @@ func Test_optionalLargeVariantWithXOR_removePreselectedItem(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan2.Solution{
+		puan.Solution{
 			"packageA": 1,
 			"itemX":    0,
 			"itemY":    1,
@@ -53,9 +53,9 @@ func Test_optionalLargeVariantWithXOR_removePreselectedItem(t *testing.T) {
 func Test_optionalLargeVariantWithXOR_shouldChangeVariant(t *testing.T) {
 	ruleSet := optionalLargeVariantWithXOR()
 
-	selections := puan2.Selections{
-		puan2.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
-		puan2.NewSelectionBuilder("itemY").Build(),
+	selections := puan.Selections{
+		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
+		puan.NewSelectionBuilder("itemY").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -65,7 +65,7 @@ func Test_optionalLargeVariantWithXOR_shouldChangeVariant(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan2.Solution{
+		puan.Solution{
 			"packageA": 1,
 			"itemX":    0,
 			"itemY":    1,
@@ -84,7 +84,7 @@ func Test_optionalLargeVariantWithXOR_shouldChangeVariant(t *testing.T) {
 func Test_optionalLargeVariantWithXOR_noSelection(t *testing.T) {
 	ruleSet := optionalLargeVariantWithXOR()
 
-	selections := puan2.Selections{}
+	selections := puan.Selections{}
 
 	query, _ := ruleSet.NewQuery(selections)
 
@@ -93,7 +93,7 @@ func Test_optionalLargeVariantWithXOR_noSelection(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan2.Solution{
+		puan.Solution{
 			"packageA": 0,
 			"itemX":    0,
 			"itemY":    0,
@@ -112,8 +112,8 @@ func Test_optionalLargeVariantWithXOR_noSelection(t *testing.T) {
 func Test_optionalLargeVariantWithXOR_singleItemSelection(t *testing.T) {
 	ruleSet := optionalLargeVariantWithXOR()
 
-	selections := puan2.Selections{
-		puan2.NewSelectionBuilder("itemM").Build(),
+	selections := puan.Selections{
+		puan.NewSelectionBuilder("itemM").Build(),
 	}
 
 	query, _ := ruleSet.NewQuery(selections)
@@ -123,7 +123,7 @@ func Test_optionalLargeVariantWithXOR_singleItemSelection(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan2.Solution{
+		puan.Solution{
 			"packageA": 0,
 			"itemX":    0,
 			"itemY":    0,
@@ -139,8 +139,8 @@ func Test_optionalLargeVariantWithXOR_singleItemSelection(t *testing.T) {
 	)
 }
 
-func optionalLargeVariantWithXOR() *puan2.RuleSet {
-	creator := puan2.NewRuleSetCreator()
+func optionalLargeVariantWithXOR() *puan.RuleSet {
+	creator := puan.NewRuleSetCreator()
 	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemM", "itemN", "itemO", "itemP", "itemQ", "itemR", "itemS")
 
 	exactlyOneOfItemXAndY, _ := creator.PLDAG().SetXor("itemX", "itemY")

@@ -3,17 +3,17 @@ package puan
 import (
 	"github.com/go-errors/errors"
 
-	pldag2 "github.com/ourstudio-se/puan-sdk-go/internal/pldag"
+	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
 
 type RuleSetCreator struct {
-	pldag              *pldag2.Model
+	pldag              *pldag.Model
 	preferredVariables []string
 }
 
 type RuleSet struct {
-	polyhedron         *pldag2.Polyhedron
+	polyhedron         *pldag.Polyhedron
 	primitiveVariables []string
 	variables          []string
 	preferredVariables []string
@@ -21,11 +21,11 @@ type RuleSet struct {
 
 func NewRuleSetCreator() *RuleSetCreator {
 	return &RuleSetCreator{
-		pldag: pldag2.New(),
+		pldag: pldag.New(),
 	}
 }
 
-func (c *RuleSetCreator) PLDAG() *pldag2.Model {
+func (c *RuleSetCreator) PLDAG() *pldag.Model {
 	return c.pldag
 }
 
@@ -38,9 +38,28 @@ func (c *RuleSetCreator) SetPreferreds(id ...string) error {
 		return err
 	}
 
-	c.preferredVariables = append(c.preferredVariables, id...)
+	negatedIDs, err := c.negatePreferreds(unpreferredIDs)
+	if err != nil {
+		return err
+	}
+
+	c.preferredVariables = append(c.preferredVariables, negatedIDs...)
 
 	return nil
+}
+
+func (c *RuleSetCreator) negatePreferreds(ids []string) ([]string, error) {
+	negatedIDs := make([]string, len(ids))
+	for i, id := range ids {
+		negatedID, err := c.pldag.SetNot(id)
+		if err != nil {
+			return nil, err
+		}
+
+		negatedIDs[i] = negatedID
+	}
+
+	return negatedIDs, nil
 }
 
 func (c *RuleSetCreator) Create() *RuleSet {
@@ -56,7 +75,7 @@ func (c *RuleSetCreator) Create() *RuleSet {
 	}
 }
 
-func (r *RuleSet) Polyhedron() *pldag2.Polyhedron {
+func (r *RuleSet) Polyhedron() *pldag.Polyhedron {
 	return r.polyhedron
 }
 
@@ -124,7 +143,7 @@ func (r *RuleSet) copy() *RuleSet {
 	bVector := make([]int, len(r.polyhedron.B()))
 	copy(bVector, r.polyhedron.B())
 
-	polyhedron := pldag2.NewPolyhedron(aMatrix, bVector)
+	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
 
 	variableIDs := make([]string, len(r.variables))
 	copy(variableIDs, r.variables)
@@ -206,12 +225,12 @@ func (r *RuleSet) setCompositeSelectionConstraint(ids []string) (string, error) 
 	return constraint.ID(), nil
 }
 
-func newCompositeSelectionConstraint(ids []string) (pldag2.Constraint, error) {
+func newCompositeSelectionConstraint(ids []string) (pldag.Constraint, error) {
 	dedupedIDs := utils.Dedupe(ids)
-	return pldag2.NewAtLeastConstraint(dedupedIDs, len(dedupedIDs))
+	return pldag.NewAtLeastConstraint(dedupedIDs, len(dedupedIDs))
 }
 
-func (r *RuleSet) setConstraintIfNotExist(constraint pldag2.Constraint) error {
+func (r *RuleSet) setConstraintIfNotExist(constraint pldag.Constraint) error {
 	if r.constraintExists(constraint) {
 		return nil
 	}
@@ -219,11 +238,11 @@ func (r *RuleSet) setConstraintIfNotExist(constraint pldag2.Constraint) error {
 	return r.setConstraint(constraint)
 }
 
-func (r *RuleSet) constraintExists(constraint pldag2.Constraint) bool {
+func (r *RuleSet) constraintExists(constraint pldag.Constraint) bool {
 	return utils.Contains(r.variables, constraint.ID())
 }
 
-func (r *RuleSet) setConstraint(constraint pldag2.Constraint) error {
+func (r *RuleSet) setConstraint(constraint pldag.Constraint) error {
 	r.polyhedron.AddEmptyColumn()
 
 	r.variables = append(r.variables, constraint.ID())
@@ -244,7 +263,7 @@ func (r *RuleSet) setConstraint(constraint pldag2.Constraint) error {
 	return nil
 }
 
-func (r *RuleSet) setAuxiliaryConstraint(constraint pldag2.AuxiliaryConstraint) error {
+func (r *RuleSet) setAuxiliaryConstraint(constraint pldag.AuxiliaryConstraint) error {
 	row, err := r.newRow(constraint.Coefficients())
 	if err != nil {
 		return err
@@ -255,7 +274,7 @@ func (r *RuleSet) setAuxiliaryConstraint(constraint pldag2.AuxiliaryConstraint) 
 	return nil
 }
 
-func (r *RuleSet) newRow(coefficients pldag2.Coefficients) ([]int, error) {
+func (r *RuleSet) newRow(coefficients pldag.Coefficients) ([]int, error) {
 	row := make([]int, len(r.variables))
 
 	for id, value := range coefficients {

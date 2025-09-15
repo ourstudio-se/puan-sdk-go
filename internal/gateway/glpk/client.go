@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-errors/errors"
 
-	puan2 "github.com/ourstudio-se/puan-sdk-go/puan"
+	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
 type Client struct {
@@ -24,24 +24,24 @@ func NewClient(baseURL string) *Client {
 }
 
 func (c *Client) Solve(
-	query *puan2.Query,
-) (puan2.Solution, error) {
+	query *puan.Query,
+) (puan.Solution, error) {
 	payload := newRequestPayload(query)
 
 	request, err := c.newRequest(payload)
 	if err != nil {
-		return puan2.Solution{}, err
+		return puan.Solution{}, err
 	}
 
 	resp, err := c.Do(request)
 	if err != nil {
-		return puan2.Solution{}, errors.Wrap(err, 0)
+		return puan.Solution{}, errors.Wrap(err, 0)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return puan2.Solution{},
+		return puan.Solution{},
 			errors.Errorf(
 				"body failed with status %d: %s", resp.StatusCode,
 				string(body),
@@ -50,14 +50,14 @@ func (c *Client) Solve(
 
 	var solveResp SolutionResponse
 	if err = json.NewDecoder(resp.Body).Decode(&solveResp); err != nil {
-		return puan2.Solution{}, errors.Wrap(err, 0)
+		return puan.Solution{}, errors.Wrap(err, 0)
 	}
 
 	return solveResp.getSolutionEntity()
 }
 
 func newRequestPayload(
-	query *puan2.Query,
+	query *puan.Query,
 ) SolveRequest {
 	A := toSparseMatrix(query.Polyhedron().SparseMatrix())
 	b := query.Polyhedron().B()

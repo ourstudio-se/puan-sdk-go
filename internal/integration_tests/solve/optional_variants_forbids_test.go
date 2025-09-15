@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
-	puan2 "github.com/ourstudio-se/puan-sdk-go/puan"
+	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
 // Test_optionalVariantsWithForbids_shouldReturnPreferred
@@ -27,9 +27,9 @@ import (
 func Test_optionalVariantsWithForbids_shouldReturnPreferred(t *testing.T) {
 	ruleset := optionalVariantsWithForbids()
 
-	selections := puan2.Selections{
-		puan2.NewSelectionBuilder("itemA").Build(),
-		puan2.NewSelectionBuilder("packageX").WithSubSelectionID("itemC").WithSubSelectionID("itemD").Build(),
+	selections := puan.Selections{
+		puan.NewSelectionBuilder("itemA").Build(),
+		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemC").WithSubSelectionID("itemD").Build(),
 	}
 
 	query, _ := ruleset.NewQuery(selections)
@@ -38,7 +38,7 @@ func Test_optionalVariantsWithForbids_shouldReturnPreferred(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan2.Solution{
+		puan.Solution{
 			"packageX": 1,
 			"itemA":    0,
 			"itemB":    0,
@@ -65,9 +65,9 @@ func Test_optionalVariantsWithForbids_shouldReturnPreferred(t *testing.T) {
 func Test_optionalVariantsWithForbids_shouldReturnNOTPreferred(t *testing.T) {
 	ruleset := optionalVariantsWithForbids()
 
-	selections := puan2.Selections{
-		puan2.NewSelectionBuilder("itemC").Build(),
-		puan2.NewSelectionBuilder("packageX").WithSubSelectionID("itemA").WithSubSelectionID("itemB").Build(),
+	selections := puan.Selections{
+		puan.NewSelectionBuilder("itemC").Build(),
+		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemA").WithSubSelectionID("itemB").Build(),
 	}
 
 	query, _ := ruleset.NewQuery(selections)
@@ -76,7 +76,7 @@ func Test_optionalVariantsWithForbids_shouldReturnNOTPreferred(t *testing.T) {
 	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
 	assert.Equal(
 		t,
-		puan2.Solution{
+		puan.Solution{
 			"packageX": 1,
 			"itemA":    1,
 			"itemB":    1,
@@ -87,8 +87,8 @@ func Test_optionalVariantsWithForbids_shouldReturnNOTPreferred(t *testing.T) {
 	)
 }
 
-func optionalVariantsWithForbids() *puan2.RuleSet {
-	creator := puan2.NewRuleSetCreator()
+func optionalVariantsWithForbids() *puan.RuleSet {
+	creator := puan.NewRuleSetCreator()
 
 	creator.PLDAG().SetPrimitives("itemA", "itemB", "itemC", "itemD", "packageX")
 
