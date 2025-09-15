@@ -31,12 +31,6 @@ func Test_validateConstraintInput(t *testing.T) {
 			amount:    -1,
 			wantErr:   true,
 		},
-		{
-			name:      "duplicated variables should return error",
-			variables: []string{"a", "a"},
-			amount:    2,
-			wantErr:   true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

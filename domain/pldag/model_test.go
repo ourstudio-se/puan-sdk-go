@@ -262,7 +262,7 @@ func TestValidateAssumedVariables(t *testing.T) {
 			name:              "duplicated assumed variable",
 			existingVariables: []string{"a", "b", "c"},
 			assumedVariables:  []string{"a", "a"},
-			wantErr:           true,
+			wantErr:           false,
 		},
 	}
 	for _, tt := range tests {

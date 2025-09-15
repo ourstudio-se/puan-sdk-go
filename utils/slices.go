@@ -79,3 +79,17 @@ func IndexOf[T comparable](elements []T, element T) (int, error) {
 
 	return -1, errors.New("element not found")
 }
+
+func Dedupe[T comparable](elements []T) []T {
+	seen := make(map[T]struct{}, len(elements))
+	var result []T
+
+	for _, e := range elements {
+		if _, ok := seen[e]; !ok {
+			seen[e] = struct{}{}
+			result = append(result, e)
+		}
+	}
+
+	return result
+}

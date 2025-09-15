@@ -221,7 +221,8 @@ func (r *RuleSet) setCompositeSelectionConstraint(ids []string) (string, error) 
 }
 
 func newCompositeSelectionConstraint(ids []string) (pldag.Constraint, error) {
-	return pldag.NewAtLeastConstraint(ids, len(ids))
+	dedupedIDs := utils.Dedupe(ids)
+	return pldag.NewAtLeastConstraint(dedupedIDs, len(dedupedIDs))
 }
 
 func (r *RuleSet) setConstraintIfNotExist(constraint pldag.Constraint) error {
