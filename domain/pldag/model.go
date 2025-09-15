@@ -27,8 +27,8 @@ func (m *Model) SetPrimitives(primitives ...string) {
 }
 
 func (m *Model) SetAnd(variables ...string) (string, error) {
-	dedupedVariables := utils.Dedupe(variables)
-	id, err := m.setAtLeast(dedupedVariables, len(dedupedVariables))
+	deduped := utils.Dedupe(variables)
+	id, err := m.setAtLeast(deduped, len(deduped))
 	if err != nil {
 		return "", err
 	}
@@ -37,8 +37,8 @@ func (m *Model) SetAnd(variables ...string) (string, error) {
 }
 
 func (m *Model) SetOr(variables ...string) (string, error) {
-	dedupedVariables := utils.Dedupe(variables)
-	id, err := m.setAtLeast(dedupedVariables, 1)
+	deduped := utils.Dedupe(variables)
+	id, err := m.setAtLeast(deduped, 1)
 	if err != nil {
 		return "", err
 	}
@@ -47,8 +47,8 @@ func (m *Model) SetOr(variables ...string) (string, error) {
 }
 
 func (m *Model) SetNot(variables ...string) (string, error) {
-	dedupedVariables := utils.Dedupe(variables)
-	id, err := m.setAtMost(dedupedVariables, 0)
+	deduped := utils.Dedupe(variables)
+	id, err := m.setAtMost(deduped, 0)
 	if err != nil {
 		return "", err
 	}
@@ -97,13 +97,13 @@ func (m *Model) SetEquivalent(variableOne, variableTwo string) (string, error) {
 }
 
 func (m *Model) Assume(variables ...string) error {
-	dedupedVariables := utils.Dedupe(variables)
-	err := m.validateAssumedVariables(dedupedVariables...)
+	deduped := utils.Dedupe(variables)
+	err := m.validateAssumedVariables(deduped...)
 	if err != nil {
 		return err
 	}
 
-	constraints := m.newAssumedConstraints(dedupedVariables...)
+	constraints := m.newAssumedConstraints(deduped...)
 	m.assumeConstraints = append(m.assumeConstraints, constraints...)
 
 	return nil
