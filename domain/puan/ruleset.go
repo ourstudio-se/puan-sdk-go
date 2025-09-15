@@ -30,29 +30,15 @@ func (c *RuleSetCreator) PLDAG() *pldag.Model {
 }
 
 func (c *RuleSetCreator) SetPreferreds(id ...string) error {
-	err := c.validatePreferredIDs(id)
+	dedupedIDs := utils.Dedupe(id)
+	unpreferredIDs := utils.Without(dedupedIDs, c.preferredVariables)
+
+	err := c.pldag.ValidateVariables(unpreferredIDs...)
 	if err != nil {
 		return err
 	}
 
 	c.preferredVariables = append(c.preferredVariables, id...)
-
-	return nil
-}
-
-func (c *RuleSetCreator) validatePreferredIDs(ids []string) error {
-	if utils.ContainsDuplicates(ids) {
-		return errors.New("duplicated preferred variables")
-	}
-
-	if utils.ContainsAny(c.preferredVariables, ids) {
-		return errors.New("preferred variable already added")
-	}
-
-	missingIDs := !utils.ContainsAll(c.pldag.Variables(), ids)
-	if missingIDs {
-		return errors.New("preferred variable not in model")
-	}
 
 	return nil
 }
@@ -88,7 +74,7 @@ func (r *RuleSet) PreferredVariables() []string {
 
 type querySpecification struct {
 	ruleSet         *RuleSet
-	querySelections querySelections
+	querySelections QuerySelections
 }
 
 func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
@@ -171,8 +157,8 @@ func (r *RuleSet) newQuerySpecification(selections Selections) (*querySpecificat
 	}, nil
 }
 
-func (r *RuleSet) newQuerySelections(selections Selections) (querySelections, error) {
-	querySelections := make(querySelections, len(selections))
+func (r *RuleSet) newQuerySelections(selections Selections) (QuerySelections, error) {
+	querySelections := make(QuerySelections, len(selections))
 	for i, selection := range selections {
 		querySelection, err := r.newQuerySelection(selection)
 		if err != nil {
@@ -185,13 +171,13 @@ func (r *RuleSet) newQuerySelections(selections Selections) (querySelections, er
 	return querySelections, nil
 }
 
-func (r *RuleSet) newQuerySelection(selection Selection) (querySelection, error) {
+func (r *RuleSet) newQuerySelection(selection Selection) (QuerySelection, error) {
 	id, err := r.obtainQuerySelectionID(selection)
 	if err != nil {
-		return querySelection{}, err
+		return QuerySelection{}, err
 	}
 
-	querySelection := querySelection{
+	querySelection := QuerySelection{
 		id:     id,
 		action: selection.action,
 	}
@@ -221,7 +207,8 @@ func (r *RuleSet) setCompositeSelectionConstraint(ids []string) (string, error) 
 }
 
 func newCompositeSelectionConstraint(ids []string) (pldag.Constraint, error) {
-	return pldag.NewAtLeastConstraint(ids, len(ids))
+	dedupedIDs := utils.Dedupe(ids)
+	return pldag.NewAtLeastConstraint(dedupedIDs, len(dedupedIDs))
 }
 
 func (r *RuleSet) setConstraintIfNotExist(constraint pldag.Constraint) error {

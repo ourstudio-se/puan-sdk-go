@@ -144,6 +144,20 @@ func Test_newCompositeSelectionConstraint_shouldCreateConstraint(
 	assert.Equal(t, want, got)
 }
 
+func Test_newCompositeSelectionConstraint_shouldCreateConstraintWithoutDuplicates(
+	t *testing.T,
+) {
+	primaryID := uuid.New().String()
+	subID := "a"
+	subID2 := "a"
+
+	got, err := newCompositeSelectionConstraint([]string{primaryID, subID, subID2})
+
+	want, _ := pldag.NewAtLeastConstraint([]string{primaryID, subID}, 2)
+	assert.NoError(t, err)
+	assert.Equal(t, want, got)
+}
+
 func Test_RuleSet_newRow(
 	t *testing.T,
 ) {

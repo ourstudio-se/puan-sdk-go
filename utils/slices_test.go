@@ -111,3 +111,27 @@ func Test_ContainsAll_givenMissingValues(t *testing.T) {
 	actual := ContainsAll(sliceA, sliceB)
 	assert.False(t, actual)
 }
+
+func Test_Dedupe_givenDuplicates(t *testing.T) {
+	slice := []string{"a", "b", "c", "a"}
+	actual := Dedupe(slice)
+	expected := []string{"a", "b", "c"}
+
+	assert.Equal(t, expected, actual)
+}
+
+func Test_Dedupe_givenNoDuplicates(t *testing.T) {
+	slice := []string{"a", "b", "c"}
+	actual := Dedupe(slice)
+	expected := []string{"a", "b", "c"}
+
+	assert.Equal(t, expected, actual)
+}
+
+func Test_Dedupe_givenEmptySlice(t *testing.T) {
+	slice := []string{}
+	actual := Dedupe(slice)
+	var expected []string
+
+	assert.Equal(t, expected, actual)
+}

@@ -27,7 +27,8 @@ func (m *Model) SetPrimitives(primitives ...string) {
 }
 
 func (m *Model) SetAnd(variables ...string) (string, error) {
-	id, err := m.setAtLeast(variables, len(variables))
+	deduped := utils.Dedupe(variables)
+	id, err := m.setAtLeast(deduped, len(deduped))
 	if err != nil {
 		return "", err
 	}
@@ -36,7 +37,8 @@ func (m *Model) SetAnd(variables ...string) (string, error) {
 }
 
 func (m *Model) SetOr(variables ...string) (string, error) {
-	id, err := m.setAtLeast(variables, 1)
+	deduped := utils.Dedupe(variables)
+	id, err := m.setAtLeast(deduped, 1)
 	if err != nil {
 		return "", err
 	}
@@ -45,7 +47,8 @@ func (m *Model) SetOr(variables ...string) (string, error) {
 }
 
 func (m *Model) SetNot(variables ...string) (string, error) {
-	id, err := m.setAtMost(variables, 0)
+	deduped := utils.Dedupe(variables)
+	id, err := m.setAtMost(deduped, 0)
 	if err != nil {
 		return "", err
 	}
@@ -76,7 +79,8 @@ func (m *Model) SetXor(variables ...string) (string, error) {
 }
 
 func (m *Model) SetOneOrNone(variables ...string) (string, error) {
-	return m.setAtMost(variables, 1)
+	deduped := utils.Dedupe(variables)
+	return m.setAtMost(deduped, 1)
 }
 
 func (m *Model) SetEquivalent(variableOne, variableTwo string) (string, error) {
@@ -93,12 +97,15 @@ func (m *Model) SetEquivalent(variableOne, variableTwo string) (string, error) {
 }
 
 func (m *Model) Assume(variables ...string) error {
-	err := m.validateAssumedVariables(variables...)
+	deduped := utils.Dedupe(variables)
+	err := m.ValidateVariables(deduped...)
 	if err != nil {
 		return err
 	}
 
-	constraints := m.newAssumedConstraints(variables...)
+	newAssumed := utils.Without(variables, m.assumeConstraints.coefficientIDs())
+
+	constraints := m.newAssumedConstraints(newAssumed...)
 	m.assumeConstraints = append(m.assumeConstraints, constraints...)
 
 	return nil
@@ -168,20 +175,10 @@ func (m *Model) newPositiveAssumedConstraint(variables ...string) AuxiliaryConst
 	return constraint
 }
 
-func (m *Model) validateAssumedVariables(assumedVariables ...string) error {
-	existingAssumedVariables := m.assumeConstraints.coefficientIDs()
-	seen := make(map[string]any)
-	for _, v := range assumedVariables {
-		if _, ok := seen[v]; ok {
-			return ErrDuplicateID
-		}
-		seen[v] = nil
-
-		if slices.Contains(existingAssumedVariables, v) {
-			return errors.New("variable already assumed")
-		}
-		if !slices.Contains(m.variables, v) {
-			return errors.New("variable not in model")
+func (m *Model) ValidateVariables(variables ...string) error {
+	for _, v := range variables {
+		if !utils.Contains(m.variables, v) {
+			return errors.Errorf("variable %s not in model", v)
 		}
 	}
 

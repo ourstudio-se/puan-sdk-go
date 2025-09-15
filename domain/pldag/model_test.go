@@ -238,7 +238,7 @@ func TestValidateAssumedVariables(t *testing.T) {
 			wantErr:                    false,
 		},
 		{
-			name: "invalid assumed variable again",
+			name: "assumed variable twice",
 			existingAssumedConstraints: AuxiliaryConstraints{
 				{
 					coefficients: Coefficients{
@@ -250,18 +250,12 @@ func TestValidateAssumedVariables(t *testing.T) {
 			},
 			existingVariables: []string{"a", "b", "c"},
 			assumedVariables:  []string{"a", "b"},
-			wantErr:           true,
+			wantErr:           false,
 		},
 		{
 			name:              "invalid assumed non-existing variable",
 			existingVariables: []string{"a", "b", "c"},
 			assumedVariables:  []string{"x"},
-			wantErr:           true,
-		},
-		{
-			name:              "duplicated assumed variable",
-			existingVariables: []string{"a", "b", "c"},
-			assumedVariables:  []string{"a", "a"},
 			wantErr:           true,
 		},
 	}
@@ -316,4 +310,24 @@ func TestModel_newAssumedConstraint(t *testing.T) {
 			assert.Equal(t, tt.want, constraints, "Constraint should match")
 		})
 	}
+}
+
+func Test_ValidateVariables_givenValidCase(t *testing.T) {
+	variables := []string{"a", "c"}
+	model := &Model{
+		variables: []string{"a", "b", "c", "d"},
+	}
+
+	err := model.ValidateVariables(variables...)
+	assert.NoError(t, err)
+}
+
+func Test_ValidateVariables_givenInvalidCase(t *testing.T) {
+	variables := []string{"k", "c"}
+	model := &Model{
+		variables: []string{"a", "b", "c", "d"},
+	}
+
+	err := model.ValidateVariables(variables...)
+	assert.Error(t, err)
 }

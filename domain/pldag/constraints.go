@@ -8,8 +8,6 @@ import (
 	"slices"
 
 	"github.com/go-errors/errors"
-
-	"github.com/ourstudio-se/puan-sdk-go/utils"
 )
 
 type Constraint struct {
@@ -37,10 +35,6 @@ func NewAtLeastConstraint(variables []string, amount int) (Constraint, error) {
 }
 
 func validateConstraintInput(variables []string, amount int) error {
-	if utils.ContainsDuplicates(variables) {
-		return errors.New("duplicated variables")
-	}
-
 	if amount > len(variables) {
 		return errors.New("amount cannot be greater than number of variables")
 	}
