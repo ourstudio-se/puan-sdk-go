@@ -358,3 +358,14 @@ func Test_Selections_extendWithPrimaryPrimitiveSelections(t *testing.T) {
 
 	assert.Equal(t, want, extended)
 }
+
+func Test_Selections_ids(t *testing.T) {
+	selections := Selections{
+		NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+		NewSelectionBuilder("z").Build(),
+		NewSelectionBuilder("z").WithSubSelectionID("w").Build(),
+	}
+
+	ids := selections.ids()
+	assert.Equal(t, []string{"x", "y", "z", "w"}, ids)
+}

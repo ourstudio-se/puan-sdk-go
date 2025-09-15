@@ -225,3 +225,53 @@ func Test_RuleSet_setConstraint_shouldAddTwoBiases(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, ruleSet.polyhedron.B(), 2)
 }
+
+func Test_validateSelectionIDs_givenValidSelection(t *testing.T) {
+	primaryID := fake.New[string]()
+	subID := fake.New[string]()
+
+	creator := NewRuleSetCreator()
+	creator.PLDAG().SetPrimitives(primaryID, subID)
+	ruleSet := creator.Create()
+
+	selections := Selections{
+		NewSelectionBuilder(primaryID).WithSubSelectionID(subID).Build(),
+	}
+
+	err := ruleSet.validateSelectionIDs(selections.ids())
+
+	assert.NoError(t, err)
+}
+
+func Test_validateSelectionIDs_givenInvalidSelection(t *testing.T) {
+	primaryID := fake.New[string]()
+	subID := fake.New[string]()
+
+	invalidID := "invalid-id"
+	creator := NewRuleSetCreator()
+	creator.PLDAG().SetPrimitives(primaryID, subID)
+	ruleSet := creator.Create()
+
+	selections := Selections{
+		NewSelectionBuilder(invalidID).Build(),
+	}
+
+	err := ruleSet.validateSelectionIDs(selections.ids())
+
+	assert.Error(t, err)
+}
+
+func Test_validateSelectionIDs_givenEmptySelection(t *testing.T) {
+	primaryID := fake.New[string]()
+	subID := fake.New[string]()
+
+	creator := NewRuleSetCreator()
+	creator.PLDAG().SetPrimitives(primaryID, subID)
+	ruleSet := creator.Create()
+
+	selection := Selections{}
+
+	err := ruleSet.validateSelectionIDs(selection.ids())
+
+	assert.NoError(t, err)
+}
