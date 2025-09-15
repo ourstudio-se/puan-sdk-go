@@ -125,10 +125,7 @@ func optionalVariantsWithForbids() *puan.RuleSet {
 	preferredPackageXItemC, _ := creator.PLDAG().SetImply("packageX", "itemC")
 	preferredPackageXItemD, _ := creator.PLDAG().SetImply("packageX", "itemD")
 
-	invertedPreferredItemC, _ := creator.PLDAG().SetNot(preferredPackageXItemC)
-	invertedPreferredItemD, _ := creator.PLDAG().SetNot(preferredPackageXItemD)
-
-	_ = creator.SetPreferreds(invertedPreferredItemC, invertedPreferredItemD)
+	_ = creator.SetPreferreds(preferredPackageXItemC, preferredPackageXItemD)
 
 	ruleSet := creator.Create()
 

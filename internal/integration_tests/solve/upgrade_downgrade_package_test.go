@@ -301,8 +301,7 @@ func upgradeDowngradePackageWithSharedItemsSmallestPreferred() *puan.RuleSet {
 	)
 	_ = creator.PLDAG().Assume(root)
 
-	invertedPreferred, _ := creator.PLDAG().SetNot("packageA")
-	_ = creator.SetPreferreds(invertedPreferred)
+	_ = creator.SetPreferreds("packageA")
 
 	ruleSet := creator.Create()
 

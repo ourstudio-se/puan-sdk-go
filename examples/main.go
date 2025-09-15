@@ -7,6 +7,7 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
+//nolint:gocyclo
 func main() {
 	// Initialize the ruleset creator
 	creator := puan.NewRuleSetCreator()
@@ -49,7 +50,7 @@ func main() {
 
 	// Custom selections, which in this specific case will override the preferred variable z
 	selections := puan.Selections{
-		//puan.NewSelectionBuilder("y").Build(),
+		puan.NewSelectionBuilder("y").Build(),
 	}
 
 	// Create the query for solver

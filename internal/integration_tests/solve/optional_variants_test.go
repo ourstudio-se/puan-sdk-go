@@ -197,9 +197,8 @@ func optionalVariantsWithXORBetweenItemsLargeVariantPreferred() *puan.RuleSet {
 
 	preferredItems, _ := creator.PLDAG().SetAnd("itemY", "itemZ")
 	packagePreferredVariant, _ := creator.PLDAG().SetImply("packageA", preferredItems)
-	invertedPreferred, _ := creator.PLDAG().SetNot(packagePreferredVariant)
 
-	_ = creator.SetPreferreds(invertedPreferred)
+	_ = creator.SetPreferreds(packagePreferredVariant)
 
 	ruleSet := creator.Create()
 
