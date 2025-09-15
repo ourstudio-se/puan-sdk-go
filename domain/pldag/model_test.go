@@ -312,36 +312,6 @@ func TestModel_newAssumedConstraint(t *testing.T) {
 	}
 }
 
-func Test_getUnassumedVariables_givenAlreadyAssumedVariables(t *testing.T) {
-	model := &Model{
-		assumeConstraints: AuxiliaryConstraints{
-			{
-				coefficients: Coefficients{
-					"a": 1,
-					"b": 1,
-				},
-				bias: Bias(2),
-			},
-		},
-	}
-
-	assumed := []string{"a", "b", "c", "d"}
-	want := []string{"c", "d"}
-	got := model.getUnassumedVariables(assumed)
-
-	assert.Equal(t, want, got)
-}
-
-func Test_getUnassumedVariables_nothingAssumed(t *testing.T) {
-	model := &Model{}
-
-	assumed := []string{"a", "b", "c", "d"}
-	want := []string{"a", "b", "c", "d"}
-	got := model.getUnassumedVariables(assumed)
-
-	assert.Equal(t, want, got)
-}
-
 func Test_ValidateVariables_givenValidCase(t *testing.T) {
 	variables := []string{"a", "c"}
 	model := &Model{

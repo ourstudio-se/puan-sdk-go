@@ -103,19 +103,12 @@ func (m *Model) Assume(variables ...string) error {
 		return err
 	}
 
-	unassumed := m.getUnassumedVariables(deduped)
+	newAssumed := utils.Without(variables, m.assumeConstraints.coefficientIDs())
 
-	constraints := m.newAssumedConstraints(unassumed...)
+	constraints := m.newAssumedConstraints(newAssumed...)
 	m.assumeConstraints = append(m.assumeConstraints, constraints...)
 
 	return nil
-}
-
-func (m *Model) getUnassumedVariables(variables []string) []string {
-	assumed := m.assumeConstraints.coefficientIDs()
-	unassumed := utils.Without(variables, assumed)
-
-	return unassumed
 }
 
 func (m *Model) NewPolyhedron() *Polyhedron {
