@@ -20,9 +20,9 @@ type QuerySelection struct {
 	action Action
 }
 
-type querySelections []QuerySelection
+type QuerySelections []QuerySelection
 
-func (s querySelections) ids() []string {
+func (s QuerySelections) ids() []string {
 	ids := make([]string, len(s))
 	for i, selection := range s {
 		ids[i] = selection.id

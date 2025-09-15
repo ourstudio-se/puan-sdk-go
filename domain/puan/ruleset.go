@@ -88,7 +88,7 @@ func (r *RuleSet) PreferredVariables() []string {
 
 type querySpecification struct {
 	ruleSet         *RuleSet
-	querySelections querySelections
+	querySelections QuerySelections
 }
 
 func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
@@ -171,8 +171,8 @@ func (r *RuleSet) newQuerySpecification(selections Selections) (*querySpecificat
 	}, nil
 }
 
-func (r *RuleSet) newQuerySelections(selections Selections) (querySelections, error) {
-	querySelections := make(querySelections, len(selections))
+func (r *RuleSet) newQuerySelections(selections Selections) (QuerySelections, error) {
+	querySelections := make(QuerySelections, len(selections))
 	for i, selection := range selections {
 		querySelection, err := r.newQuerySelection(selection)
 		if err != nil {
