@@ -15,12 +15,12 @@ type Selection struct {
 	action          Action
 }
 
-type querySelection struct {
+type QuerySelection struct {
 	id     string
 	action Action
 }
 
-type querySelections []querySelection
+type querySelections []QuerySelection
 
 func (s querySelections) ids() []string {
 	ids := make([]string, len(s))

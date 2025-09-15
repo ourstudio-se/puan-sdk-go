@@ -185,13 +185,13 @@ func (r *RuleSet) newQuerySelections(selections Selections) (querySelections, er
 	return querySelections, nil
 }
 
-func (r *RuleSet) newQuerySelection(selection Selection) (querySelection, error) {
+func (r *RuleSet) newQuerySelection(selection Selection) (QuerySelection, error) {
 	id, err := r.obtainQuerySelectionID(selection)
 	if err != nil {
-		return querySelection{}, err
+		return QuerySelection{}, err
 	}
 
-	querySelection := querySelection{
+	querySelection := QuerySelection{
 		id:     id,
 		action: selection.action,
 	}

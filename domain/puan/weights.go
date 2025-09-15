@@ -78,7 +78,7 @@ func calculatePreferredWeights(
 }
 
 func calculateSelectedWeights(
-	selections []querySelection,
+	selections querySelections,
 	notSelectedSum,
 	preferredWeightsSum int,
 ) Weights {
