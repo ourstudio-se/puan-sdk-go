@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/ourstudio-se/puan-sdk-go/utils"
+	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
 
 type Model struct {

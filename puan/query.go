@@ -1,6 +1,8 @@
 package puan
 
-import "github.com/ourstudio-se/puan-sdk-go/domain/pldag"
+import (
+	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
+)
 
 type Query struct {
 	polyhedron *pldag.Polyhedron

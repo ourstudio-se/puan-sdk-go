@@ -3,8 +3,8 @@ package puan
 import (
 	"github.com/go-errors/errors"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
-	"github.com/ourstudio-se/puan-sdk-go/utils"
+	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
+	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
 
 type RuleSetCreator struct {
@@ -38,9 +38,28 @@ func (c *RuleSetCreator) SetPreferreds(id ...string) error {
 		return err
 	}
 
-	c.preferredVariables = append(c.preferredVariables, id...)
+	negatedIDs, err := c.negatePreferreds(unpreferredIDs)
+	if err != nil {
+		return err
+	}
+
+	c.preferredVariables = append(c.preferredVariables, negatedIDs...)
 
 	return nil
+}
+
+func (c *RuleSetCreator) negatePreferreds(ids []string) ([]string, error) {
+	negatedIDs := make([]string, len(ids))
+	for i, id := range ids {
+		negatedID, err := c.pldag.SetNot(id)
+		if err != nil {
+			return nil, err
+		}
+
+		negatedIDs[i] = negatedID
+	}
+
+	return negatedIDs, nil
 }
 
 func (c *RuleSetCreator) Create() *RuleSet {

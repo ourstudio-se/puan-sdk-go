@@ -6,8 +6,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/pldag"
-	"github.com/ourstudio-se/puan-sdk-go/fake"
+	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
+	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 )
 
 func Test_RuleSet_copy_shouldBeEqual(t *testing.T) {
@@ -24,12 +24,12 @@ func Test_RuleSet_copy_shouldBeEqual(t *testing.T) {
 	original.primitiveVariables = primitiveVariables
 	original.preferredVariables = preferredVariables
 
-	copy := original.copy()
+	ccopy := original.copy()
 
-	assert.Equal(t, polyhedron, copy.polyhedron)
-	assert.Equal(t, variables, copy.variables)
-	assert.Equal(t, primitiveVariables, copy.primitiveVariables)
-	assert.Equal(t, preferredVariables, copy.preferredVariables)
+	assert.Equal(t, polyhedron, ccopy.polyhedron)
+	assert.Equal(t, variables, ccopy.variables)
+	assert.Equal(t, primitiveVariables, ccopy.primitiveVariables)
+	assert.Equal(t, preferredVariables, ccopy.preferredVariables)
 }
 
 func Test_RuleSet_copy_givenChangeToCopy_shouldNotChangeOriginal(t *testing.T) {

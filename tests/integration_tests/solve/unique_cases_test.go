@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
-	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
+	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
+	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
 const url = "http://127.0.0.1:9000"
@@ -27,8 +27,7 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred(t *testing.T) {
 	root, _ := creator.PLDAG().SetAnd(exactlyOnePackage, packageBRequiresItemX)
 	_ = creator.PLDAG().Assume(root)
 
-	invertedPreferred, _ := creator.PLDAG().SetNot("packageA")
-	_ = creator.SetPreferreds(invertedPreferred)
+	_ = creator.SetPreferreds("packageA")
 
 	ruleSet := creator.Create()
 
@@ -100,8 +99,7 @@ func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldGivePreferred(t 
 	root, _ := creator.PLDAG().SetAnd(exactlyOnePackage)
 	_ = creator.PLDAG().Assume(root)
 
-	invertedPreferred, _ := creator.PLDAG().SetNot("packageA")
-	_ = creator.SetPreferreds(invertedPreferred)
+	_ = creator.SetPreferreds("packageA")
 
 	ruleSet := creator.Create()
 
@@ -147,8 +145,7 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldGivePreferred(t *testing.T) 
 	root, _ := creator.PLDAG().SetAnd("packageA", packageARequiresItems, packageARequiresExactlyOneOfItemMAndN, packageARequiresExactlyOneOfItemOAndN)
 	_ = creator.PLDAG().Assume(root)
 
-	invertedPreferred, _ := creator.PLDAG().SetNot("itemN")
-	_ = creator.SetPreferreds(invertedPreferred)
+	_ = creator.SetPreferreds("itemN")
 
 	ruleSet := creator.Create()
 
@@ -322,8 +319,7 @@ func Test_packageInDefaultConfig(t *testing.T) {
 	_ = creator.PLDAG().Assume(root)
 
 	preferredZWithX, _ := creator.PLDAG().SetImply("packageZ", "itemX")
-	invertedPreferred, _ := creator.PLDAG().SetNot(preferredZWithX)
-	_ = creator.SetPreferreds(invertedPreferred)
+	_ = creator.SetPreferreds(preferredZWithX)
 
 	ruleSet := creator.Create()
 
@@ -487,13 +483,10 @@ func Test_subComponentsAndPackageInDefaultConfig(t *testing.T) {
 
 	_ = creator.PLDAG().Assume(root)
 
-	invertedZPreferred, _ := creator.PLDAG().SetNot("itemZ")
-
 	prefItemsInPackageP, _ := creator.PLDAG().SetAnd("itemA", "itemX")
 	prefPackagePImpliesAAndItemX, _ := creator.PLDAG().SetImply("packageP", prefItemsInPackageP)
-	invertedPackagePAndPackageAAndItemX, _ := creator.PLDAG().SetNot(prefPackagePImpliesAAndItemX)
 
-	_ = creator.SetPreferreds(invertedZPreferred, invertedPackagePAndPackageAAndItemX)
+	_ = creator.SetPreferreds("itemZ", prefPackagePImpliesAAndItemX)
 
 	ruleSet := creator.Create()
 
@@ -546,16 +539,10 @@ func Test_duplicatedPreferred(t *testing.T) {
 	_ = creator.PLDAG().Assume(root)
 
 	preferredX, _ := creator.PLDAG().SetImply("itemX", "itemA")
-	invertedX, _ := creator.PLDAG().SetNot(preferredX)
-
 	preferredXDuplicated, _ := creator.PLDAG().SetImply("itemX", "itemA")
-	invertedXDuplicated, _ := creator.PLDAG().SetNot(preferredXDuplicated)
-
 	preferredY, _ := creator.PLDAG().SetImply("itemY", "itemB")
-	invertedY, _ := creator.PLDAG().SetNot(preferredY)
 
-	// Comment: returns error due to duplicated variables.
-	_ = creator.SetPreferreds(invertedX, invertedY, invertedXDuplicated)
+	_ = creator.SetPreferreds(preferredX, preferredXDuplicated, preferredY)
 
 	ruleSet := creator.Create()
 
@@ -681,9 +668,7 @@ func Test_xorBetweenPackagesAndItemsWithPreferred_shouldGiveLastSelection(t *tes
 
 	_ = creator.PLDAG().Assume(root)
 
-	invertedPreferredPackageA, _ := creator.PLDAG().SetNot("packageA")
-
-	_ = creator.SetPreferreds(invertedPreferredPackageA)
+	_ = creator.SetPreferreds("packageA")
 
 	ruleSet := creator.Create()
 
@@ -756,13 +741,8 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 	_ = creator.PLDAG().Assume(root)
 
 	preferredItemNWithItemB, _ := creator.PLDAG().SetImply("itemN", "itemB")
-	invertedPreferredItemNWithItemB, _ := creator.PLDAG().SetNot(preferredItemNWithItemB)
 
-	invertedItemB, _ := creator.PLDAG().SetNot("itemB")
-	invertedItemX, _ := creator.PLDAG().SetNot("itemX")
-	invertedItemA, _ := creator.PLDAG().SetNot("itemA")
-
-	_ = creator.SetPreferreds(invertedPreferredItemNWithItemB, invertedItemB, invertedItemX, invertedItemA)
+	_ = creator.SetPreferreds(preferredItemNWithItemB, "itemB", "itemX", "itemA")
 
 	ruleSet := creator.Create()
 
@@ -834,8 +814,7 @@ func Test_removePackageWithSubselection_shouldGiveEmptySolution(t *testing.T) {
 	_ = creator.PLDAG().Assume(packageARequiresExactlyOneOfItemXYZ, itemARequiresAnyOfItems)
 
 	preferred, _ := creator.PLDAG().SetImply("packageA", "itemX")
-	invertedPreferred, _ := creator.PLDAG().SetNot(preferred)
-	_ = creator.SetPreferreds(invertedPreferred)
+	_ = creator.SetPreferreds(preferred)
 
 	ruleSet := creator.Create()
 

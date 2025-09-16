@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
-	"github.com/ourstudio-se/puan-sdk-go/gateway/glpk"
+	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
+	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
 // Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_shouldGiveNewVariant
@@ -40,9 +40,7 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 	_ = creator.PLDAG().Assume(root)
 
 	preferred, _ := creator.PLDAG().SetImply("packageA", "itemN")
-	invertedPreferred, _ := creator.PLDAG().SetNot(preferred)
-
-	_ = creator.SetPreferreds(invertedPreferred)
+	_ = creator.SetPreferreds(preferred)
 
 	ruleSet := creator.Create()
 
@@ -99,9 +97,7 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 	_ = creator.PLDAG().Assume(root)
 
 	preferredVariant, _ := creator.PLDAG().SetImply("packageA", "itemX")
-	invertedPreferred, _ := creator.PLDAG().SetNot(preferredVariant)
-
-	_ = creator.SetPreferreds(invertedPreferred)
+	_ = creator.SetPreferreds(preferredVariant)
 
 	ruleSet := creator.Create()
 

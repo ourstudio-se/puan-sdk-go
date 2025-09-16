@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/ourstudio-se/puan-sdk-go/domain/puan"
+	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
 type Client struct {
