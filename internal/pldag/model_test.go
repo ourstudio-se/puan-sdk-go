@@ -331,3 +331,18 @@ func Test_ValidateVariables_givenInvalidCase(t *testing.T) {
 	err := model.ValidateVariables(variables...)
 	assert.Error(t, err)
 }
+
+func Test_SetPrimitives_givenDuplicatedVariables_shouldOnlyAddOne(t *testing.T) {
+	model := New()
+	model.SetPrimitives([]string{"a", "a", "c"}...)
+
+	assert.Equal(t, []string{"a", "c"}, model.variables)
+}
+
+func Test_SetPrimitives_givenVariableAgain_shouldNotAdd(t *testing.T) {
+	model := New()
+	model.SetPrimitives([]string{"a", "b", "c"}...)
+	model.SetPrimitives("b")
+
+	assert.Equal(t, []string{"a", "b", "c"}, model.variables)
+}

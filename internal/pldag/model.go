@@ -23,7 +23,14 @@ func New() *Model {
 }
 
 func (m *Model) SetPrimitives(primitives ...string) {
-	m.variables = append(m.variables, primitives...)
+	deduped := utils.Dedupe(primitives)
+	for _, d := range deduped {
+		if m.idAlreadyExists(d) {
+			continue
+		}
+
+		m.variables = append(m.variables, d)
+	}
 }
 
 func (m *Model) SetAnd(variables ...string) (string, error) {
