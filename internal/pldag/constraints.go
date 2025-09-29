@@ -29,9 +29,7 @@ func NewAtLeastConstraint(variables []string, amount int) (Constraint, error) {
 
 	bias := Bias(-amount)
 
-	constraint := newConstraint(coefficients, bias)
-
-	return constraint, nil
+	return newConstraint(coefficients, bias)
 }
 
 func validateConstraintInput(variables []string, amount int) error {
@@ -62,19 +60,20 @@ func NewAtMostConstraint(variables []string, amount int) (Constraint, error) {
 
 	bias := Bias(amount)
 
-	constraint := newConstraint(coefficients, bias)
-
-	return constraint, nil
+	return newConstraint(coefficients, bias)
 }
 
-func newConstraint(coefficients Coefficients, bias Bias) Constraint {
-	id := newConstraintID(coefficients, bias)
+func newConstraint(coefficients Coefficients, bias Bias) (Constraint, error) {
+	id, err := newConstraintID(coefficients, bias)
+	if err != nil {
+		return Constraint{}, err
+	}
 	constraint := Constraint{
 		id:           id,
 		coefficients: coefficients,
 		bias:         bias,
 	}
-	return constraint
+	return constraint, nil
 }
 
 func (c Constraint) ID() string {
@@ -182,17 +181,23 @@ func (c AuxiliaryConstraint) asMatrixRow(variables []string) []int {
 	return row
 }
 
-func newConstraintID(coefficients Coefficients, bias Bias) string {
+func newConstraintID(coefficients Coefficients, bias Bias) (string, error) {
 	keys := slices.Sorted(maps.Keys(coefficients))
 
 	h := sha1.New()
 	for _, key := range keys {
 		h.Write([]byte(key))
-		_, _ = fmt.Fprintf(h, "%d", coefficients[key])
+		_, err := fmt.Fprintf(h, "%d", coefficients[key])
+		if err != nil {
+			return "", errors.Errorf("failed to write %s to hash: %w", key, err)
+		}
 	}
-	_, _ = fmt.Fprintf(h, "%d", bias)
+	_, err := fmt.Fprintf(h, "%d", bias)
+	if err != nil {
+		return "", errors.Errorf("failed to write %d to hash: %w", bias, err)
+	}
 
-	return fmt.Sprintf("%x", h.Sum(nil))
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
 type Coefficients map[string]int

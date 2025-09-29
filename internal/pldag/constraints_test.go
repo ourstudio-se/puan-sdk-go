@@ -212,10 +212,12 @@ func Test_newConstraintID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			actual, err := newConstraintID(tt.coefficients, tt.bias)
+			assert.NoError(t, err)
 			assert.Equalf(
 				t,
 				tt.want,
-				newConstraintID(tt.coefficients, tt.bias),
+				actual,
 				"newConstraintID(%v, %v)",
 				tt.coefficients,
 				tt.bias,
