@@ -346,3 +346,10 @@ func Test_SetPrimitives_givenVariableAgain_shouldNotAdd(t *testing.T) {
 
 	assert.Equal(t, []string{"a", "b", "c"}, model.variables)
 }
+
+func Test_SetPrimitives_givenEmptyVariable_shouldNotAdd(t *testing.T) {
+	model := New()
+	model.SetPrimitives([]string{"a", "", "c"}...)
+
+	assert.Equal(t, []string{"a", "c"}, model.variables)
+}

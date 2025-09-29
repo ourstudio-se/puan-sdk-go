@@ -25,6 +25,10 @@ func New() *Model {
 func (m *Model) SetPrimitives(primitives ...string) {
 	deduped := utils.Dedupe(primitives)
 	for _, d := range deduped {
+		if d == "" {
+			continue
+		}
+
 		if m.idAlreadyExists(d) {
 			continue
 		}
