@@ -32,13 +32,13 @@ func Test_validateConstraintInput(t *testing.T) {
 			wantErr:   true,
 		},
 		{
-			name:      "empty variables return error",
+			name:      "empty variables should return error",
 			variables: []string{},
 			amount:    2,
 			wantErr:   true,
 		},
 		{
-			name:      "nil variables return error",
+			name:      "nil variables should return error",
 			variables: nil,
 			amount:    2,
 			wantErr:   true,
