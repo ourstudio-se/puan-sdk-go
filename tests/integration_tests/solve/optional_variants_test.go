@@ -180,7 +180,7 @@ func Test_optionalVariant_noSelection_shouldGiveEmptySolution(t *testing.T) {
 
 func optionalVariantsWithXORBetweenItemsLargeVariantPreferred() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
-	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemZ")
+	_ = creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemZ")
 
 	xorItem1Item2, _ := creator.PLDAG().SetXor("itemX", "itemY")
 	xorItem1Item3, _ := creator.PLDAG().SetXor("itemX", "itemZ")

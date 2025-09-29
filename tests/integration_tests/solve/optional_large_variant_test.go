@@ -141,7 +141,7 @@ func Test_optionalLargeVariantWithXOR_singleItemSelection(t *testing.T) {
 
 func optionalLargeVariantWithXOR() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
-	creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemM", "itemN", "itemO", "itemP", "itemQ", "itemR", "itemS")
+	_ = creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemM", "itemN", "itemO", "itemP", "itemQ", "itemR", "itemS")
 
 	exactlyOneOfItemXAndY, _ := creator.PLDAG().SetXor("itemX", "itemY")
 	packageARequiresExactlyOneOfXAndY, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfItemXAndY)

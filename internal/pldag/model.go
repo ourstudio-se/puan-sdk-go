@@ -22,19 +22,23 @@ func New() *Model {
 	}
 }
 
-func (m *Model) SetPrimitives(primitives ...string) {
-	deduped := utils.Dedupe(primitives)
-	for _, d := range deduped {
-		if d == "" {
-			continue
-		}
-
-		if m.idAlreadyExists(d) {
-			continue
-		}
-
-		m.variables = append(m.variables, d)
+func (m *Model) SetPrimitives(primitives ...string) error {
+	if utils.ContainsDuplicates(primitives) {
+		return errors.New("primitives contain duplicates")
 	}
+
+	for _, p := range primitives {
+		if p == "" {
+			return errors.New("primitive cannot be empty")
+		}
+		if m.idAlreadyExists(p) {
+			return errors.Errorf("primitive %s already exists in model", p)
+		}
+
+		m.variables = append(m.variables, p)
+	}
+
+	return nil
 }
 
 func (m *Model) SetAnd(variables ...string) (string, error) {

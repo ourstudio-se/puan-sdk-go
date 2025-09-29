@@ -90,7 +90,7 @@ func Test_optionalVariantsWithForbids_shouldReturnNOTPreferred(t *testing.T) {
 func optionalVariantsWithForbids() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
 
-	creator.PLDAG().SetPrimitives("itemA", "itemB", "itemC", "itemD", "packageX")
+	_ = creator.PLDAG().SetPrimitives("itemA", "itemB", "itemC", "itemD", "packageX")
 
 	reversedItemA, _ := creator.PLDAG().SetImply("itemA", "packageX")
 
