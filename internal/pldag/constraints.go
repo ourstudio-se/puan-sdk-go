@@ -35,6 +35,10 @@ func NewAtLeastConstraint(variables []string, amount int) (Constraint, error) {
 }
 
 func validateConstraintInput(variables []string, amount int) error {
+	if len(variables) == 0 {
+		return errors.New("variables cannot be empty")
+	}
+
 	if amount > len(variables) {
 		return errors.New("amount cannot be greater than number of variables")
 	}
