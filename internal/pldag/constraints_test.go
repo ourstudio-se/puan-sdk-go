@@ -31,6 +31,18 @@ func Test_validateConstraintInput(t *testing.T) {
 			amount:    -1,
 			wantErr:   true,
 		},
+		{
+			name:      "empty variables return error",
+			variables: []string{},
+			amount:    2,
+			wantErr:   true,
+		},
+		{
+			name:      "nil variables return error",
+			variables: nil,
+			amount:    2,
+			wantErr:   true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -78,26 +90,6 @@ func Test_newAtLeastConstraint(t *testing.T) {
 				bias: Bias(-2),
 			},
 		},
-		{
-			name:      "no variables should return constraint",
-			variables: []string{},
-			amount:    0,
-			want: Constraint{
-				id:           "id",
-				coefficients: Coefficients{},
-				bias:         Bias(0),
-			},
-		},
-		{
-			name:      "nil variables should return constraint",
-			variables: nil,
-			amount:    0,
-			want: Constraint{
-				id:           "id",
-				coefficients: Coefficients{},
-				bias:         Bias(0),
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -142,26 +134,6 @@ func Test_newAtMostConstraint(t *testing.T) {
 					"b": 1,
 				},
 				bias: Bias(2),
-			},
-		},
-		{
-			name:      "no variables should return constraint",
-			variables: []string{},
-			amount:    0,
-			want: Constraint{
-				id:           "id",
-				coefficients: Coefficients{},
-				bias:         Bias(0),
-			},
-		},
-		{
-			name:      "nil variables should return constraint",
-			variables: nil,
-			amount:    0,
-			want: Constraint{
-				id:           "id",
-				coefficients: Coefficients{},
-				bias:         Bias(0),
 			},
 		},
 	}
