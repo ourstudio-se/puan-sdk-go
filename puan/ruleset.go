@@ -288,3 +288,21 @@ func (r *RuleSet) newRow(coefficients pldag.Coefficients) ([]int, error) {
 
 	return row, nil
 }
+
+// For when creating a rule set from a serialized representation
+// When setting up new rule sets, use RuleSetCreator instead
+func HydrateRuleSet(
+	aMatrix [][]int,
+	bVector []int,
+	variables []string,
+	primitiveVariables []string,
+	preferredVariables []string,
+) *RuleSet {
+	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
+	return &RuleSet{
+		polyhedron:         polyhedron,
+		primitiveVariables: primitiveVariables,
+		variables:          variables,
+		preferredVariables: preferredVariables,
+	}
+}
