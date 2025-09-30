@@ -79,7 +79,7 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintDoesNotExist_sh
 	subID := uuid.New().String()
 
 	creator := NewRuleSetCreator()
-	creator.PLDAG().SetPrimitives(primaryID, subID)
+	_ = creator.PLDAG().SetPrimitives(primaryID, subID)
 	ruleSet := creator.Create()
 
 	selection := NewSelectionBuilder(primaryID).WithSubSelectionID(subID).Build()
@@ -101,7 +101,7 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintExists_shouldNo
 	subID := uuid.New().String()
 
 	creator := NewRuleSetCreator()
-	creator.PLDAG().SetPrimitives(primaryID, subID)
+	_ = creator.PLDAG().SetPrimitives(primaryID, subID)
 	_, _ = creator.PLDAG().SetAnd(primaryID, subID)
 	ruleSet := creator.Create()
 
@@ -245,7 +245,7 @@ func Test_validateSelectionIDs_givenValidSelection(t *testing.T) {
 	subID := fake.New[string]()
 
 	creator := NewRuleSetCreator()
-	creator.PLDAG().SetPrimitives(primaryID, subID)
+	_ = creator.PLDAG().SetPrimitives(primaryID, subID)
 	ruleSet := creator.Create()
 
 	selections := Selections{
@@ -263,7 +263,7 @@ func Test_validateSelectionIDs_givenInvalidSelection(t *testing.T) {
 
 	invalidID := "invalid-id"
 	creator := NewRuleSetCreator()
-	creator.PLDAG().SetPrimitives(primaryID, subID)
+	_ = creator.PLDAG().SetPrimitives(primaryID, subID)
 	ruleSet := creator.Create()
 
 	selections := Selections{
@@ -280,7 +280,7 @@ func Test_validateSelectionIDs_givenEmptySelection(t *testing.T) {
 	subID := fake.New[string]()
 
 	creator := NewRuleSetCreator()
-	creator.PLDAG().SetPrimitives(primaryID, subID)
+	_ = creator.PLDAG().SetPrimitives(primaryID, subID)
 	ruleSet := creator.Create()
 
 	selection := Selections{}

@@ -123,7 +123,7 @@ func TestBias_negate(t *testing.T) {
 
 func TestModel_NewPolyhedron(t *testing.T) {
 	model := New()
-	model.SetPrimitives([]string{"x", "y", "z", "k", "w"}...)
+	_ = model.SetPrimitives([]string{"x", "y", "z", "k", "w"}...)
 
 	andID, _ := model.SetAnd([]string{"x", "y"}...)
 	notID, _ := model.SetNot([]string{"k"}...)
@@ -162,7 +162,7 @@ func TestModel_NewPolyhedron(t *testing.T) {
 
 func TestModel_NewPolyhedron_withImpliesOr(t *testing.T) {
 	model := New()
-	model.SetPrimitives([]string{"x", "y", "z"}...)
+	_ = model.SetPrimitives([]string{"x", "y", "z"}...)
 
 	orID, err := model.SetOr([]string{"y", "z"}...)
 	if err != nil {
@@ -332,17 +332,38 @@ func Test_ValidateVariables_givenInvalidCase(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func Test_SetPrimitives_givenDuplicatedVariables_shouldOnlyAddOne(t *testing.T) {
+func Test_SetPrimitives_givenDuplicatedVariables_shouldReturnError(t *testing.T) {
 	model := New()
-	model.SetPrimitives([]string{"a", "a", "c"}...)
-
-	assert.Equal(t, []string{"a", "c"}, model.variables)
+	err := model.SetPrimitives([]string{"a", "a", "c"}...)
+	assert.Error(t, err)
 }
 
-func Test_SetPrimitives_givenVariableAgain_shouldNotAdd(t *testing.T) {
+func Test_SetPrimitives_givenVariableAgain_shouldReturnError(t *testing.T) {
 	model := New()
-	model.SetPrimitives([]string{"a", "b", "c"}...)
-	model.SetPrimitives("b")
+	err := model.SetPrimitives([]string{"a", "b", "c"}...)
+	assert.NoError(t, err)
+	err = model.SetPrimitives("b")
+	assert.Error(t, err)
+}
 
+func Test_SetPrimitives_givenEmptyVariable_shouldReturnError(t *testing.T) {
+	model := New()
+	err := model.SetPrimitives([]string{"a", "", "c"}...)
+	assert.Error(t, err)
+}
+
+func Test_SetPrimitives_givenValidVariables(t *testing.T) {
+	model := New()
+	err := model.SetPrimitives([]string{"a", "b", "c"}...)
+	assert.NoError(t, err)
 	assert.Equal(t, []string{"a", "b", "c"}, model.variables)
+}
+
+func Test_SetPrimitives_givenValidVariablesTwice(t *testing.T) {
+	model := New()
+	err := model.SetPrimitives([]string{"a", "b", "c"}...)
+	assert.NoError(t, err)
+	err = model.SetPrimitives("d")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"a", "b", "c", "d"}, model.variables)
 }

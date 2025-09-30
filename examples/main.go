@@ -13,7 +13,7 @@ func main() {
 	creator := puan.NewRuleSetCreator()
 
 	// Sets x, y, z as boolean primitive variables
-	creator.PLDAG().SetPrimitives([]string{"x", "y", "z"}...)
+	_ = creator.PLDAG().SetPrimitives([]string{"x", "y", "z"}...)
 
 	// Create a simple and between x and y
 	xyID, err := creator.PLDAG().SetAnd("x", "y")
