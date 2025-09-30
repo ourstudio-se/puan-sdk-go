@@ -46,7 +46,10 @@ func main() {
 	}
 
 	// Create the ruleset
-	ruleSet, _ := creator.Create()
+	ruleSet, err := creator.Create()
+	if err != nil {
+		panic(err)
+	}
 
 	// Custom selections, which in this specific case will override the preferred variable z
 	selections := puan.Selections{
