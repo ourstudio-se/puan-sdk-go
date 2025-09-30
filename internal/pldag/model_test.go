@@ -351,3 +351,19 @@ func Test_SetPrimitives_givenEmptyVariable_shouldReturnError(t *testing.T) {
 	err := model.SetPrimitives([]string{"a", "", "c"}...)
 	assert.Error(t, err)
 }
+
+func Test_SetPrimitives_givenValidVariables(t *testing.T) {
+	model := New()
+	err := model.SetPrimitives([]string{"a", "b", "c"}...)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"a", "b", "c"}, model.variables)
+}
+
+func Test_SetPrimitives_givenValidVariablesTwice(t *testing.T) {
+	model := New()
+	err := model.SetPrimitives([]string{"a", "b", "c"}...)
+	assert.NoError(t, err)
+	err = model.SetPrimitives("d")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"a", "b", "c", "d"}, model.variables)
+}
