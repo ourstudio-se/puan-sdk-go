@@ -289,6 +289,8 @@ func (r *RuleSet) newRow(coefficients pldag.Coefficients) ([]int, error) {
 	return row, nil
 }
 
+// For when creating a rule set from a serialized representation
+// When setting up new rule sets, use RuleSetCreator instead
 func HydrateRuleSet(
 	aMatrix [][]int,
 	bVector []int,
