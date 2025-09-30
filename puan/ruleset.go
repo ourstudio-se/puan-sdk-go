@@ -288,3 +288,19 @@ func (r *RuleSet) newRow(coefficients pldag.Coefficients) ([]int, error) {
 
 	return row, nil
 }
+
+func HydrateRuleSet(
+	aMatrix [][]int,
+	bVector []int,
+	variables []string,
+	primitiveVariables []string,
+	preferredVariables []string,
+) *RuleSet {
+	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
+	return &RuleSet{
+		polyhedron:         polyhedron,
+		primitiveVariables: primitiveVariables,
+		variables:          variables,
+		preferredVariables: preferredVariables,
+	}
+}
