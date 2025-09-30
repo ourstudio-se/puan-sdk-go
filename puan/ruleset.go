@@ -77,7 +77,7 @@ func (c *RuleSetCreator) negatePreferreds(ids []string) ([]string, error) {
 	return negatedIDs, nil
 }
 
-func (c *RuleSetCreator) assume() error {
+func (c *RuleSetCreator) assumeVariables() error {
 	if len(c.assumedVariables) == 0 {
 		return nil
 	}
@@ -91,7 +91,7 @@ func (c *RuleSetCreator) assume() error {
 }
 
 func (c *RuleSetCreator) Create() (*RuleSet, error) {
-	err := c.assume()
+	err := c.assumeVariables()
 	if err != nil {
 		return nil, err
 	}
