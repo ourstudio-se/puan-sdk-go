@@ -24,12 +24,10 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred(t *testing.T) {
 
 	packageBRequiresItemX, _ := creator.PLDAG().SetImply("packageB", "itemX")
 
-	root, _ := creator.PLDAG().SetAnd(exactlyOnePackage, packageBRequiresItemX)
-	_ = creator.PLDAG().Assume(root)
-
+	_ = creator.SetAssumedVariables(exactlyOnePackage, packageBRequiresItemX)
 	_ = creator.SetPreferreds("packageA")
 
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").Build(),
@@ -61,9 +59,8 @@ func Test_packageImpliesAnotherPackage_addAndRemove_shouldGiveEmptySolution(t *t
 	_ = creator.PLDAG().SetPrimitives("packageA", "packageB")
 	packageARequiredPackageB, _ := creator.PLDAG().SetImply("packageA", "packageB")
 
-	_ = creator.PLDAG().Assume(packageARequiredPackageB)
-
-	ruleSet := creator.Create()
+	_ = creator.SetAssumedVariables(packageARequiredPackageB)
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageB").Build(),
@@ -96,12 +93,10 @@ func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldGivePreferred(t 
 
 	exactlyOnePackage, _ := creator.PLDAG().SetXor("packageA", "packageB", "packageC")
 
-	root, _ := creator.PLDAG().SetAnd(exactlyOnePackage)
-	_ = creator.PLDAG().Assume(root)
-
+	_ = creator.SetAssumedVariables(exactlyOnePackage)
 	_ = creator.SetPreferreds("packageA")
 
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageB").Build(),
@@ -142,12 +137,16 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldGivePreferred(t *testing.T) 
 	exactlyOneOfItemOAndM, _ := creator.PLDAG().SetXor("itemN", "itemO")
 	packageARequiresExactlyOneOfItemOAndN, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfItemOAndM)
 
-	root, _ := creator.PLDAG().SetAnd("packageA", packageARequiresItems, packageARequiresExactlyOneOfItemMAndN, packageARequiresExactlyOneOfItemOAndN)
-	_ = creator.PLDAG().Assume(root)
+	_ = creator.SetAssumedVariables(
+		"packageA",
+		packageARequiresItems,
+		packageARequiresExactlyOneOfItemMAndN,
+		packageARequiresExactlyOneOfItemOAndN,
+	)
 
 	_ = creator.SetPreferreds("itemN")
 
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{}
 
@@ -184,14 +183,13 @@ func Test_implicationChain_shouldGiveAll(t *testing.T) {
 	packageERequiresF, _ := creator.PLDAG().SetImply("packageE", "packageF")
 	packageFRequiresA, _ := creator.PLDAG().SetImply("packageF", "packageA")
 
-	root, _ := creator.PLDAG().SetAnd(
+	_ = creator.SetAssumedVariables(
 		packageERequiresF,
 		packageFRequiresA,
 		packageARequiresItems,
 	)
-	_ = creator.PLDAG().Assume(root)
 
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageE").Build(),
@@ -228,10 +226,9 @@ func Test_multiplePackagesWithXOR_shouldGiveLastSelected(t *testing.T) {
 	_ = creator.PLDAG().SetPrimitives("packageA", "packageB", "packageC", "packageD", "packageE")
 	exactlyOnePackage, _ := creator.PLDAG().SetXor("packageA", "packageB", "packageC", "packageD", "packageE")
 
-	root, _ := creator.PLDAG().SetAnd(exactlyOnePackage)
-	_ = creator.PLDAG().Assume(root)
+	_ = creator.SetAssumedVariables(exactlyOnePackage)
 
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").Build(),
@@ -269,13 +266,9 @@ func Test_notExistingVariable_shouldGiveError(t *testing.T) {
 	includedItemsInA, _ := creator.PLDAG().SetAnd("itemX", "itemY")
 	packageARequiresItems, _ := creator.PLDAG().SetEquivalent("packageA", includedItemsInA)
 
-	root, _ := creator.PLDAG().SetAnd(
-		packageARequiresItems,
-	)
+	_ = creator.SetAssumedVariables(packageARequiresItems)
 
-	_ = creator.PLDAG().Assume(root)
-
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("notExistingID").Build(),
@@ -310,18 +303,16 @@ func Test_packageInDefaultConfig(t *testing.T) {
 
 	packageARequiresItemB, _ := creator.PLDAG().SetImply("packageA", "itemB")
 
-	root, _ := creator.PLDAG().SetAnd(
+	_ = creator.SetAssumedVariables(
 		packageZRequiresExactlyOneOfItemXOrY,
 		packageZRequiresItems,
 		packageARequiresItemB,
 	)
 
-	_ = creator.PLDAG().Assume(root)
-
 	preferredZWithX, _ := creator.PLDAG().SetImply("packageZ", "itemX")
 	_ = creator.SetPreferreds(preferredZWithX)
 
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").Build(),
@@ -365,14 +356,12 @@ func Test_selectPackageWithItemAfterSingleConflictingItemSelection_shouldGivePac
 
 	packageARequiresItemB, _ := creator.PLDAG().SetImply("packageA", "itemB")
 
-	root, _ := creator.PLDAG().SetAnd(
+	_ = creator.SetAssumedVariables(
 		packagePRequiresExactlyOneOfItemXOrY,
 		packageARequiresItemB,
 	)
 
-	_ = creator.PLDAG().Assume(root)
-
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("itemB").Build(),
@@ -415,14 +404,12 @@ func Test_changeVariant_shouldGiveLastSelected(t *testing.T) {
 	exactlyOneOfItemXAndY, _ := creator.PLDAG().SetXor("itemX", "itemY")
 	packageRequiresExactlyOneOfItemXOrY, _ := creator.PLDAG().SetImply("packageP", exactlyOneOfItemXAndY)
 
-	root, _ := creator.PLDAG().SetAnd(
+	_ = creator.SetAssumedVariables(
 		packageRequiresItems,
 		packageRequiresExactlyOneOfItemXOrY,
 	)
 
-	_ = creator.PLDAG().Assume(root)
-
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageP").WithSubSelectionID("itemY").Build(),
@@ -475,20 +462,18 @@ func Test_subComponentsAndPackageInDefaultConfig(t *testing.T) {
 	exactlyOneOfItemAAndB, _ := creator.PLDAG().SetXor("itemA", "itemB")
 	packagePRequiresExactlyOneOfItemAAndB, _ := creator.PLDAG().SetImply("packageP", exactlyOneOfItemAAndB)
 
-	root, _ := creator.PLDAG().SetAnd(
+	_ = creator.SetAssumedVariables(
 		exactlyOneOfTheItemsXYZ,
 		packagePRequiresExactlyOneOfTheItems,
 		packagePRequiresExactlyOneOfItemAAndB,
 	)
-
-	_ = creator.PLDAG().Assume(root)
 
 	prefItemsInPackageP, _ := creator.PLDAG().SetAnd("itemA", "itemX")
 	prefPackagePImpliesAAndItemX, _ := creator.PLDAG().SetImply("packageP", prefItemsInPackageP)
 
 	_ = creator.SetPreferreds("itemZ", prefPackagePImpliesAAndItemX)
 
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("itemX").Build(),
@@ -531,12 +516,10 @@ func Test_duplicatedPreferred(t *testing.T) {
 	itemXRequiresExactlyOneOfItemAAndB, _ := creator.PLDAG().SetImply("itemX", exactlyOneOfItemAAndB)
 	itemYRequiresExactlyOneOfItemBAndC, _ := creator.PLDAG().SetImply("itemY", exactlyOneOfItemBAndC)
 
-	root, _ := creator.PLDAG().SetAnd(
+	_ = creator.SetAssumedVariables(
 		itemXRequiresExactlyOneOfItemAAndB,
 		itemYRequiresExactlyOneOfItemBAndC,
 	)
-
-	_ = creator.PLDAG().Assume(root)
 
 	preferredX, _ := creator.PLDAG().SetImply("itemX", "itemA")
 	preferredXDuplicated, _ := creator.PLDAG().SetImply("itemX", "itemA")
@@ -544,7 +527,7 @@ func Test_duplicatedPreferred(t *testing.T) {
 
 	_ = creator.SetPreferreds(preferredX, preferredXDuplicated, preferredY)
 
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("itemA").Build(),
@@ -594,7 +577,7 @@ func Test_xorBetweenPackagesAndItems_shouldGiveLastSelection(t *testing.T) {
 	itemYRequiresExactlyOneOfPackageAAndB, _ := creator.PLDAG().SetImply("itemY", exactlyOneOfPackageAAndB)
 	itemZRequiresExactlyOneOfPackageAAndB, _ := creator.PLDAG().SetImply("itemZ", exactlyOneOfPackageAAndB)
 
-	root, _ := creator.PLDAG().SetAnd(
+	_ = creator.SetAssumedVariables(
 		packageARequiresExactlyOneOfItemXYZ,
 		packageBRequiresExactlyOneOfItemXYZ,
 		itemXRequiresExactlyOneOfPackageAAndB,
@@ -602,9 +585,7 @@ func Test_xorBetweenPackagesAndItems_shouldGiveLastSelection(t *testing.T) {
 		itemZRequiresExactlyOneOfPackageAAndB,
 	)
 
-	_ = creator.PLDAG().Assume(root)
-
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("itemX").Build(),
@@ -658,7 +639,7 @@ func Test_xorBetweenPackagesAndItemsWithPreferred_shouldGiveLastSelection(t *tes
 	itemYRequiresExactlyOneOfPackageAAndB, _ := creator.PLDAG().SetImply("itemY", exactlyOneOfPackageAAndB)
 	itemZRequiresExactlyOneOfPackageAAndB, _ := creator.PLDAG().SetImply("itemZ", exactlyOneOfPackageAAndB)
 
-	root, _ := creator.PLDAG().SetAnd(
+	_ = creator.SetAssumedVariables(
 		packageARequiresExactlyOneOfItemXYZ,
 		packageBRequiresExactlyOneOfItemXYZ,
 		itemXRequiresExactlyOneOfPackageAAndB,
@@ -666,11 +647,9 @@ func Test_xorBetweenPackagesAndItemsWithPreferred_shouldGiveLastSelection(t *tes
 		itemZRequiresExactlyOneOfPackageAAndB,
 	)
 
-	_ = creator.PLDAG().Assume(root)
-
 	_ = creator.SetPreferreds("packageA")
 
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").Build(),
@@ -730,7 +709,7 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 	notItemA, _ := creator.PLDAG().SetNot("itemA")
 	itemNForbidsItemA, _ := creator.PLDAG().SetImply("itemN", notItemA)
 
-	root, _ := creator.PLDAG().SetAnd(
+	_ = creator.SetAssumedVariables(
 		exactlyOneOfItemXYZ,
 		itemXRequiresExactlyOneOfItemABC,
 		itemYRequiresExactlyOneOfItemABC,
@@ -738,13 +717,11 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 		itemNForbidsItemA,
 	)
 
-	_ = creator.PLDAG().Assume(root)
-
 	preferredItemNWithItemB, _ := creator.PLDAG().SetImply("itemN", "itemB")
 
 	_ = creator.SetPreferreds(preferredItemNWithItemB, "itemB", "itemX", "itemA")
 
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("itemB").Build(),
@@ -777,10 +754,9 @@ func Test_removingItemInAddedPackage_shouldRemovePackageAsWell(t *testing.T) {
 	itemXAndY, _ := creator.PLDAG().SetAnd("itemX", "itemY")
 	packageARequiresItemXAndY, _ := creator.PLDAG().SetImply("packageA", itemXAndY)
 
-	root, _ := creator.PLDAG().SetAnd(packageARequiresItemXAndY)
-	_ = creator.PLDAG().Assume(root)
+	_ = creator.SetAssumedVariables(packageARequiresItemXAndY)
 
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").Build(),
@@ -811,12 +787,15 @@ func Test_removePackageWithSubselection_shouldGiveEmptySolution(t *testing.T) {
 	itemARequiresAnyOfItems, _ := creator.PLDAG().SetImply("packageA", anyOfItems)
 	packageARequiresExactlyOneOfItemXYZ, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfItemXYZ)
 
-	_ = creator.PLDAG().Assume(packageARequiresExactlyOneOfItemXYZ, itemARequiresAnyOfItems)
+	_ = creator.SetAssumedVariables(
+		packageARequiresExactlyOneOfItemXYZ,
+		itemARequiresAnyOfItems,
+	)
 
 	preferred, _ := creator.PLDAG().SetImply("packageA", "itemX")
 	_ = creator.SetPreferreds(preferred)
 
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").Build(),

@@ -35,14 +35,13 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 	reversedPackageVariantOne, _ := creator.PLDAG().SetImply(includedItemsInVariantOne, "packageA")
 	reversedPackageVariantTwo, _ := creator.PLDAG().SetImply(includedItemsInVariantTwo, "packageA")
 
-	root, _ := creator.PLDAG().SetAnd("packageA", packageRequiresItems, packageRequiresExactlyOneOfItemNAndM, reversedPackageVariantOne, reversedPackageVariantTwo)
-
-	_ = creator.PLDAG().Assume(root)
+	_ = creator.SetAssumedVariables("packageA", packageRequiresItems, packageRequiresExactlyOneOfItemNAndM, reversedPackageVariantOne, reversedPackageVariantTwo)
 
 	preferred, _ := creator.PLDAG().SetImply("packageA", "itemN")
 	_ = creator.SetPreferreds(preferred)
 
-	ruleSet := creator.Create()
+	ruleSet, err := creator.Create()
+	assert.NoError(t, err)
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemM").Build(),
@@ -87,19 +86,17 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 	includedItemsInVariantTwo, _ := creator.PLDAG().SetAnd("itemY", "itemZ")
 	reversePackageVariantTwo, _ := creator.PLDAG().SetImply(includedItemsInVariantTwo, "packageA")
 
-	root, _ := creator.PLDAG().SetAnd(
+	_ = creator.SetAssumedVariables(
 		packageExactlyOneOfItem1Item2,
 		packageExactlyOneOfItem1Item3,
 		reversePackageVariantOne,
 		reversePackageVariantTwo,
 	)
 
-	_ = creator.PLDAG().Assume(root)
-
 	preferredVariant, _ := creator.PLDAG().SetImply("packageA", "itemX")
 	_ = creator.SetPreferreds(preferredVariant)
 
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
@@ -151,7 +148,7 @@ func Test_twoPackagesWithSharedItems_selectLargestPackage(t *testing.T) {
 	reversedPackageAOrB, _ := creator.PLDAG().SetImply(includedItemsInA, packageAOrB)
 	reversedPackageB, _ := creator.PLDAG().SetImply(includedItemsInB, "packageB")
 
-	root, _ := creator.PLDAG().SetAnd(
+	_ = creator.SetAssumedVariables(
 		packageARequiresItems,
 		packageBRequiresItems,
 		packageAForbidsB,
@@ -159,9 +156,7 @@ func Test_twoPackagesWithSharedItems_selectLargestPackage(t *testing.T) {
 		reversedPackageB,
 	)
 
-	_ = creator.PLDAG().Assume(root)
-
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").Build(),

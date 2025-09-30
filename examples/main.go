@@ -34,7 +34,7 @@ func main() {
 	}
 
 	// Enforces the connective to be true
-	err = creator.PLDAG().Assume(xorID)
+	err = creator.SetAssumedVariables(xorID)
 	if err != nil {
 		panic(err)
 	}
@@ -46,7 +46,7 @@ func main() {
 	}
 
 	// Create the ruleset
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	// Custom selections, which in this specific case will override the preferred variable z
 	selections := puan.Selections{
