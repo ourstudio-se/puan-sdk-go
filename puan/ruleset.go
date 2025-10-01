@@ -30,7 +30,7 @@ func (c *RuleSetCreator) PLDAG() *pldag.Model {
 	return c.pldag
 }
 
-func (c *RuleSetCreator) SetPreferreds(id ...string) error {
+func (c *RuleSetCreator) Prefer(id ...string) error {
 	dedupedIDs := utils.Dedupe(id)
 	unpreferredIDs := utils.Without(dedupedIDs, c.preferredVariables)
 
@@ -49,7 +49,7 @@ func (c *RuleSetCreator) SetPreferreds(id ...string) error {
 	return nil
 }
 
-func (c *RuleSetCreator) SetAssumedVariables(id ...string) error {
+func (c *RuleSetCreator) Assume(id ...string) error {
 	dedupedIDs := utils.Dedupe(id)
 	unassumedIDs := utils.Without(dedupedIDs, c.assumedVariables)
 
@@ -77,7 +77,7 @@ func (c *RuleSetCreator) negatePreferreds(ids []string) ([]string, error) {
 	return negatedIDs, nil
 }
 
-func (c *RuleSetCreator) assumeVariables() error {
+func (c *RuleSetCreator) createAssumedConstraints() error {
 	if len(c.assumedVariables) == 0 {
 		return nil
 	}
@@ -91,7 +91,7 @@ func (c *RuleSetCreator) assumeVariables() error {
 }
 
 func (c *RuleSetCreator) Create() (*RuleSet, error) {
-	err := c.assumeVariables()
+	err := c.createAssumedConstraints()
 	if err != nil {
 		return nil, err
 	}

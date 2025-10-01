@@ -188,7 +188,7 @@ func optionalVariantsWithXORBetweenItemsLargeVariantPreferred() *puan.RuleSet {
 	packageExactlyOneOfItem1Item2, _ := creator.PLDAG().SetImply("packageA", xorItem1Item2)
 	packageExactlyOneOfItem1Item3, _ := creator.PLDAG().SetImply("packageA", xorItem1Item3)
 
-	_ = creator.SetAssumedVariables(
+	_ = creator.Assume(
 		packageExactlyOneOfItem1Item2,
 		packageExactlyOneOfItem1Item3,
 	)
@@ -196,7 +196,7 @@ func optionalVariantsWithXORBetweenItemsLargeVariantPreferred() *puan.RuleSet {
 	preferredItems, _ := creator.PLDAG().SetAnd("itemY", "itemZ")
 	packagePreferredVariant, _ := creator.PLDAG().SetImply("packageA", preferredItems)
 
-	_ = creator.SetPreferreds(packagePreferredVariant)
+	_ = creator.Prefer(packagePreferredVariant)
 
 	ruleSet, _ := creator.Create()
 

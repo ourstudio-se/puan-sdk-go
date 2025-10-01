@@ -35,10 +35,10 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 	reversedPackageVariantOne, _ := creator.PLDAG().SetImply(includedItemsInVariantOne, "packageA")
 	reversedPackageVariantTwo, _ := creator.PLDAG().SetImply(includedItemsInVariantTwo, "packageA")
 
-	_ = creator.SetAssumedVariables("packageA", packageRequiresItems, packageRequiresExactlyOneOfItemNAndM, reversedPackageVariantOne, reversedPackageVariantTwo)
+	_ = creator.Assume("packageA", packageRequiresItems, packageRequiresExactlyOneOfItemNAndM, reversedPackageVariantOne, reversedPackageVariantTwo)
 
 	preferred, _ := creator.PLDAG().SetImply("packageA", "itemN")
-	_ = creator.SetPreferreds(preferred)
+	_ = creator.Prefer(preferred)
 
 	ruleSet, err := creator.Create()
 	assert.NoError(t, err)
@@ -86,7 +86,7 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 	includedItemsInVariantTwo, _ := creator.PLDAG().SetAnd("itemY", "itemZ")
 	reversePackageVariantTwo, _ := creator.PLDAG().SetImply(includedItemsInVariantTwo, "packageA")
 
-	_ = creator.SetAssumedVariables(
+	_ = creator.Assume(
 		packageExactlyOneOfItem1Item2,
 		packageExactlyOneOfItem1Item3,
 		reversePackageVariantOne,
@@ -94,7 +94,7 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 	)
 
 	preferredVariant, _ := creator.PLDAG().SetImply("packageA", "itemX")
-	_ = creator.SetPreferreds(preferredVariant)
+	_ = creator.Prefer(preferredVariant)
 
 	ruleSet, _ := creator.Create()
 
@@ -148,7 +148,7 @@ func Test_twoPackagesWithSharedItems_selectLargestPackage(t *testing.T) {
 	reversedPackageAOrB, _ := creator.PLDAG().SetImply(includedItemsInA, packageAOrB)
 	reversedPackageB, _ := creator.PLDAG().SetImply(includedItemsInB, "packageB")
 
-	_ = creator.SetAssumedVariables(
+	_ = creator.Assume(
 		packageARequiresItems,
 		packageBRequiresItems,
 		packageAForbidsB,

@@ -87,7 +87,7 @@ func packagesWithSharedItemsSmallerPackagePreferred() *puan.RuleSet {
 	itemsInAllPackages, _ := creator.PLDAG().SetImply(includedItemsInA, anyOfThePackages)
 	reversedPackageB, _ := creator.PLDAG().SetImply(includedItemsInB, "packageB")
 
-	_ = creator.SetAssumedVariables(
+	_ = creator.Assume(
 		exactlyOnePackage,
 		packageARequiredItems,
 		packageBRequiredItems,
@@ -95,7 +95,7 @@ func packagesWithSharedItemsSmallerPackagePreferred() *puan.RuleSet {
 		reversedPackageB,
 	)
 
-	_ = creator.SetPreferreds("packageA")
+	_ = creator.Prefer("packageA")
 
 	ruleSet, _ := creator.Create()
 

@@ -290,7 +290,7 @@ func upgradeDowngradePackageWithSharedItemsSmallestPreferred() *puan.RuleSet {
 	itemsInPackageBOrC, _ := creator.PLDAG().SetImply(includedItemsInB, packageBOrC)
 	reversedPackageC, _ := creator.PLDAG().SetImply(includedItemsInC, "packageC")
 
-	_ = creator.SetAssumedVariables(
+	_ = creator.Assume(
 		exactlyOnePackage,
 		packageARequiredItems,
 		packageBRequiredItems,
@@ -300,7 +300,7 @@ func upgradeDowngradePackageWithSharedItemsSmallestPreferred() *puan.RuleSet {
 		reversedPackageC,
 	)
 
-	_ = creator.SetPreferreds("packageA")
+	_ = creator.Prefer("packageA")
 
 	ruleSet, _ := creator.Create()
 

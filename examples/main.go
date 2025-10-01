@@ -34,13 +34,13 @@ func main() {
 	}
 
 	// Enforces the connective to be true
-	err = creator.SetAssumedVariables(xorID)
+	err = creator.Assume(xorID)
 	if err != nil {
 		panic(err)
 	}
 
 	// Set z as preferred if no variable is selected
-	err = creator.SetPreferreds("z")
+	err = creator.Prefer("z")
 	if err != nil {
 		panic(err)
 	}
