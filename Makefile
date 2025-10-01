@@ -13,3 +13,13 @@ glpk:
 .PHONY: down
 down:
 	@docker compose down
+
+.PHONY: gitleaks
+gitleaks:
+	@gitleaks detect --source . --verbose
+
+.PHONY: vulncheck
+vulncheck:
+	@govulncheck ./...
+
+security-scan: gitleaks vulncheck
