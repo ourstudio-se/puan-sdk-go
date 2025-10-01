@@ -149,14 +149,9 @@ func optionalLargeVariantWithXOR() *puan.RuleSet {
 	includedItemsInA, _ := creator.PLDAG().SetAnd("itemM", "itemN", "itemO", "itemP", "itemQ", "itemR", "itemS")
 	packageARequiresItems, _ := creator.PLDAG().SetImply("packageA", includedItemsInA)
 
-	root, _ := creator.PLDAG().SetAnd(
-		packageARequiresExactlyOneOfXAndY,
-		packageARequiresItems,
-	)
+	_ = creator.Assume(packageARequiresExactlyOneOfXAndY, packageARequiresItems)
 
-	_ = creator.PLDAG().Assume(root)
-
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	return ruleSet
 }

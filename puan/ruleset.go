@@ -10,6 +10,7 @@ import (
 type RuleSetCreator struct {
 	pldag              *pldag.Model
 	preferredVariables []string
+	assumedVariables   []string
 }
 
 type RuleSet struct {
@@ -29,7 +30,7 @@ func (c *RuleSetCreator) PLDAG() *pldag.Model {
 	return c.pldag
 }
 
-func (c *RuleSetCreator) SetPreferreds(id ...string) error {
+func (c *RuleSetCreator) Prefer(id ...string) error {
 	dedupedIDs := utils.Dedupe(id)
 	unpreferredIDs := utils.Without(dedupedIDs, c.preferredVariables)
 
@@ -48,6 +49,20 @@ func (c *RuleSetCreator) SetPreferreds(id ...string) error {
 	return nil
 }
 
+func (c *RuleSetCreator) Assume(id ...string) error {
+	dedupedIDs := utils.Dedupe(id)
+	unassumedIDs := utils.Without(dedupedIDs, c.assumedVariables)
+
+	err := c.pldag.ValidateVariables(unassumedIDs...)
+	if err != nil {
+		return err
+	}
+
+	c.assumedVariables = append(c.assumedVariables, unassumedIDs...)
+
+	return nil
+}
+
 func (c *RuleSetCreator) negatePreferreds(ids []string) ([]string, error) {
 	negatedIDs := make([]string, len(ids))
 	for i, id := range ids {
@@ -62,7 +77,25 @@ func (c *RuleSetCreator) negatePreferreds(ids []string) ([]string, error) {
 	return negatedIDs, nil
 }
 
-func (c *RuleSetCreator) Create() *RuleSet {
+func (c *RuleSetCreator) createAssumedConstraints() error {
+	if len(c.assumedVariables) == 0 {
+		return nil
+	}
+
+	root, err := c.pldag.SetAnd(c.assumedVariables...)
+	if err != nil {
+		return err
+	}
+
+	return c.pldag.Assume(root)
+}
+
+func (c *RuleSetCreator) Create() (*RuleSet, error) {
+	err := c.createAssumedConstraints()
+	if err != nil {
+		return nil, err
+	}
+
 	polyhedron := c.pldag.NewPolyhedron()
 	variables := c.pldag.Variables()
 	primitiveVariables := c.PLDAG().PrimitiveVariables()
@@ -72,7 +105,7 @@ func (c *RuleSetCreator) Create() *RuleSet {
 		primitiveVariables: primitiveVariables,
 		variables:          variables,
 		preferredVariables: c.preferredVariables,
-	}
+	}, nil
 }
 
 func (r *RuleSet) Polyhedron() *pldag.Polyhedron {

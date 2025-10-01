@@ -135,7 +135,7 @@ func optionalPackagesWithForbids() *puan.RuleSet {
 
 	packageCRequiresItemsX, _ := creator.PLDAG().SetImply("packageC", "itemX")
 
-	root, _ := creator.PLDAG().SetAnd(
+	_ = creator.Assume(
 		packageAForbidsPackageB,
 		packageAForbidsPackageC,
 		packageBForbidsPackageC,
@@ -145,9 +145,7 @@ func optionalPackagesWithForbids() *puan.RuleSet {
 		packageCRequiresItemsX,
 	)
 
-	_ = creator.PLDAG().Assume(root)
-
-	ruleSet := creator.Create()
+	ruleSet, _ := creator.Create()
 
 	return ruleSet
 }

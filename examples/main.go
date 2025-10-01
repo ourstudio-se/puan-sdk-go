@@ -34,19 +34,22 @@ func main() {
 	}
 
 	// Enforces the connective to be true
-	err = creator.PLDAG().Assume(xorID)
+	err = creator.Assume(xorID)
 	if err != nil {
 		panic(err)
 	}
 
 	// Set z as preferred if no variable is selected
-	err = creator.SetPreferreds("z")
+	err = creator.Prefer("z")
 	if err != nil {
 		panic(err)
 	}
 
 	// Create the ruleset
-	ruleSet := creator.Create()
+	ruleSet, err := creator.Create()
+	if err != nil {
+		panic(err)
+	}
 
 	// Custom selections, which in this specific case will override the preferred variable z
 	selections := puan.Selections{
