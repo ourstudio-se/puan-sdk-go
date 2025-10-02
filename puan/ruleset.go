@@ -26,8 +26,36 @@ func NewRuleSetCreator() *RuleSetCreator {
 	}
 }
 
-func (c *RuleSetCreator) PLDAG() *pldag.Model {
-	return c.pldag
+func (c *RuleSetCreator) SetPrimitives(primitives ...string) error {
+	return c.pldag.SetPrimitives(primitives...)
+}
+
+func (c *RuleSetCreator) SetAnd(variables ...string) (string, error) {
+	return c.pldag.SetAnd(variables...)
+}
+
+func (c *RuleSetCreator) SetOr(variables ...string) (string, error) {
+	return c.pldag.SetOr(variables...)
+}
+
+func (c *RuleSetCreator) SetNot(variable string) (string, error) {
+	return c.pldag.SetNot(variable)
+}
+
+func (c *RuleSetCreator) SetImply(condition, consequence string) (string, error) {
+	return c.pldag.SetImply(condition, consequence)
+}
+
+func (c *RuleSetCreator) SetXor(variables ...string) (string, error) {
+	return c.pldag.SetXor(variables...)
+}
+
+func (c *RuleSetCreator) SetOneOrNone(variables ...string) (string, error) {
+	return c.pldag.SetOneOrNone(variables...)
+}
+
+func (c *RuleSetCreator) SetEquivalent(variableOne, variableTwo string) (string, error) {
+	return c.pldag.SetEquivalent(variableOne, variableTwo)
 }
 
 func (c *RuleSetCreator) Prefer(id ...string) error {
@@ -98,7 +126,7 @@ func (c *RuleSetCreator) Create() (*RuleSet, error) {
 
 	polyhedron := c.pldag.NewPolyhedron()
 	variables := c.pldag.Variables()
-	primitiveVariables := c.PLDAG().PrimitiveVariables()
+	primitiveVariables := c.pldag.PrimitiveVariables()
 
 	return &RuleSet{
 		polyhedron:         polyhedron,

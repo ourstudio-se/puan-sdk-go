@@ -114,26 +114,26 @@ func Test_optionalPackagesWithForbids_noSelection(t *testing.T) {
 
 func optionalPackagesWithForbids() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.PLDAG().SetPrimitives("packageA", "packageB", "packageC", "itemN", "itemM", "itemX", "itemY", "itemZ")
+	_ = creator.SetPrimitives("packageA", "packageB", "packageC", "itemN", "itemM", "itemX", "itemY", "itemZ")
 
-	notPackageB, _ := creator.PLDAG().SetNot("packageB")
-	notPackageC, _ := creator.PLDAG().SetNot("packageC")
+	notPackageB, _ := creator.SetNot("packageB")
+	notPackageC, _ := creator.SetNot("packageC")
 
 	// Note: Law of implication A -> !B is equivalent to !A v !B
-	packageAForbidsPackageB, _ := creator.PLDAG().SetImply("packageA", notPackageB)
-	packageAForbidsPackageC, _ := creator.PLDAG().SetImply("packageA", notPackageC)
-	packageBForbidsPackageC, _ := creator.PLDAG().SetImply("packageB", notPackageC)
+	packageAForbidsPackageB, _ := creator.SetImply("packageA", notPackageB)
+	packageAForbidsPackageC, _ := creator.SetImply("packageA", notPackageC)
+	packageBForbidsPackageC, _ := creator.SetImply("packageB", notPackageC)
 
-	exactlyOneOfTheItemsNM, _ := creator.PLDAG().SetXor("itemN", "itemM")
-	packageARequiresExactlyOneOfItemsNM, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfTheItemsNM)
+	exactlyOneOfTheItemsNM, _ := creator.SetXor("itemN", "itemM")
+	packageARequiresExactlyOneOfItemsNM, _ := creator.SetImply("packageA", exactlyOneOfTheItemsNM)
 
-	itemsXYZ, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemZ")
-	packageARequiresItemsXYZ, _ := creator.PLDAG().SetImply("packageA", itemsXYZ)
+	itemsXYZ, _ := creator.SetAnd("itemX", "itemY", "itemZ")
+	packageARequiresItemsXYZ, _ := creator.SetImply("packageA", itemsXYZ)
 
-	itemsXY, _ := creator.PLDAG().SetAnd("itemX", "itemY")
-	packageBRequiresItemsXY, _ := creator.PLDAG().SetImply("packageB", itemsXY)
+	itemsXY, _ := creator.SetAnd("itemX", "itemY")
+	packageBRequiresItemsXY, _ := creator.SetImply("packageB", itemsXY)
 
-	packageCRequiresItemsX, _ := creator.PLDAG().SetImply("packageC", "itemX")
+	packageCRequiresItemsX, _ := creator.SetImply("packageC", "itemX")
 
 	_ = creator.Assume(
 		packageAForbidsPackageB,

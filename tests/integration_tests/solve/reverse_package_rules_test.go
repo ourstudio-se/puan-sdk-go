@@ -21,23 +21,23 @@ import (
 func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_shouldGiveNewVariant(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemZ", "itemN", "itemM")
+	_ = creator.SetPrimitives("packageA", "itemX", "itemY", "itemZ", "itemN", "itemM")
 
-	sharedItems, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemZ")
-	packageRequiresItems, _ := creator.PLDAG().SetImply("packageA", sharedItems)
+	sharedItems, _ := creator.SetAnd("itemX", "itemY", "itemZ")
+	packageRequiresItems, _ := creator.SetImply("packageA", sharedItems)
 
-	exactlyOneOfItemNAndM, _ := creator.PLDAG().SetXor("itemN", "itemM")
-	packageRequiresExactlyOneOfItemNAndM, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfItemNAndM)
+	exactlyOneOfItemNAndM, _ := creator.SetXor("itemN", "itemM")
+	packageRequiresExactlyOneOfItemNAndM, _ := creator.SetImply("packageA", exactlyOneOfItemNAndM)
 
-	includedItemsInVariantOne, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemZ", "itemN")
-	includedItemsInVariantTwo, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemZ", "itemM")
+	includedItemsInVariantOne, _ := creator.SetAnd("itemX", "itemY", "itemZ", "itemN")
+	includedItemsInVariantTwo, _ := creator.SetAnd("itemX", "itemY", "itemZ", "itemM")
 
-	reversedPackageVariantOne, _ := creator.PLDAG().SetImply(includedItemsInVariantOne, "packageA")
-	reversedPackageVariantTwo, _ := creator.PLDAG().SetImply(includedItemsInVariantTwo, "packageA")
+	reversedPackageVariantOne, _ := creator.SetImply(includedItemsInVariantOne, "packageA")
+	reversedPackageVariantTwo, _ := creator.SetImply(includedItemsInVariantTwo, "packageA")
 
 	_ = creator.Assume("packageA", packageRequiresItems, packageRequiresExactlyOneOfItemNAndM, reversedPackageVariantOne, reversedPackageVariantTwo)
 
-	preferred, _ := creator.PLDAG().SetImply("packageA", "itemN")
+	preferred, _ := creator.SetImply("packageA", "itemN")
 	_ = creator.Prefer(preferred)
 
 	ruleSet, err := creator.Create()
@@ -74,17 +74,17 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemZ")
+	_ = creator.SetPrimitives("packageA", "itemX", "itemY", "itemZ")
 
-	xorItemXItemY, _ := creator.PLDAG().SetXor("itemX", "itemY")
-	xorItemXItemZ, _ := creator.PLDAG().SetXor("itemX", "itemZ")
+	xorItemXItemY, _ := creator.SetXor("itemX", "itemY")
+	xorItemXItemZ, _ := creator.SetXor("itemX", "itemZ")
 
-	packageExactlyOneOfItem1Item2, _ := creator.PLDAG().SetImply("packageA", xorItemXItemY)
-	packageExactlyOneOfItem1Item3, _ := creator.PLDAG().SetImply("packageA", xorItemXItemZ)
+	packageExactlyOneOfItem1Item2, _ := creator.SetImply("packageA", xorItemXItemY)
+	packageExactlyOneOfItem1Item3, _ := creator.SetImply("packageA", xorItemXItemZ)
 
-	reversePackageVariantOne, _ := creator.PLDAG().SetImply("itemX", "packageA")
-	includedItemsInVariantTwo, _ := creator.PLDAG().SetAnd("itemY", "itemZ")
-	reversePackageVariantTwo, _ := creator.PLDAG().SetImply(includedItemsInVariantTwo, "packageA")
+	reversePackageVariantOne, _ := creator.SetImply("itemX", "packageA")
+	includedItemsInVariantTwo, _ := creator.SetAnd("itemY", "itemZ")
+	reversePackageVariantTwo, _ := creator.SetImply(includedItemsInVariantTwo, "packageA")
 
 	_ = creator.Assume(
 		packageExactlyOneOfItem1Item2,
@@ -93,7 +93,7 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 		reversePackageVariantTwo,
 	)
 
-	preferredVariant, _ := creator.PLDAG().SetImply("packageA", "itemX")
+	preferredVariant, _ := creator.SetImply("packageA", "itemX")
 	_ = creator.Prefer(preferredVariant)
 
 	ruleSet, _ := creator.Create()
@@ -133,20 +133,20 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 func Test_twoPackagesWithSharedItems_selectLargestPackage(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.PLDAG().SetPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
+	_ = creator.SetPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 
-	includedItemsInA, _ := creator.PLDAG().SetAnd("itemX", "itemY")
-	includedItemsInB, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemZ")
+	includedItemsInA, _ := creator.SetAnd("itemX", "itemY")
+	includedItemsInB, _ := creator.SetAnd("itemX", "itemY", "itemZ")
 
-	packageARequiresItems, _ := creator.PLDAG().SetImply("packageA", includedItemsInA)
-	packageBRequiresItems, _ := creator.PLDAG().SetImply("packageB", includedItemsInB)
+	packageARequiresItems, _ := creator.SetImply("packageA", includedItemsInA)
+	packageBRequiresItems, _ := creator.SetImply("packageB", includedItemsInB)
 
-	notPackageB, _ := creator.PLDAG().SetNot("packageB")
-	packageAForbidsB, _ := creator.PLDAG().SetImply("packageA", notPackageB)
+	notPackageB, _ := creator.SetNot("packageB")
+	packageAForbidsB, _ := creator.SetImply("packageA", notPackageB)
 
-	packageAOrB, _ := creator.PLDAG().SetOr("packageA", "packageB")
-	reversedPackageAOrB, _ := creator.PLDAG().SetImply(includedItemsInA, packageAOrB)
-	reversedPackageB, _ := creator.PLDAG().SetImply(includedItemsInB, "packageB")
+	packageAOrB, _ := creator.SetOr("packageA", "packageB")
+	reversedPackageAOrB, _ := creator.SetImply(includedItemsInA, packageAOrB)
+	reversedPackageB, _ := creator.SetImply(includedItemsInB, "packageB")
 
 	_ = creator.Assume(
 		packageARequiresItems,
