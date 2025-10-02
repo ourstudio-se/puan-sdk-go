@@ -19,7 +19,7 @@ const url = "http://127.0.0.1:9000"
 func Test_exactlyOnePackage_selectPreferredThenNotPreferred(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.SetPrimitives("packageA", "packageB", "packageC", "itemX")
+	_ = creator.AddPrimitives("packageA", "packageB", "packageC", "itemX")
 	exactlyOnePackage, _ := creator.SetXor("packageA", "packageB", "packageC")
 
 	packageBRequiresItemX, _ := creator.SetImply("packageB", "itemX")
@@ -56,7 +56,7 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred(t *testing.T) {
 // Description: package A requires B. B has been preselected and is then removed.
 func Test_packageImpliesAnotherPackage_addAndRemove_shouldGiveEmptySolution(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.SetPrimitives("packageA", "packageB")
+	_ = creator.AddPrimitives("packageA", "packageB")
 	packageARequiredPackageB, _ := creator.SetImply("packageA", "packageB")
 
 	_ = creator.Assume(packageARequiredPackageB)
@@ -89,7 +89,7 @@ func Test_packageImpliesAnotherPackage_addAndRemove_shouldGiveEmptySolution(t *t
 func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldGivePreferred(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.SetPrimitives("packageA", "packageB", "packageC")
+	_ = creator.AddPrimitives("packageA", "packageB", "packageC")
 
 	exactlyOnePackage, _ := creator.SetXor("packageA", "packageB", "packageC")
 
@@ -126,7 +126,7 @@ func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldGivePreferred(t 
 // Nothing is preselected and we expect (A, itemX, itemY, itemN) as our result configuration.
 func Test_exactlyOnePackage_nothingIsSelected_shouldGivePreferred(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.SetPrimitives("packageA", "itemX", "itemY", "itemM", "itemN", "itemO")
+	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemM", "itemN", "itemO")
 
 	itemsXAndY, _ := creator.SetAnd("itemX", "itemY")
 	packageARequiresItems, _ := creator.SetImply("packageA", itemsXAndY)
@@ -175,7 +175,7 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldGivePreferred(t *testing.T) 
 func Test_implicationChain_shouldGiveAll(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.SetPrimitives("packageA", "packageE", "packageF", "itemX", "itemY", "itemZ")
+	_ = creator.AddPrimitives("packageA", "packageE", "packageF", "itemX", "itemY", "itemZ")
 
 	includedItemsInA, _ := creator.SetAnd("itemX", "itemY", "itemZ")
 	packageARequiresItems, _ := creator.SetImply("packageA", includedItemsInA)
@@ -223,7 +223,7 @@ func Test_implicationChain_shouldGiveAll(t *testing.T) {
 func Test_multiplePackagesWithXOR_shouldGiveLastSelected(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.SetPrimitives("packageA", "packageB", "packageC", "packageD", "packageE")
+	_ = creator.AddPrimitives("packageA", "packageB", "packageC", "packageD", "packageE")
 	exactlyOnePackage, _ := creator.SetXor("packageA", "packageB", "packageC", "packageD", "packageE")
 
 	_ = creator.Assume(exactlyOnePackage)
@@ -261,7 +261,7 @@ func Test_multiplePackagesWithXOR_shouldGiveLastSelected(t *testing.T) {
 func Test_notExistingVariable_shouldGiveError(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.SetPrimitives("packageA", "itemX", "itemY")
+	_ = creator.AddPrimitives("packageA", "itemX", "itemY")
 
 	includedItemsInA, _ := creator.SetAnd("itemX", "itemY")
 	packageARequiresItems, _ := creator.SetEquivalent("packageA", includedItemsInA)
@@ -293,7 +293,7 @@ func Test_notExistingVariable_shouldGiveError(t *testing.T) {
 func Test_packageInDefaultConfig(t *testing.T) {
 	t.Skip()
 	creator := puan.NewRuleSetCreator()
-	_ = creator.SetPrimitives("packageA", "packageZ", "itemB", "itemX", "itemY", "itemM", "itemN", "itemO")
+	_ = creator.AddPrimitives("packageA", "packageZ", "itemB", "itemX", "itemY", "itemM", "itemN", "itemO")
 
 	exactlyOneIfItemXAndY, _ := creator.SetXor("itemX", "itemY")
 	packageZRequiresExactlyOneOfItemXOrY, _ := creator.SetImply("packageZ", exactlyOneIfItemXAndY)
@@ -349,7 +349,7 @@ func Test_packageInDefaultConfig(t *testing.T) {
 // We expect (packageP, itemY) and itemB to be selected
 func Test_selectPackageWithItemAfterSingleConflictingItemSelection_shouldGivePackage(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.SetPrimitives("packageA", "packageP", "itemB", "itemX", "itemY")
+	_ = creator.AddPrimitives("packageA", "packageP", "itemB", "itemX", "itemY")
 
 	exactlyOneOfItemXAndY, _ := creator.SetXor("itemX", "itemY")
 	packagePRequiresExactlyOneOfItemXOrY, _ := creator.SetImply("packageP", exactlyOneOfItemXAndY)
@@ -396,7 +396,7 @@ func Test_selectPackageWithItemAfterSingleConflictingItemSelection_shouldGivePac
 // expects (packageP, itemY) to be removed from selected variants.
 func Test_changeVariant_shouldGiveLastSelected(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.SetPrimitives("packageP", "itemX", "itemY", "itemA", "itemB", "itemC")
+	_ = creator.AddPrimitives("packageP", "itemX", "itemY", "itemA", "itemB", "itemC")
 
 	includedItemsInPackage, _ := creator.SetAnd("itemA", "itemB", "itemC")
 	packageRequiresItems, _ := creator.SetImply("packageP", includedItemsInPackage)
@@ -452,7 +452,7 @@ func Test_changeVariant_shouldGiveLastSelected(t *testing.T) {
 func Test_subComponentsAndPackageInDefaultConfig(t *testing.T) {
 	t.Skip()
 	creator := puan.NewRuleSetCreator()
-	_ = creator.SetPrimitives("packageP", "itemA", "itemB", "itemX", "itemY", "itemZ")
+	_ = creator.AddPrimitives("packageP", "itemA", "itemB", "itemX", "itemY", "itemZ")
 
 	exactlyOneOfTheItemsXYZ, _ := creator.SetXor("itemX", "itemY", "itemZ")
 
@@ -508,7 +508,7 @@ func Test_subComponentsAndPackageInDefaultConfig(t *testing.T) {
 func Test_duplicatedPreferred(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.SetPrimitives("itemA", "itemB", "itemC", "itemX", "itemY")
+	_ = creator.AddPrimitives("itemA", "itemB", "itemC", "itemX", "itemY")
 
 	exactlyOneOfItemAAndB, _ := creator.SetXor("itemA", "itemB")
 	exactlyOneOfItemBAndC, _ := creator.SetXor("itemB", "itemC")
@@ -566,7 +566,7 @@ func Test_duplicatedPreferred(t *testing.T) {
 func Test_xorBetweenPackagesAndItems_shouldGiveLastSelection(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.SetPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
+	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 
 	exactlyOneOfItemXYZ, _ := creator.SetXor("itemX", "itemY", "itemZ")
 	packageARequiresExactlyOneOfItemXYZ, _ := creator.SetImply("packageA", exactlyOneOfItemXYZ)
@@ -628,7 +628,7 @@ func Test_xorBetweenPackagesAndItems_shouldGiveLastSelection(t *testing.T) {
 func Test_xorBetweenPackagesAndItemsWithPreferred_shouldGiveLastSelection(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.SetPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
+	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 
 	exactlyOneOfItemXYZ, _ := creator.SetXor("itemX", "itemY", "itemZ")
 	packageARequiresExactlyOneOfItemXYZ, _ := creator.SetImply("packageA", exactlyOneOfItemXYZ)
@@ -697,7 +697,7 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 	t.Skip()
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.SetPrimitives("itemA", "itemB", "itemC", "itemN", "itemX", "itemY", "itemZ")
+	_ = creator.AddPrimitives("itemA", "itemB", "itemC", "itemN", "itemX", "itemY", "itemZ")
 
 	exactlyOneOfItemXYZ, _ := creator.SetXor("itemX", "itemY", "itemZ")
 
@@ -749,7 +749,7 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 
 func Test_removingItemInAddedPackage_shouldRemovePackageAsWell(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.SetPrimitives("packageA", "itemX", "itemY")
+	_ = creator.AddPrimitives("packageA", "itemX", "itemY")
 
 	itemXAndY, _ := creator.SetAnd("itemX", "itemY")
 	packageARequiresItemXAndY, _ := creator.SetImply("packageA", itemXAndY)
@@ -780,7 +780,7 @@ func Test_removingItemInAddedPackage_shouldRemovePackageAsWell(t *testing.T) {
 
 func Test_removePackageWithSubselection_shouldGiveEmptySolution(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.SetPrimitives("packageA", "itemX", "itemY", "itemZ", "itemM", "itemN")
+	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemZ", "itemM", "itemN")
 
 	exactlyOneOfItemXYZ, _ := creator.SetXor("itemX", "itemY", "itemZ")
 	anyOfItems, _ := creator.SetOr("itemM", "itemN")

@@ -26,7 +26,7 @@ func NewRuleSetCreator() *RuleSetCreator {
 	}
 }
 
-func (c *RuleSetCreator) SetPrimitives(primitives ...string) error {
+func (c *RuleSetCreator) AddPrimitives(primitives ...string) error {
 	return c.pldag.SetPrimitives(primitives...)
 }
 

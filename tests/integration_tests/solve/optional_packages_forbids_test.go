@@ -114,7 +114,7 @@ func Test_optionalPackagesWithForbids_noSelection(t *testing.T) {
 
 func optionalPackagesWithForbids() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.SetPrimitives("packageA", "packageB", "packageC", "itemN", "itemM", "itemX", "itemY", "itemZ")
+	_ = creator.AddPrimitives("packageA", "packageB", "packageC", "itemN", "itemM", "itemX", "itemY", "itemZ")
 
 	notPackageB, _ := creator.SetNot("packageB")
 	notPackageC, _ := creator.SetNot("packageC")

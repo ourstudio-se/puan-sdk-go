@@ -21,7 +21,7 @@ import (
 func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_shouldGiveNewVariant(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.SetPrimitives("packageA", "itemX", "itemY", "itemZ", "itemN", "itemM")
+	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemZ", "itemN", "itemM")
 
 	sharedItems, _ := creator.SetAnd("itemX", "itemY", "itemZ")
 	packageRequiresItems, _ := creator.SetImply("packageA", sharedItems)
@@ -74,7 +74,7 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.SetPrimitives("packageA", "itemX", "itemY", "itemZ")
+	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemZ")
 
 	xorItemXItemY, _ := creator.SetXor("itemX", "itemY")
 	xorItemXItemZ, _ := creator.SetXor("itemX", "itemZ")
@@ -133,7 +133,7 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 func Test_twoPackagesWithSharedItems_selectLargestPackage(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.SetPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
+	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 
 	includedItemsInA, _ := creator.SetAnd("itemX", "itemY")
 	includedItemsInB, _ := creator.SetAnd("itemX", "itemY", "itemZ")

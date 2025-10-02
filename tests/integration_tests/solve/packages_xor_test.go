@@ -73,7 +73,7 @@ func Test_exactlyOnePackage_selectNotPreferred(t *testing.T) {
 
 func packagesWithSharedItemsSmallerPackagePreferred() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.SetPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
+	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 
 	includedItemsInA, _ := creator.SetAnd("itemX", "itemY")
 	includedItemsInB, _ := creator.SetAnd("itemX", "itemY", "itemZ")

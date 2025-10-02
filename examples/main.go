@@ -12,8 +12,8 @@ func main() {
 	// Initialize the ruleset creator
 	creator := puan.NewRuleSetCreator()
 
-	// Sets x, y, z as boolean primitive variables
-	_ = creator.SetPrimitives([]string{"x", "y", "z"}...)
+	// Adds x, y, z as boolean primitive variables
+	_ = creator.AddPrimitives([]string{"x", "y", "z"}...)
 
 	// Create a simple and between x and y
 	xyID, err := creator.SetAnd("x", "y")
