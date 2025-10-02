@@ -38,8 +38,8 @@ func (c *RuleSetCreator) SetOr(variables ...string) (string, error) {
 	return c.pldag.SetOr(variables...)
 }
 
-func (c *RuleSetCreator) SetNot(variable string) (string, error) {
-	return c.pldag.SetNot(variable)
+func (c *RuleSetCreator) SetNot(variable ...string) (string, error) {
+	return c.pldag.SetNot(variable...)
 }
 
 func (c *RuleSetCreator) SetImply(condition, consequence string) (string, error) {
