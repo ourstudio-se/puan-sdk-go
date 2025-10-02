@@ -127,16 +127,16 @@ func Test_multiplePackagesWithOr_allSelectedExceptA(t *testing.T) {
 
 func multiplePackagesWithOr() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.PLDAG().SetPrimitives("packageA", "packageB", "itemX", "packageC", "packageD")
+	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "packageC", "packageD")
 
-	anyOfThePackages, _ := creator.PLDAG().SetOr("packageA", "packageB", "packageC", "packageD")
-	packageBRequiresItemX, _ := creator.PLDAG().SetImply("packageB", "itemX")
+	anyOfThePackages, _ := creator.SetOr("packageA", "packageB", "packageC", "packageD")
+	packageBRequiresItemX, _ := creator.SetImply("packageB", "itemX")
 
 	_ = creator.Assume(anyOfThePackages, packageBRequiresItemX)
 
-	unPreferredPackages, _ := creator.PLDAG().SetOr("packageB", "packageC", "packageD")
-	notPreferred, _ := creator.PLDAG().SetNot(unPreferredPackages)
-	packageAAndNotPreferred, _ := creator.PLDAG().SetAnd("packageA", notPreferred)
+	unPreferredPackages, _ := creator.SetOr("packageB", "packageC", "packageD")
+	notPreferred, _ := creator.SetNot(unPreferredPackages)
+	packageAAndNotPreferred, _ := creator.SetAnd("packageA", notPreferred)
 
 	_ = creator.Prefer(packageAAndNotPreferred)
 

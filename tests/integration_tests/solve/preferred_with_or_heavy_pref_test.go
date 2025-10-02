@@ -120,18 +120,18 @@ func Test_heavyPreferredWithOr_bothPackagesSelection(t *testing.T) {
 func heavyPreferredWithOr() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.PLDAG().SetPrimitives("packageA", "packageB", "itemX", "itemY")
-	itemXAndY, _ := creator.PLDAG().SetAnd("itemX", "itemY")
-	packageARequiresItemXAndItemY, _ := creator.PLDAG().SetImply("packageA", itemXAndY)
+	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "itemY")
+	itemXAndY, _ := creator.SetAnd("itemX", "itemY")
+	packageARequiresItemXAndItemY, _ := creator.SetImply("packageA", itemXAndY)
 
-	packageAOrPackageB, _ := creator.PLDAG().SetOr("packageA", "packageB")
+	packageAOrPackageB, _ := creator.SetOr("packageA", "packageB")
 	_ = creator.Assume(
 		packageARequiresItemXAndItemY,
 		packageAOrPackageB,
 	)
 
-	notPackageB, _ := creator.PLDAG().SetNot("packageB")
-	packageAAndNotB, _ := creator.PLDAG().SetAnd("packageA", notPackageB)
+	notPackageB, _ := creator.SetNot("packageB")
+	packageAAndNotB, _ := creator.SetAnd("packageA", notPackageB)
 	_ = creator.Prefer(packageAAndNotB)
 
 	ruleSet, _ := creator.Create()

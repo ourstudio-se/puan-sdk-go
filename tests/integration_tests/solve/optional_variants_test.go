@@ -180,21 +180,21 @@ func Test_optionalVariant_noSelection_shouldGiveEmptySolution(t *testing.T) {
 
 func optionalVariantsWithXORBetweenItemsLargeVariantPreferred() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemZ")
+	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemZ")
 
-	xorItem1Item2, _ := creator.PLDAG().SetXor("itemX", "itemY")
-	xorItem1Item3, _ := creator.PLDAG().SetXor("itemX", "itemZ")
+	xorItem1Item2, _ := creator.SetXor("itemX", "itemY")
+	xorItem1Item3, _ := creator.SetXor("itemX", "itemZ")
 
-	packageExactlyOneOfItem1Item2, _ := creator.PLDAG().SetImply("packageA", xorItem1Item2)
-	packageExactlyOneOfItem1Item3, _ := creator.PLDAG().SetImply("packageA", xorItem1Item3)
+	packageExactlyOneOfItem1Item2, _ := creator.SetImply("packageA", xorItem1Item2)
+	packageExactlyOneOfItem1Item3, _ := creator.SetImply("packageA", xorItem1Item3)
 
 	_ = creator.Assume(
 		packageExactlyOneOfItem1Item2,
 		packageExactlyOneOfItem1Item3,
 	)
 
-	preferredItems, _ := creator.PLDAG().SetAnd("itemY", "itemZ")
-	packagePreferredVariant, _ := creator.PLDAG().SetImply("packageA", preferredItems)
+	preferredItems, _ := creator.SetAnd("itemY", "itemZ")
+	packagePreferredVariant, _ := creator.SetImply("packageA", preferredItems)
 
 	_ = creator.Prefer(packagePreferredVariant)
 

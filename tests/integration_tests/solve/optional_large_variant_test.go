@@ -141,13 +141,13 @@ func Test_optionalLargeVariantWithXOR_singleItemSelection(t *testing.T) {
 
 func optionalLargeVariantWithXOR() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemM", "itemN", "itemO", "itemP", "itemQ", "itemR", "itemS")
+	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemM", "itemN", "itemO", "itemP", "itemQ", "itemR", "itemS")
 
-	exactlyOneOfItemXAndY, _ := creator.PLDAG().SetXor("itemX", "itemY")
-	packageARequiresExactlyOneOfXAndY, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfItemXAndY)
+	exactlyOneOfItemXAndY, _ := creator.SetXor("itemX", "itemY")
+	packageARequiresExactlyOneOfXAndY, _ := creator.SetImply("packageA", exactlyOneOfItemXAndY)
 
-	includedItemsInA, _ := creator.PLDAG().SetAnd("itemM", "itemN", "itemO", "itemP", "itemQ", "itemR", "itemS")
-	packageARequiresItems, _ := creator.PLDAG().SetImply("packageA", includedItemsInA)
+	includedItemsInA, _ := creator.SetAnd("itemM", "itemN", "itemO", "itemP", "itemQ", "itemR", "itemS")
+	packageARequiresItems, _ := creator.SetImply("packageA", includedItemsInA)
 
 	_ = creator.Assume(packageARequiresExactlyOneOfXAndY, packageARequiresItems)
 

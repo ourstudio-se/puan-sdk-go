@@ -19,10 +19,10 @@ const url = "http://127.0.0.1:9000"
 func Test_exactlyOnePackage_selectPreferredThenNotPreferred(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.PLDAG().SetPrimitives("packageA", "packageB", "packageC", "itemX")
-	exactlyOnePackage, _ := creator.PLDAG().SetXor("packageA", "packageB", "packageC")
+	_ = creator.AddPrimitives("packageA", "packageB", "packageC", "itemX")
+	exactlyOnePackage, _ := creator.SetXor("packageA", "packageB", "packageC")
 
-	packageBRequiresItemX, _ := creator.PLDAG().SetImply("packageB", "itemX")
+	packageBRequiresItemX, _ := creator.SetImply("packageB", "itemX")
 
 	_ = creator.Assume(exactlyOnePackage, packageBRequiresItemX)
 	_ = creator.Prefer("packageA")
@@ -56,8 +56,8 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred(t *testing.T) {
 // Description: package A requires B. B has been preselected and is then removed.
 func Test_packageImpliesAnotherPackage_addAndRemove_shouldGiveEmptySolution(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.PLDAG().SetPrimitives("packageA", "packageB")
-	packageARequiredPackageB, _ := creator.PLDAG().SetImply("packageA", "packageB")
+	_ = creator.AddPrimitives("packageA", "packageB")
+	packageARequiredPackageB, _ := creator.SetImply("packageA", "packageB")
 
 	_ = creator.Assume(packageARequiredPackageB)
 	ruleSet, _ := creator.Create()
@@ -89,9 +89,9 @@ func Test_packageImpliesAnotherPackage_addAndRemove_shouldGiveEmptySolution(t *t
 func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldGivePreferred(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.PLDAG().SetPrimitives("packageA", "packageB", "packageC")
+	_ = creator.AddPrimitives("packageA", "packageB", "packageC")
 
-	exactlyOnePackage, _ := creator.PLDAG().SetXor("packageA", "packageB", "packageC")
+	exactlyOnePackage, _ := creator.SetXor("packageA", "packageB", "packageC")
 
 	_ = creator.Assume(exactlyOnePackage)
 	_ = creator.Prefer("packageA")
@@ -126,16 +126,16 @@ func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldGivePreferred(t 
 // Nothing is preselected and we expect (A, itemX, itemY, itemN) as our result configuration.
 func Test_exactlyOnePackage_nothingIsSelected_shouldGivePreferred(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemM", "itemN", "itemO")
+	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemM", "itemN", "itemO")
 
-	itemsXAndY, _ := creator.PLDAG().SetAnd("itemX", "itemY")
-	packageARequiresItems, _ := creator.PLDAG().SetImply("packageA", itemsXAndY)
+	itemsXAndY, _ := creator.SetAnd("itemX", "itemY")
+	packageARequiresItems, _ := creator.SetImply("packageA", itemsXAndY)
 
-	exactlyOneOfItemMAndM, _ := creator.PLDAG().SetXor("itemN", "itemM")
-	packageARequiresExactlyOneOfItemMAndN, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfItemMAndM)
+	exactlyOneOfItemMAndM, _ := creator.SetXor("itemN", "itemM")
+	packageARequiresExactlyOneOfItemMAndN, _ := creator.SetImply("packageA", exactlyOneOfItemMAndM)
 
-	exactlyOneOfItemOAndM, _ := creator.PLDAG().SetXor("itemN", "itemO")
-	packageARequiresExactlyOneOfItemOAndN, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfItemOAndM)
+	exactlyOneOfItemOAndM, _ := creator.SetXor("itemN", "itemO")
+	packageARequiresExactlyOneOfItemOAndN, _ := creator.SetImply("packageA", exactlyOneOfItemOAndM)
 
 	_ = creator.Assume(
 		"packageA",
@@ -175,13 +175,13 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldGivePreferred(t *testing.T) 
 func Test_implicationChain_shouldGiveAll(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.PLDAG().SetPrimitives("packageA", "packageE", "packageF", "itemX", "itemY", "itemZ")
+	_ = creator.AddPrimitives("packageA", "packageE", "packageF", "itemX", "itemY", "itemZ")
 
-	includedItemsInA, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemZ")
-	packageARequiresItems, _ := creator.PLDAG().SetImply("packageA", includedItemsInA)
+	includedItemsInA, _ := creator.SetAnd("itemX", "itemY", "itemZ")
+	packageARequiresItems, _ := creator.SetImply("packageA", includedItemsInA)
 
-	packageERequiresF, _ := creator.PLDAG().SetImply("packageE", "packageF")
-	packageFRequiresA, _ := creator.PLDAG().SetImply("packageF", "packageA")
+	packageERequiresF, _ := creator.SetImply("packageE", "packageF")
+	packageFRequiresA, _ := creator.SetImply("packageF", "packageA")
 
 	_ = creator.Assume(
 		packageERequiresF,
@@ -223,8 +223,8 @@ func Test_implicationChain_shouldGiveAll(t *testing.T) {
 func Test_multiplePackagesWithXOR_shouldGiveLastSelected(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.PLDAG().SetPrimitives("packageA", "packageB", "packageC", "packageD", "packageE")
-	exactlyOnePackage, _ := creator.PLDAG().SetXor("packageA", "packageB", "packageC", "packageD", "packageE")
+	_ = creator.AddPrimitives("packageA", "packageB", "packageC", "packageD", "packageE")
+	exactlyOnePackage, _ := creator.SetXor("packageA", "packageB", "packageC", "packageD", "packageE")
 
 	_ = creator.Assume(exactlyOnePackage)
 
@@ -261,10 +261,10 @@ func Test_multiplePackagesWithXOR_shouldGiveLastSelected(t *testing.T) {
 func Test_notExistingVariable_shouldGiveError(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY")
+	_ = creator.AddPrimitives("packageA", "itemX", "itemY")
 
-	includedItemsInA, _ := creator.PLDAG().SetAnd("itemX", "itemY")
-	packageARequiresItems, _ := creator.PLDAG().SetEquivalent("packageA", includedItemsInA)
+	includedItemsInA, _ := creator.SetAnd("itemX", "itemY")
+	packageARequiresItems, _ := creator.SetEquivalent("packageA", includedItemsInA)
 
 	_ = creator.Assume(packageARequiresItems)
 
@@ -293,15 +293,15 @@ func Test_notExistingVariable_shouldGiveError(t *testing.T) {
 func Test_packageInDefaultConfig(t *testing.T) {
 	t.Skip()
 	creator := puan.NewRuleSetCreator()
-	_ = creator.PLDAG().SetPrimitives("packageA", "packageZ", "itemB", "itemX", "itemY", "itemM", "itemN", "itemO")
+	_ = creator.AddPrimitives("packageA", "packageZ", "itemB", "itemX", "itemY", "itemM", "itemN", "itemO")
 
-	exactlyOneIfItemXAndY, _ := creator.PLDAG().SetXor("itemX", "itemY")
-	packageZRequiresExactlyOneOfItemXOrY, _ := creator.PLDAG().SetImply("packageZ", exactlyOneIfItemXAndY)
+	exactlyOneIfItemXAndY, _ := creator.SetXor("itemX", "itemY")
+	packageZRequiresExactlyOneOfItemXOrY, _ := creator.SetImply("packageZ", exactlyOneIfItemXAndY)
 
-	requiredItemsInZ, _ := creator.PLDAG().SetAnd("itemM", "itemN", "itemO")
-	packageZRequiresItems, _ := creator.PLDAG().SetImply("packageZ", requiredItemsInZ)
+	requiredItemsInZ, _ := creator.SetAnd("itemM", "itemN", "itemO")
+	packageZRequiresItems, _ := creator.SetImply("packageZ", requiredItemsInZ)
 
-	packageARequiresItemB, _ := creator.PLDAG().SetImply("packageA", "itemB")
+	packageARequiresItemB, _ := creator.SetImply("packageA", "itemB")
 
 	_ = creator.Assume(
 		packageZRequiresExactlyOneOfItemXOrY,
@@ -309,7 +309,7 @@ func Test_packageInDefaultConfig(t *testing.T) {
 		packageARequiresItemB,
 	)
 
-	preferredZWithX, _ := creator.PLDAG().SetImply("packageZ", "itemX")
+	preferredZWithX, _ := creator.SetImply("packageZ", "itemX")
 	_ = creator.Prefer(preferredZWithX)
 
 	ruleSet, _ := creator.Create()
@@ -349,12 +349,12 @@ func Test_packageInDefaultConfig(t *testing.T) {
 // We expect (packageP, itemY) and itemB to be selected
 func Test_selectPackageWithItemAfterSingleConflictingItemSelection_shouldGivePackage(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.PLDAG().SetPrimitives("packageA", "packageP", "itemB", "itemX", "itemY")
+	_ = creator.AddPrimitives("packageA", "packageP", "itemB", "itemX", "itemY")
 
-	exactlyOneOfItemXAndY, _ := creator.PLDAG().SetXor("itemX", "itemY")
-	packagePRequiresExactlyOneOfItemXOrY, _ := creator.PLDAG().SetImply("packageP", exactlyOneOfItemXAndY)
+	exactlyOneOfItemXAndY, _ := creator.SetXor("itemX", "itemY")
+	packagePRequiresExactlyOneOfItemXOrY, _ := creator.SetImply("packageP", exactlyOneOfItemXAndY)
 
-	packageARequiresItemB, _ := creator.PLDAG().SetImply("packageA", "itemB")
+	packageARequiresItemB, _ := creator.SetImply("packageA", "itemB")
 
 	_ = creator.Assume(
 		packagePRequiresExactlyOneOfItemXOrY,
@@ -396,13 +396,13 @@ func Test_selectPackageWithItemAfterSingleConflictingItemSelection_shouldGivePac
 // expects (packageP, itemY) to be removed from selected variants.
 func Test_changeVariant_shouldGiveLastSelected(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.PLDAG().SetPrimitives("packageP", "itemX", "itemY", "itemA", "itemB", "itemC")
+	_ = creator.AddPrimitives("packageP", "itemX", "itemY", "itemA", "itemB", "itemC")
 
-	includedItemsInPackage, _ := creator.PLDAG().SetAnd("itemA", "itemB", "itemC")
-	packageRequiresItems, _ := creator.PLDAG().SetImply("packageP", includedItemsInPackage)
+	includedItemsInPackage, _ := creator.SetAnd("itemA", "itemB", "itemC")
+	packageRequiresItems, _ := creator.SetImply("packageP", includedItemsInPackage)
 
-	exactlyOneOfItemXAndY, _ := creator.PLDAG().SetXor("itemX", "itemY")
-	packageRequiresExactlyOneOfItemXOrY, _ := creator.PLDAG().SetImply("packageP", exactlyOneOfItemXAndY)
+	exactlyOneOfItemXAndY, _ := creator.SetXor("itemX", "itemY")
+	packageRequiresExactlyOneOfItemXOrY, _ := creator.SetImply("packageP", exactlyOneOfItemXAndY)
 
 	_ = creator.Assume(
 		packageRequiresItems,
@@ -452,15 +452,15 @@ func Test_changeVariant_shouldGiveLastSelected(t *testing.T) {
 func Test_subComponentsAndPackageInDefaultConfig(t *testing.T) {
 	t.Skip()
 	creator := puan.NewRuleSetCreator()
-	_ = creator.PLDAG().SetPrimitives("packageP", "itemA", "itemB", "itemX", "itemY", "itemZ")
+	_ = creator.AddPrimitives("packageP", "itemA", "itemB", "itemX", "itemY", "itemZ")
 
-	exactlyOneOfTheItemsXYZ, _ := creator.PLDAG().SetXor("itemX", "itemY", "itemZ")
+	exactlyOneOfTheItemsXYZ, _ := creator.SetXor("itemX", "itemY", "itemZ")
 
-	exactlyOneOfItemXAndY, _ := creator.PLDAG().SetXor("itemX", "itemY")
-	packagePRequiresExactlyOneOfTheItems, _ := creator.PLDAG().SetImply("packageP", exactlyOneOfItemXAndY)
+	exactlyOneOfItemXAndY, _ := creator.SetXor("itemX", "itemY")
+	packagePRequiresExactlyOneOfTheItems, _ := creator.SetImply("packageP", exactlyOneOfItemXAndY)
 
-	exactlyOneOfItemAAndB, _ := creator.PLDAG().SetXor("itemA", "itemB")
-	packagePRequiresExactlyOneOfItemAAndB, _ := creator.PLDAG().SetImply("packageP", exactlyOneOfItemAAndB)
+	exactlyOneOfItemAAndB, _ := creator.SetXor("itemA", "itemB")
+	packagePRequiresExactlyOneOfItemAAndB, _ := creator.SetImply("packageP", exactlyOneOfItemAAndB)
 
 	_ = creator.Assume(
 		exactlyOneOfTheItemsXYZ,
@@ -468,8 +468,8 @@ func Test_subComponentsAndPackageInDefaultConfig(t *testing.T) {
 		packagePRequiresExactlyOneOfItemAAndB,
 	)
 
-	prefItemsInPackageP, _ := creator.PLDAG().SetAnd("itemA", "itemX")
-	prefPackagePImpliesAAndItemX, _ := creator.PLDAG().SetImply("packageP", prefItemsInPackageP)
+	prefItemsInPackageP, _ := creator.SetAnd("itemA", "itemX")
+	prefPackagePImpliesAAndItemX, _ := creator.SetImply("packageP", prefItemsInPackageP)
 
 	_ = creator.Prefer("itemZ", prefPackagePImpliesAAndItemX)
 
@@ -508,22 +508,22 @@ func Test_subComponentsAndPackageInDefaultConfig(t *testing.T) {
 func Test_duplicatedPreferred(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.PLDAG().SetPrimitives("itemA", "itemB", "itemC", "itemX", "itemY")
+	_ = creator.AddPrimitives("itemA", "itemB", "itemC", "itemX", "itemY")
 
-	exactlyOneOfItemAAndB, _ := creator.PLDAG().SetXor("itemA", "itemB")
-	exactlyOneOfItemBAndC, _ := creator.PLDAG().SetXor("itemB", "itemC")
+	exactlyOneOfItemAAndB, _ := creator.SetXor("itemA", "itemB")
+	exactlyOneOfItemBAndC, _ := creator.SetXor("itemB", "itemC")
 
-	itemXRequiresExactlyOneOfItemAAndB, _ := creator.PLDAG().SetImply("itemX", exactlyOneOfItemAAndB)
-	itemYRequiresExactlyOneOfItemBAndC, _ := creator.PLDAG().SetImply("itemY", exactlyOneOfItemBAndC)
+	itemXRequiresExactlyOneOfItemAAndB, _ := creator.SetImply("itemX", exactlyOneOfItemAAndB)
+	itemYRequiresExactlyOneOfItemBAndC, _ := creator.SetImply("itemY", exactlyOneOfItemBAndC)
 
 	_ = creator.Assume(
 		itemXRequiresExactlyOneOfItemAAndB,
 		itemYRequiresExactlyOneOfItemBAndC,
 	)
 
-	preferredX, _ := creator.PLDAG().SetImply("itemX", "itemA")
-	preferredXDuplicated, _ := creator.PLDAG().SetImply("itemX", "itemA")
-	preferredY, _ := creator.PLDAG().SetImply("itemY", "itemB")
+	preferredX, _ := creator.SetImply("itemX", "itemA")
+	preferredXDuplicated, _ := creator.SetImply("itemX", "itemA")
+	preferredY, _ := creator.SetImply("itemY", "itemB")
 
 	_ = creator.Prefer(preferredX, preferredXDuplicated, preferredY)
 
@@ -566,16 +566,16 @@ func Test_duplicatedPreferred(t *testing.T) {
 func Test_xorBetweenPackagesAndItems_shouldGiveLastSelection(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.PLDAG().SetPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
+	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 
-	exactlyOneOfItemXYZ, _ := creator.PLDAG().SetXor("itemX", "itemY", "itemZ")
-	packageARequiresExactlyOneOfItemXYZ, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfItemXYZ)
-	packageBRequiresExactlyOneOfItemXYZ, _ := creator.PLDAG().SetImply("packageB", exactlyOneOfItemXYZ)
+	exactlyOneOfItemXYZ, _ := creator.SetXor("itemX", "itemY", "itemZ")
+	packageARequiresExactlyOneOfItemXYZ, _ := creator.SetImply("packageA", exactlyOneOfItemXYZ)
+	packageBRequiresExactlyOneOfItemXYZ, _ := creator.SetImply("packageB", exactlyOneOfItemXYZ)
 
-	exactlyOneOfPackageAAndB, _ := creator.PLDAG().SetXor("packageA", "packageB")
-	itemXRequiresExactlyOneOfPackageAAndB, _ := creator.PLDAG().SetImply("itemX", exactlyOneOfPackageAAndB)
-	itemYRequiresExactlyOneOfPackageAAndB, _ := creator.PLDAG().SetImply("itemY", exactlyOneOfPackageAAndB)
-	itemZRequiresExactlyOneOfPackageAAndB, _ := creator.PLDAG().SetImply("itemZ", exactlyOneOfPackageAAndB)
+	exactlyOneOfPackageAAndB, _ := creator.SetXor("packageA", "packageB")
+	itemXRequiresExactlyOneOfPackageAAndB, _ := creator.SetImply("itemX", exactlyOneOfPackageAAndB)
+	itemYRequiresExactlyOneOfPackageAAndB, _ := creator.SetImply("itemY", exactlyOneOfPackageAAndB)
+	itemZRequiresExactlyOneOfPackageAAndB, _ := creator.SetImply("itemZ", exactlyOneOfPackageAAndB)
 
 	_ = creator.Assume(
 		packageARequiresExactlyOneOfItemXYZ,
@@ -628,16 +628,16 @@ func Test_xorBetweenPackagesAndItems_shouldGiveLastSelection(t *testing.T) {
 func Test_xorBetweenPackagesAndItemsWithPreferred_shouldGiveLastSelection(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.PLDAG().SetPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
+	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 
-	exactlyOneOfItemXYZ, _ := creator.PLDAG().SetXor("itemX", "itemY", "itemZ")
-	packageARequiresExactlyOneOfItemXYZ, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfItemXYZ)
-	packageBRequiresExactlyOneOfItemXYZ, _ := creator.PLDAG().SetImply("packageB", exactlyOneOfItemXYZ)
+	exactlyOneOfItemXYZ, _ := creator.SetXor("itemX", "itemY", "itemZ")
+	packageARequiresExactlyOneOfItemXYZ, _ := creator.SetImply("packageA", exactlyOneOfItemXYZ)
+	packageBRequiresExactlyOneOfItemXYZ, _ := creator.SetImply("packageB", exactlyOneOfItemXYZ)
 
-	exactlyOneOfPackageAAndB, _ := creator.PLDAG().SetXor("packageA", "packageB")
-	itemXRequiresExactlyOneOfPackageAAndB, _ := creator.PLDAG().SetImply("itemX", exactlyOneOfPackageAAndB)
-	itemYRequiresExactlyOneOfPackageAAndB, _ := creator.PLDAG().SetImply("itemY", exactlyOneOfPackageAAndB)
-	itemZRequiresExactlyOneOfPackageAAndB, _ := creator.PLDAG().SetImply("itemZ", exactlyOneOfPackageAAndB)
+	exactlyOneOfPackageAAndB, _ := creator.SetXor("packageA", "packageB")
+	itemXRequiresExactlyOneOfPackageAAndB, _ := creator.SetImply("itemX", exactlyOneOfPackageAAndB)
+	itemYRequiresExactlyOneOfPackageAAndB, _ := creator.SetImply("itemY", exactlyOneOfPackageAAndB)
+	itemZRequiresExactlyOneOfPackageAAndB, _ := creator.SetImply("itemZ", exactlyOneOfPackageAAndB)
 
 	_ = creator.Assume(
 		packageARequiresExactlyOneOfItemXYZ,
@@ -697,17 +697,17 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 	t.Skip()
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.PLDAG().SetPrimitives("itemA", "itemB", "itemC", "itemN", "itemX", "itemY", "itemZ")
+	_ = creator.AddPrimitives("itemA", "itemB", "itemC", "itemN", "itemX", "itemY", "itemZ")
 
-	exactlyOneOfItemXYZ, _ := creator.PLDAG().SetXor("itemX", "itemY", "itemZ")
+	exactlyOneOfItemXYZ, _ := creator.SetXor("itemX", "itemY", "itemZ")
 
-	exactlyOneOfItemABC, _ := creator.PLDAG().SetXor("itemA", "itemB", "itemC")
-	itemXRequiresExactlyOneOfItemABC, _ := creator.PLDAG().SetImply("itemX", exactlyOneOfItemABC)
-	itemYRequiresExactlyOneOfItemABC, _ := creator.PLDAG().SetImply("itemY", exactlyOneOfItemABC)
-	itemZRequiresExactlyOneOfItemABC, _ := creator.PLDAG().SetImply("itemZ", exactlyOneOfItemABC)
+	exactlyOneOfItemABC, _ := creator.SetXor("itemA", "itemB", "itemC")
+	itemXRequiresExactlyOneOfItemABC, _ := creator.SetImply("itemX", exactlyOneOfItemABC)
+	itemYRequiresExactlyOneOfItemABC, _ := creator.SetImply("itemY", exactlyOneOfItemABC)
+	itemZRequiresExactlyOneOfItemABC, _ := creator.SetImply("itemZ", exactlyOneOfItemABC)
 
-	notItemA, _ := creator.PLDAG().SetNot("itemA")
-	itemNForbidsItemA, _ := creator.PLDAG().SetImply("itemN", notItemA)
+	notItemA, _ := creator.SetNot("itemA")
+	itemNForbidsItemA, _ := creator.SetImply("itemN", notItemA)
 
 	_ = creator.Assume(
 		exactlyOneOfItemXYZ,
@@ -717,7 +717,7 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 		itemNForbidsItemA,
 	)
 
-	preferredItemNWithItemB, _ := creator.PLDAG().SetImply("itemN", "itemB")
+	preferredItemNWithItemB, _ := creator.SetImply("itemN", "itemB")
 
 	_ = creator.Prefer(preferredItemNWithItemB, "itemB", "itemX", "itemA")
 
@@ -749,10 +749,10 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 
 func Test_removingItemInAddedPackage_shouldRemovePackageAsWell(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY")
+	_ = creator.AddPrimitives("packageA", "itemX", "itemY")
 
-	itemXAndY, _ := creator.PLDAG().SetAnd("itemX", "itemY")
-	packageARequiresItemXAndY, _ := creator.PLDAG().SetImply("packageA", itemXAndY)
+	itemXAndY, _ := creator.SetAnd("itemX", "itemY")
+	packageARequiresItemXAndY, _ := creator.SetImply("packageA", itemXAndY)
 
 	_ = creator.Assume(packageARequiresItemXAndY)
 
@@ -780,19 +780,19 @@ func Test_removingItemInAddedPackage_shouldRemovePackageAsWell(t *testing.T) {
 
 func Test_removePackageWithSubselection_shouldGiveEmptySolution(t *testing.T) {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.PLDAG().SetPrimitives("packageA", "itemX", "itemY", "itemZ", "itemM", "itemN")
+	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemZ", "itemM", "itemN")
 
-	exactlyOneOfItemXYZ, _ := creator.PLDAG().SetXor("itemX", "itemY", "itemZ")
-	anyOfItems, _ := creator.PLDAG().SetOr("itemM", "itemN")
-	itemARequiresAnyOfItems, _ := creator.PLDAG().SetImply("packageA", anyOfItems)
-	packageARequiresExactlyOneOfItemXYZ, _ := creator.PLDAG().SetImply("packageA", exactlyOneOfItemXYZ)
+	exactlyOneOfItemXYZ, _ := creator.SetXor("itemX", "itemY", "itemZ")
+	anyOfItems, _ := creator.SetOr("itemM", "itemN")
+	itemARequiresAnyOfItems, _ := creator.SetImply("packageA", anyOfItems)
+	packageARequiresExactlyOneOfItemXYZ, _ := creator.SetImply("packageA", exactlyOneOfItemXYZ)
 
 	_ = creator.Assume(
 		packageARequiresExactlyOneOfItemXYZ,
 		itemARequiresAnyOfItems,
 	)
 
-	preferred, _ := creator.PLDAG().SetImply("packageA", "itemX")
+	preferred, _ := creator.SetImply("packageA", "itemX")
 	_ = creator.Prefer(preferred)
 
 	ruleSet, _ := creator.Create()

@@ -90,25 +90,25 @@ func Test_optionalVariantsWithForbids_shouldReturnNOTPreferred(t *testing.T) {
 func optionalVariantsWithForbids() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
 
-	_ = creator.PLDAG().SetPrimitives("itemA", "itemB", "itemC", "itemD", "packageX")
+	_ = creator.AddPrimitives("itemA", "itemB", "itemC", "itemD", "packageX")
 
-	reversedItemA, _ := creator.PLDAG().SetImply("itemA", "packageX")
+	reversedItemA, _ := creator.SetImply("itemA", "packageX")
 
-	exactlyOneOfItemCAndA, _ := creator.PLDAG().SetXor("itemC", "itemA")
-	exactlyOneOfItemCAndAInX, _ := creator.PLDAG().SetImply("packageX", exactlyOneOfItemCAndA)
+	exactlyOneOfItemCAndA, _ := creator.SetXor("itemC", "itemA")
+	exactlyOneOfItemCAndAInX, _ := creator.SetImply("packageX", exactlyOneOfItemCAndA)
 
-	exactlyOneOfItemDAndB, _ := creator.PLDAG().SetXor("itemD", "itemB")
-	exactlyOneOfItemDAndBInX, _ := creator.PLDAG().SetImply("packageX", exactlyOneOfItemDAndB)
+	exactlyOneOfItemDAndB, _ := creator.SetXor("itemD", "itemB")
+	exactlyOneOfItemDAndBInX, _ := creator.SetImply("packageX", exactlyOneOfItemDAndB)
 
-	notItemC, _ := creator.PLDAG().SetNot("itemC")
-	itemAForbidsItemC, _ := creator.PLDAG().SetImply("itemA", notItemC)
+	notItemC, _ := creator.SetNot("itemC")
+	itemAForbidsItemC, _ := creator.SetImply("itemA", notItemC)
 
-	exactlyOneOfItemCAndAWithB, _ := creator.PLDAG().SetImply("itemB", exactlyOneOfItemCAndA)
+	exactlyOneOfItemCAndAWithB, _ := creator.SetImply("itemB", exactlyOneOfItemCAndA)
 
-	itemARequiresItemB, _ := creator.PLDAG().SetImply("itemA", "itemB")
+	itemARequiresItemB, _ := creator.SetImply("itemA", "itemB")
 
-	notItemD, _ := creator.PLDAG().SetNot("itemD")
-	itemAForbidsItemD, _ := creator.PLDAG().SetImply("itemA", notItemD)
+	notItemD, _ := creator.SetNot("itemD")
+	itemAForbidsItemD, _ := creator.SetImply("itemA", notItemD)
 
 	_ = creator.Assume(
 		reversedItemA,
@@ -120,8 +120,8 @@ func optionalVariantsWithForbids() *puan.RuleSet {
 		itemAForbidsItemD,
 	)
 
-	preferredPackageXItemC, _ := creator.PLDAG().SetImply("packageX", "itemC")
-	preferredPackageXItemD, _ := creator.PLDAG().SetImply("packageX", "itemD")
+	preferredPackageXItemC, _ := creator.SetImply("packageX", "itemC")
+	preferredPackageXItemD, _ := creator.SetImply("packageX", "itemD")
 
 	_ = creator.Prefer(preferredPackageXItemC, preferredPackageXItemD)
 

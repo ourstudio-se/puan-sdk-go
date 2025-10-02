@@ -12,23 +12,23 @@ func main() {
 	// Initialize the ruleset creator
 	creator := puan.NewRuleSetCreator()
 
-	// Sets x, y, z as boolean primitive variables
-	_ = creator.PLDAG().SetPrimitives([]string{"x", "y", "z"}...)
+	// Adds x, y, z as boolean primitive variables
+	_ = creator.AddPrimitives([]string{"x", "y", "z"}...)
 
 	// Create a simple and between x and y
-	xyID, err := creator.PLDAG().SetAnd("x", "y")
+	xyID, err := creator.SetAnd("x", "y")
 	if err != nil {
 		panic(err)
 	}
 
 	// Create a simple and between x and z
-	xzID, err := creator.PLDAG().SetAnd("x", "z")
+	xzID, err := creator.SetAnd("x", "z")
 	if err != nil {
 		panic(err)
 	}
 
 	// Either x with y or x with z
-	xorID, err := creator.PLDAG().SetXor(xyID, xzID)
+	xorID, err := creator.SetXor(xyID, xzID)
 	if err != nil {
 		panic(err)
 	}

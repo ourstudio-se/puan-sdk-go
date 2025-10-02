@@ -272,23 +272,23 @@ func Test_exactlyOnePackage_noSelection_shouldGivePreferred(t *testing.T) {
 
 func upgradeDowngradePackageWithSharedItemsSmallestPreferred() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.PLDAG().SetPrimitives("packageA", "packageB", "packageC", "itemX", "itemY", "itemZ", "itemK")
+	_ = creator.AddPrimitives("packageA", "packageB", "packageC", "itemX", "itemY", "itemZ", "itemK")
 
-	includedItemsInA, _ := creator.PLDAG().SetAnd("itemX", "itemY")
-	includedItemsInB, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemZ")
-	includedItemsInC, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemZ", "itemK")
+	includedItemsInA, _ := creator.SetAnd("itemX", "itemY")
+	includedItemsInB, _ := creator.SetAnd("itemX", "itemY", "itemZ")
+	includedItemsInC, _ := creator.SetAnd("itemX", "itemY", "itemZ", "itemK")
 
-	packageARequiredItems, _ := creator.PLDAG().SetImply("packageA", includedItemsInA)
-	packageBRequiredItems, _ := creator.PLDAG().SetImply("packageB", includedItemsInB)
-	packageCRequiredItems, _ := creator.PLDAG().SetImply("packageC", includedItemsInC)
+	packageARequiredItems, _ := creator.SetImply("packageA", includedItemsInA)
+	packageBRequiredItems, _ := creator.SetImply("packageB", includedItemsInB)
+	packageCRequiredItems, _ := creator.SetImply("packageC", includedItemsInC)
 
-	exactlyOnePackage, _ := creator.PLDAG().SetXor("packageA", "packageB", "packageC")
-	anyOfThePackages, _ := creator.PLDAG().SetOr("packageA", "packageB", "packageC")
-	packageBOrC, _ := creator.PLDAG().SetOr("packageB", "packageC")
+	exactlyOnePackage, _ := creator.SetXor("packageA", "packageB", "packageC")
+	anyOfThePackages, _ := creator.SetOr("packageA", "packageB", "packageC")
+	packageBOrC, _ := creator.SetOr("packageB", "packageC")
 
-	itemsInAllPackages, _ := creator.PLDAG().SetImply(includedItemsInA, anyOfThePackages)
-	itemsInPackageBOrC, _ := creator.PLDAG().SetImply(includedItemsInB, packageBOrC)
-	reversedPackageC, _ := creator.PLDAG().SetImply(includedItemsInC, "packageC")
+	itemsInAllPackages, _ := creator.SetImply(includedItemsInA, anyOfThePackages)
+	itemsInPackageBOrC, _ := creator.SetImply(includedItemsInB, packageBOrC)
+	reversedPackageC, _ := creator.SetImply(includedItemsInC, "packageC")
 
 	_ = creator.Assume(
 		exactlyOnePackage,

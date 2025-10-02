@@ -73,19 +73,19 @@ func Test_exactlyOnePackage_selectNotPreferred(t *testing.T) {
 
 func packagesWithSharedItemsSmallerPackagePreferred() *puan.RuleSet {
 	creator := puan.NewRuleSetCreator()
-	_ = creator.PLDAG().SetPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
+	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 
-	includedItemsInA, _ := creator.PLDAG().SetAnd("itemX", "itemY")
-	includedItemsInB, _ := creator.PLDAG().SetAnd("itemX", "itemY", "itemZ")
+	includedItemsInA, _ := creator.SetAnd("itemX", "itemY")
+	includedItemsInB, _ := creator.SetAnd("itemX", "itemY", "itemZ")
 
-	packageARequiredItems, _ := creator.PLDAG().SetImply("packageA", includedItemsInA)
-	packageBRequiredItems, _ := creator.PLDAG().SetImply("packageB", includedItemsInB)
+	packageARequiredItems, _ := creator.SetImply("packageA", includedItemsInA)
+	packageBRequiredItems, _ := creator.SetImply("packageB", includedItemsInB)
 
-	exactlyOnePackage, _ := creator.PLDAG().SetXor("packageA", "packageB")
+	exactlyOnePackage, _ := creator.SetXor("packageA", "packageB")
 
-	anyOfThePackages, _ := creator.PLDAG().SetOr("packageA", "packageB")
-	itemsInAllPackages, _ := creator.PLDAG().SetImply(includedItemsInA, anyOfThePackages)
-	reversedPackageB, _ := creator.PLDAG().SetImply(includedItemsInB, "packageB")
+	anyOfThePackages, _ := creator.SetOr("packageA", "packageB")
+	itemsInAllPackages, _ := creator.SetImply(includedItemsInA, anyOfThePackages)
+	reversedPackageB, _ := creator.SetImply(includedItemsInB, "packageB")
 
 	_ = creator.Assume(
 		exactlyOnePackage,
