@@ -48,7 +48,7 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 		puan.NewSelectionBuilder("itemN").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(selections)
+	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
@@ -103,7 +103,7 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(selections)
+	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
@@ -163,7 +163,7 @@ func Test_twoPackagesWithSharedItems_selectLargestPackage(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(selections)
+	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)

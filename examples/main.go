@@ -57,7 +57,7 @@ func main() {
 	}
 
 	// Create the query for solver
-	query, err := ruleSet.NewQuery(selections)
+	query, err := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 	if err != nil {
 		panic(err)
 	}

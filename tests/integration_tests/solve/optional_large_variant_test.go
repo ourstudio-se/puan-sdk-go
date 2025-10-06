@@ -25,7 +25,7 @@ func Test_optionalLargeVariantWithXOR_removePreselectedItem(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(selections)
+	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
@@ -58,7 +58,7 @@ func Test_optionalLargeVariantWithXOR_shouldChangeVariant(t *testing.T) {
 		puan.NewSelectionBuilder("itemY").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(selections)
+	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
@@ -86,7 +86,7 @@ func Test_optionalLargeVariantWithXOR_noSelection(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	query, _ := ruleSet.NewQuery(selections)
+	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
@@ -116,7 +116,7 @@ func Test_optionalLargeVariantWithXOR_singleItemSelection(t *testing.T) {
 		puan.NewSelectionBuilder("itemM").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(selections)
+	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)

@@ -29,7 +29,7 @@ func Test_optionalPackagesWithForbids_changeToSmallerPackage(t *testing.T) {
 		puan.NewSelectionBuilder("packageC").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(selections)
+	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
@@ -67,7 +67,7 @@ func Test_optionalPackagesWithForbids_changeToLargerPackage(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemN").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(selections)
+	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
@@ -92,7 +92,7 @@ func Test_optionalPackagesWithForbids_noSelection(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	query, _ := ruleSet.NewQuery(selections)
+	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
 	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)

@@ -320,12 +320,19 @@ func (r *RuleSet) RemoveSupportVariables(solution Solution) (Solution, error) {
 	return solution.Extract(nonSupportVariables...)
 }
 
+type QueryInput struct {
+	Selections Selections
+	From       *time.Time
+}
+
 type querySpecification struct {
 	ruleSet         *RuleSet
 	querySelections QuerySelections
 }
 
-func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
+func (r *RuleSet) NewQuery(input QueryInput) (*Query, error) {
+	selections := input.Selections
+
 	err := r.validateSelectionIDs(selections.ids())
 	if err != nil {
 		return nil, err
@@ -333,7 +340,7 @@ func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
 
 	extendedSelections := selections.modifySelections()
 	impactingSelections := getImpactingSelections(extendedSelections)
-	specification, err := r.newQuerySpecification(impactingSelections)
+	specification, err := r.newQuerySpecification(impactingSelections, input.From)
 	if err != nil {
 		return nil, err
 	}
@@ -396,10 +403,18 @@ func (r *RuleSet) copy() *RuleSet {
 	}
 }
 
-func (r *RuleSet) newQuerySpecification(selections Selections) (*querySpecification, error) {
+func (r *RuleSet) newQuerySpecification(
+	selections Selections,
+	from *time.Time,
+) (*querySpecification, error) {
 	ruleSet := r.copy()
 
 	querySelections, err := ruleSet.newQuerySelections(selections)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ruleSet.forbidPassedPeriods(from)
 	if err != nil {
 		return nil, err
 	}
@@ -521,6 +536,54 @@ func (r *RuleSet) newRow(coefficients pldag.Coefficients) ([]int, error) {
 	}
 
 	return row, nil
+}
+
+func (r *RuleSet) forbidPassedPeriods(from *time.Time) error {
+	if from == nil {
+		return nil
+	}
+
+	var passedPeriodIDs []string
+	for _, periodVariable := range r.periodVariables {
+		if periodVariable.period.to.Before(*from) {
+			passedPeriodIDs = append(passedPeriodIDs, periodVariable.variable)
+		}
+	}
+
+	if len(passedPeriodIDs) == 0 {
+		return nil
+	}
+
+	passedPeriodsConstraint, err := pldag.NewAtMostConstraint(passedPeriodIDs, 0)
+	if err != nil {
+		return err
+	}
+	if err := r.setConstraint(passedPeriodsConstraint); err != nil {
+		return err
+	}
+
+	if err := r.assumeAuxiliaryConstraint(passedPeriodsConstraint.ID()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *RuleSet) assumeAuxiliaryConstraint(id string) error {
+	row, err := r.newRow(map[string]int{id: 1})
+	if err != nil {
+		return err
+	}
+	r.polyhedron.Extend(row, pldag.Bias(1))
+
+	row2, err := r.newRow(map[string]int{id: -1})
+	if err != nil {
+		return err
+	}
+
+	r.polyhedron.Extend(row2, pldag.Bias(-1))
+
+	return nil
 }
 
 // For when creating a rule set from a serialized representation
