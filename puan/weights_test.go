@@ -109,7 +109,7 @@ func Test_calculateSelectedWeights_oneSelected_shouldReturnWeights(t *testing.T)
 	notSelectedSum := -2
 	preferredWeightsSum := -1
 
-	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum)
+	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum, 0)
 	expected := Weights{
 		"a": 4,
 	}
@@ -131,7 +131,7 @@ func Test_calculateSelectedWeights_twoSelected_shouldReturnWeights(t *testing.T)
 	notSelectedSum := -4
 	preferredWeightsSum := -2
 
-	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum)
+	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum, 0)
 	expected := Weights{
 		"a": 7,
 		"b": 14,
@@ -154,7 +154,7 @@ func Test_calculateSelectedWeights_twoSelected_withRemoveAction(t *testing.T) {
 	notSelectedSum := -4
 	preferredWeightsSum := -2
 
-	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum)
+	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum, 0)
 	expected := Weights{
 		"a": 7,
 		"b": -14,
@@ -167,7 +167,7 @@ func Test_calculateSelectedWeights_noSelection_shouldReturnEmptyWeights(t *testi
 	notSelectedSum := -1
 	preferredWeightsSum := -1
 
-	actual := calculateSelectedWeights(nil, notSelectedSum, preferredWeightsSum)
+	actual := calculateSelectedWeights(nil, notSelectedSum, preferredWeightsSum, 0)
 	expected := Weights{}
 
 	assert.Equal(t, expected, actual)
@@ -183,7 +183,7 @@ func Test_calculateWeights(t *testing.T) {
 		},
 	}
 
-	actual := calculateWeights(primitives, selections, preferredIDs)
+	actual := calculateWeights(primitives, selections, preferredIDs, nil)
 	expected := Weights{
 		"a": 8,
 		"b": -2,

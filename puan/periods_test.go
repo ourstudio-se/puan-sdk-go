@@ -168,6 +168,186 @@ func Test_calculate_non_overlapping_periods(t *testing.T) {
 	}
 }
 
+func Test_groupByPeriod(t *testing.T) {
+	tests := []struct {
+		name             string
+		periodVariables  timeBoundVariables
+		assumedVariables timeBoundVariables
+		expectedGroups   map[string][]string
+	}{
+		{
+			name: "assumed variable overlaps with multiple period variables",
+			periodVariables: timeBoundVariables{
+				{
+					variable: "p1",
+					period: period{
+						from: newTestTime("2024-01-01T00:00:00Z"),
+						to:   newTestTime("2024-01-10T00:00:00Z"),
+					},
+				},
+				{
+					variable: "p2",
+					period: period{
+						from: newTestTime("2024-01-10T00:00:00Z"),
+						to:   newTestTime("2024-01-15T00:00:00Z"),
+					},
+				},
+			},
+			assumedVariables: timeBoundVariables{
+				{
+					variable: "v1",
+					period: period{
+						from: newTestTime("2024-01-05T00:00:00Z"),
+						to:   newTestTime("2024-01-12T00:00:00Z"),
+					},
+				},
+			},
+			expectedGroups: map[string][]string{
+				"p1|p2": {"v1"},
+			},
+		},
+		{
+			name: "multiple assumed variables with different overlaps",
+			periodVariables: timeBoundVariables{
+				{
+					variable: "p1",
+					period: period{
+						from: newTestTime("2024-01-01T00:00:00Z"),
+						to:   newTestTime("2024-01-10T00:00:00Z"),
+					},
+				},
+				{
+					variable: "p2",
+					period: period{
+						from: newTestTime("2024-01-10T00:00:00Z"),
+						to:   newTestTime("2024-01-20T00:00:00Z"),
+					},
+				},
+				{
+					variable: "p3",
+					period: period{
+						from: newTestTime("2024-01-20T00:00:00Z"),
+						to:   newTestTime("2024-01-30T00:00:00Z"),
+					},
+				},
+			},
+			assumedVariables: timeBoundVariables{
+				{
+					variable: "v1",
+					period: period{
+						from: newTestTime("2024-01-05T00:00:00Z"),
+						to:   newTestTime("2024-01-08T00:00:00Z"),
+					},
+				},
+				{
+					variable: "v2",
+					period: period{
+						from: newTestTime("2024-01-15T00:00:00Z"),
+						to:   newTestTime("2024-01-25T00:00:00Z"),
+					},
+				},
+				{
+					variable: "v3",
+					period: period{
+						from: newTestTime("2024-01-05T00:00:00Z"),
+						to:   newTestTime("2024-01-08T00:00:00Z"),
+					},
+				},
+			},
+			expectedGroups: map[string][]string{
+				"p1":    {"v1", "v3"},
+				"p2|p3": {"v2"},
+			},
+		},
+		{
+			name: "variable ends at the start of the next period",
+			periodVariables: timeBoundVariables{
+				{
+					variable: "p1",
+					period: period{
+						from: newTestTime("2024-01-01T00:00:00Z"),
+						to:   newTestTime("2024-01-10T00:00:00Z"),
+					},
+				},
+				{
+					variable: "p2",
+					period: period{
+						from: newTestTime("2024-01-10T00:00:00Z"),
+						to:   newTestTime("2024-01-15T00:00:00Z"),
+					},
+				},
+			},
+			assumedVariables: timeBoundVariables{
+				{
+					variable: "v1",
+					period: period{
+						from: newTestTime("2024-01-05T00:00:00Z"),
+						to:   newTestTime("2024-01-10T00:00:00Z"),
+					},
+				},
+			},
+			expectedGroups: map[string][]string{
+				"p1": {"v1"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := groupByPeriod(tt.periodVariables, tt.assumedVariables)
+
+			// Convert temp keys to strings for easier comparison
+			actualGroups := make(map[string][]string)
+			for key, vars := range actual {
+				actualGroups[string(key)] = vars
+			}
+
+			assert.Equal(t, tt.expectedGroups, actualGroups)
+		})
+	}
+}
+
+func Test_periodsOverlap(t *testing.T) {
+	tests := []struct {
+		name     string
+		a        period
+		b        period
+		expected bool
+	}{
+		{
+			name: "touching at end edge, should not overlap",
+			a: period{
+				from: newTestTime("2024-01-05T00:00:00Z"),
+				to:   newTestTime("2024-01-10T00:00:00Z"),
+			},
+			b: period{
+				from: newTestTime("2024-01-10T00:00:00Z"),
+				to:   newTestTime("2024-01-15T00:00:00Z"),
+			},
+			expected: false,
+		},
+		{
+			name: "touching at start edge, should not overlap",
+			a: period{
+				from: newTestTime("2024-01-10T00:00:00Z"),
+				to:   newTestTime("2024-01-15T00:00:00Z"),
+			},
+			b: period{
+				from: newTestTime("2024-01-05T00:00:00Z"),
+				to:   newTestTime("2024-01-10T00:00:00Z"),
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := periodsOverlap(tt.a, tt.b)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
 func newTestTime(value string) time.Time {
 	t, err := time.Parse(time.RFC3339, value)
 	if err != nil {

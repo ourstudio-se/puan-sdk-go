@@ -1,6 +1,7 @@
 package puan
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -9,9 +10,27 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
 
-type timeBoundAssumedVariable struct {
+type timeBoundVariables []timeBoundVariable
+
+type timeBoundVariable struct {
 	variable string
 	period   period
+}
+
+func (p timeBoundVariables) periods() []period {
+	periods := make([]period, len(p))
+	for i, periodVariable := range p {
+		periods[i] = periodVariable.period
+	}
+	return periods
+}
+
+func (p timeBoundVariables) ids() []string {
+	ids := make([]string, len(p))
+	for i, periodVariable := range p {
+		ids[i] = periodVariable.variable
+	}
+	return ids
 }
 
 type period struct {
@@ -23,7 +42,7 @@ type RuleSetCreator struct {
 	pldag                     *pldag.Model
 	preferredVariables        []string
 	assumedVariables          []string
-	timeBoundAssumedVariables []timeBoundAssumedVariable
+	timeBoundAssumedVariables timeBoundVariables
 }
 
 type RuleSet struct {
@@ -31,6 +50,7 @@ type RuleSet struct {
 	primitiveVariables []string
 	variables          []string
 	preferredVariables []string
+	periodVariables    timeBoundVariables
 }
 
 func NewRuleSetCreator() *RuleSetCreator {
@@ -108,7 +128,7 @@ func (c *RuleSetCreator) AssumeInPeriod(
 	variable string,
 	from, to time.Time,
 ) error {
-	validityPeriod := timeBoundAssumedVariable{
+	validityPeriod := timeBoundVariable{
 		variable: variable,
 		period: period{
 			from: from,
@@ -147,7 +167,12 @@ func (c *RuleSetCreator) createAssumedConstraints() error {
 }
 
 func (c *RuleSetCreator) Create() (*RuleSet, error) {
-	err := c.createAssumedConstraints()
+	periodVariables, err := c.createValidityPeriodConstraints()
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.createAssumedConstraints()
 	if err != nil {
 		return nil, err
 	}
@@ -161,12 +186,13 @@ func (c *RuleSetCreator) Create() (*RuleSet, error) {
 		primitiveVariables: primitiveVariables,
 		variables:          variables,
 		preferredVariables: c.preferredVariables,
+		periodVariables:    periodVariables,
 	}, nil
 }
 
-func (c *RuleSetCreator) createValidityPeriodConstraints() error {
+func (c *RuleSetCreator) createValidityPeriodConstraints() (timeBoundVariables, error) {
 	if len(c.timeBoundAssumedVariables) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// find all true periods
@@ -179,11 +205,80 @@ func (c *RuleSetCreator) createValidityPeriodConstraints() error {
 	// We also need 2 extra period variables:
 	// {start-of-time}-{start-of-first-period}
 	// {end-of-last-period}-{end-of-time}
-	// For each validity period, group them with their period variables
-	// Create implies constraint between the period variables (OR) and the variables
-	// Create XOR constraint between the period variables
+	nonOverlappingPeriods := calculateNonOverlappingPeriods(c.timeBoundAssumedVariables.periods())
 
-	return nil
+	// Create variable for each period
+	periodVariables := make(timeBoundVariables, len(nonOverlappingPeriods))
+	for i, period := range nonOverlappingPeriods {
+		period := timeBoundVariable{
+			variable: fmt.Sprintf("period_%d", i),
+			period:   period,
+		}
+		periodVariables[i] = period
+		if err := c.pldag.SetPrimitives(period.variable); err != nil {
+			return nil, err
+		}
+	}
+
+	// For each validity period, group them with their period variables
+	groupedPeriodVariables := groupByPeriod(periodVariables, c.timeBoundAssumedVariables)
+
+	// Create implies constraint between the period variables (OR) and the variables
+	var constraintIDs []string
+	for periodVariables, aassumedVariables := range groupedPeriodVariables {
+		constraintID, err := c.createPeriodVariableConstraints(periodVariables, aassumedVariables)
+		if err != nil {
+			return nil, err
+		}
+		constraintIDs = append(constraintIDs, constraintID)
+	}
+
+	// Create XOR constraint between the period variables
+	xorConstraintID, err := c.pldag.SetXor(constraintIDs...)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.pldag.Assume(xorConstraintID); err != nil {
+		return nil, err
+	}
+	for _, constraintID := range constraintIDs {
+		if err := c.pldag.Assume(constraintID); err != nil {
+			return nil, err
+		}
+	}
+
+	return periodVariables, nil
+}
+
+func (c *RuleSetCreator) createPeriodVariableConstraints(
+	periodVariables periodVariables,
+	assumedVariables []string,
+) (string, error) {
+	pVariables := periodVariables.variables()
+
+	var periodVariableID string
+	var err error
+	if pVariables[0] == pVariables[1] {
+		periodVariableID = pVariables[0]
+	} else {
+		periodVariableID, err = c.pldag.SetOr(pVariables...)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	var assumedVariableID string
+	if len(assumedVariables) == 1 {
+		assumedVariableID = assumedVariables[0]
+	} else {
+		assumedVariableID, err = c.pldag.SetAnd(assumedVariables...)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return c.pldag.SetImply(periodVariableID, assumedVariableID)
 }
 
 func (r *RuleSet) Polyhedron() *pldag.Polyhedron {
@@ -224,6 +319,7 @@ func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
 		specification.ruleSet.primitiveVariables,
 		specification.querySelections,
 		specification.ruleSet.preferredVariables,
+		specification.ruleSet.periodVariables.ids(),
 	)
 
 	query := NewQuery(
@@ -265,11 +361,15 @@ func (r *RuleSet) copy() *RuleSet {
 	preferredIDs := make([]string, len(r.preferredVariables))
 	copy(preferredIDs, r.preferredVariables)
 
+	periodVariables := make([]timeBoundVariable, len(r.periodVariables))
+	copy(periodVariables, r.periodVariables)
+
 	return &RuleSet{
 		polyhedron:         polyhedron,
 		primitiveVariables: primitiveVariables,
 		variables:          variableIDs,
 		preferredVariables: preferredIDs,
+		periodVariables:    periodVariables,
 	}
 }
 

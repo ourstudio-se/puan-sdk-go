@@ -1,6 +1,7 @@
 package puan
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/google/uuid"
@@ -17,19 +18,17 @@ func Test_RuleSet_copy_shouldBeEqual(t *testing.T) {
 	variables := fake.New[[]string]()
 	primitiveVariables := fake.New[[]string]()
 	preferredVariables := fake.New[[]string]()
+	periodVariables := fake.New[[]timeBoundVariable]()
 
 	original := &RuleSet{}
 	original.polyhedron = polyhedron
 	original.variables = variables
 	original.primitiveVariables = primitiveVariables
 	original.preferredVariables = preferredVariables
-
+	original.periodVariables = periodVariables
 	ccopy := original.copy()
 
-	assert.Equal(t, polyhedron, ccopy.polyhedron)
-	assert.Equal(t, variables, ccopy.variables)
-	assert.Equal(t, primitiveVariables, ccopy.primitiveVariables)
-	assert.Equal(t, preferredVariables, ccopy.preferredVariables)
+	assert.True(t, reflect.DeepEqual(original, ccopy))
 }
 
 func Test_RuleSet_copy_givenChangeToCopy_shouldNotChangeOriginal(t *testing.T) {

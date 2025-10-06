@@ -7,6 +7,7 @@ import (
 )
 
 const NOT_SELECTED_WEIGHT = -2
+const PERIOD_WEIGHT_MULTIPLIER = NOT_SELECTED_WEIGHT * 2
 
 type Weights map[string]int
 
@@ -31,21 +32,29 @@ func calculateWeights(
 	primitives []string,
 	selections QuerySelections,
 	preferredIDs []string,
+	periodIDs []string,
 ) Weights {
 	notSelectedPrimitives := utils.Without(primitives, selections.ids())
 	notSelectedWeights := calculatedNotSelectedWeights(notSelectedPrimitives)
 	notSelectedSum := notSelectedWeights.sum()
+
 	preferredWeights := calculatePreferredWeights(preferredIDs, notSelectedSum)
 	sumOfPreferredWeights := preferredWeights.sum()
+
+	periodWeights := calculatePeriodWeights(periodIDs)
+	minPeriodWeight := calculateMinPeriodWeight(periodIDs)
+
 	selectedWeights := calculateSelectedWeights(
 		selections,
 		notSelectedSum,
 		sumOfPreferredWeights,
+		minPeriodWeight,
 	)
 
 	weights := notSelectedWeights.
 		concat(selectedWeights).
-		concat(preferredWeights)
+		concat(preferredWeights).
+		concat(periodWeights)
 
 	return weights
 }
@@ -77,13 +86,39 @@ func calculatePreferredWeights(
 	return preferredWeights
 }
 
+func calculatePeriodWeights(
+	periodIDs []string,
+) Weights {
+	periodWeights := make(Weights)
+	for i, periodID := range periodIDs {
+		periodWeights[periodID] = i * PERIOD_WEIGHT_MULTIPLIER
+	}
+
+	return periodWeights
+}
+
+func calculateMinPeriodWeight(
+	periodIDs []string,
+) int {
+	if len(periodIDs) == 0 {
+		return 0
+	}
+
+	return (len(periodIDs) - 1) * PERIOD_WEIGHT_MULTIPLIER
+}
+
 func calculateSelectedWeights(
 	selections QuerySelections,
 	notSelectedSum,
 	preferredWeightsSum int,
+	minPeriodWeight int,
 ) Weights {
 	selectedWeights := make(Weights)
-	selectionThreshold := -(notSelectedSum + preferredWeightsSum)
+
+	selectionThreshold := -(notSelectedSum +
+		preferredWeightsSum -
+		minPeriodWeight)
+
 	selectionWeightSum := selectionThreshold
 	for _, selection := range selections {
 		weight := selectionWeightSum + 1
