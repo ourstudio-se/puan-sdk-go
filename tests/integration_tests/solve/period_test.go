@@ -17,8 +17,7 @@ func Test_optionRequiredInPeriod(t *testing.T) {
 	startTime := time.Now()
 	endTime := startTime.Add(1 * time.Hour)
 
-	creator.SetStartTime(startTime)
-	creator.SetEndTime(endTime)
+	creator.EnableTime(startTime, endTime)
 	_ = creator.AssumeInPeriod(
 		"itemX",
 		startTime,
@@ -50,8 +49,7 @@ func Test_manyOptionsRequiredInPeriod_shouldChooseLaterPeriod(t *testing.T) {
 	startTime := time.Now()
 	endTime := startTime.Add(1 * time.Hour)
 
-	creator.SetStartTime(startTime)
-	creator.SetEndTime(endTime)
+	creator.EnableTime(startTime, endTime)
 	xyAndZ, _ := creator.SetAnd("itemX", "itemY", "itemZ")
 	_ = creator.AssumeInPeriod(
 		xyAndZ,
@@ -86,8 +84,7 @@ func Test_optionRequiredInLaterPeriod_shouldChooseEarlierPeriod(t *testing.T) {
 	startTime := time.Now()
 	endTime := startTime.Add(1 * time.Hour)
 
-	creator.SetStartTime(startTime)
-	creator.SetEndTime(endTime)
+	creator.EnableTime(startTime, endTime)
 	_ = creator.AssumeInPeriod(
 		"itemX",
 		startTime.Add(30*time.Minute),
@@ -119,8 +116,7 @@ func Test_optionRequiredInLaterPeriod_andFromInLaterPeriod_shouldChooseLaterPeri
 	startTime := time.Now()
 	endTime := startTime.Add(1 * time.Hour)
 
-	creator.SetStartTime(startTime)
-	creator.SetEndTime(endTime)
+	creator.EnableTime(startTime, endTime)
 	_ = creator.AssumeInPeriod(
 		"itemX",
 		startTime.Add(30*time.Minute),
@@ -155,8 +151,7 @@ func Test_optionRequiredInLaterPeriod_andFromInEarlierPeriod_shouldChooseEarlier
 	startTime := time.Now()
 	endTime := startTime.Add(1 * time.Hour)
 
-	creator.SetStartTime(startTime)
-	creator.SetEndTime(endTime)
+	creator.EnableTime(startTime, endTime)
 	_ = creator.AssumeInPeriod(
 		"itemX",
 		startTime.Add(30*time.Minute),

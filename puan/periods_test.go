@@ -10,38 +10,81 @@ import (
 var MinTime = time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)
 var MaxTime = time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC)
 
-func Test_calculate_non_overlapping_periods(t *testing.T) {
+func Test_NewPeriod(t *testing.T) {
+	from := newTestTime("2024-01-01T00:00:00Z")
+	to := newTestTime("2024-01-31T00:00:00Z")
+
+	actual, err := NewPeriod(from, to)
+
+	assert.NoError(t, err)
+	assert.Equal(t, from, actual.From())
+	assert.Equal(t, to, actual.To())
+}
+
+func Test_NewPeriod_givenFromAfterTo_shouldReturnError(t *testing.T) {
+	from := newTestTime("2024-01-31T00:00:00Z")
+	to := newTestTime("2024-01-01T00:00:00Z")
+
+	_, err := NewPeriod(from, to)
+
+	assert.Error(t, err)
+}
+
+func Test_calculateCompletePeriods(t *testing.T) {
 	tests := []struct {
 		name     string
-		periods  []period
-		expected []period
+		periods  []Period
+		expected []Period
 	}{
 		{
-			name: "given no overlaps or gaps",
-			periods: []period{
+			name: "given single period",
+			periods: []Period{
 				{
 					from: newTestTime("2024-01-01T00:00:00Z"),
 					to:   newTestTime("2024-01-31T00:00:00Z"),
 				},
 			},
-			expected: []period{
+			expected: []Period{
 				{
-					from: MinTime,
-					to:   newTestTime("2024-01-01T00:00:00Z"),
+					from: newTestTime("2024-01-01T00:00:00Z"),
+					to:   newTestTime("2024-01-31T00:00:00Z"),
 				},
+			},
+		},
+		{
+			name: "given no overlaps or gaps",
+			periods: []Period{
 				{
 					from: newTestTime("2024-01-01T00:00:00Z"),
 					to:   newTestTime("2024-01-31T00:00:00Z"),
 				},
 				{
 					from: newTestTime("2024-01-31T00:00:00Z"),
-					to:   MaxTime,
+					to:   newTestTime("2024-02-15T00:00:00Z"),
+				},
+				{
+					from: newTestTime("2024-02-15T00:00:00Z"),
+					to:   newTestTime("2024-02-28T00:00:00Z"),
+				},
+			},
+			expected: []Period{
+				{
+					from: newTestTime("2024-01-01T00:00:00Z"),
+					to:   newTestTime("2024-01-31T00:00:00Z"),
+				},
+				{
+					from: newTestTime("2024-01-31T00:00:00Z"),
+					to:   newTestTime("2024-02-15T00:00:00Z"),
+				},
+				{
+					from: newTestTime("2024-02-15T00:00:00Z"),
+					to:   newTestTime("2024-02-28T00:00:00Z"),
 				},
 			},
 		},
 		{
 			name: "given overlap",
-			periods: []period{
+			periods: []Period{
 				{
 					from: newTestTime("2024-01-01T00:00:00Z"),
 					to:   newTestTime("2024-01-15T00:00:00Z"),
@@ -51,11 +94,7 @@ func Test_calculate_non_overlapping_periods(t *testing.T) {
 					to:   newTestTime("2024-01-20T00:00:00Z"),
 				},
 			},
-			expected: []period{
-				{
-					from: MinTime,
-					to:   newTestTime("2024-01-01T00:00:00Z"),
-				},
+			expected: []Period{
 				{
 					from: newTestTime("2024-01-01T00:00:00Z"),
 					to:   newTestTime("2024-01-10T00:00:00Z"),
@@ -68,15 +107,11 @@ func Test_calculate_non_overlapping_periods(t *testing.T) {
 					from: newTestTime("2024-01-15T00:00:00Z"),
 					to:   newTestTime("2024-01-20T00:00:00Z"),
 				},
-				{
-					from: newTestTime("2024-01-20T00:00:00Z"),
-					to:   MaxTime,
-				},
 			},
 		},
 		{
 			name: "given gap",
-			periods: []period{
+			periods: []Period{
 				{
 					from: newTestTime("2024-01-01T00:00:00Z"),
 					to:   newTestTime("2024-01-15T00:00:00Z"),
@@ -86,11 +121,7 @@ func Test_calculate_non_overlapping_periods(t *testing.T) {
 					to:   newTestTime("2024-01-30T00:00:00Z"),
 				},
 			},
-			expected: []period{
-				{
-					from: MinTime,
-					to:   newTestTime("2024-01-01T00:00:00Z"),
-				},
+			expected: []Period{
 				{
 					from: newTestTime("2024-01-01T00:00:00Z"),
 					to:   newTestTime("2024-01-15T00:00:00Z"),
@@ -103,15 +134,11 @@ func Test_calculate_non_overlapping_periods(t *testing.T) {
 					from: newTestTime("2024-01-20T00:00:00Z"),
 					to:   newTestTime("2024-01-30T00:00:00Z"),
 				},
-				{
-					from: newTestTime("2024-01-30T00:00:00Z"),
-					to:   MaxTime,
-				},
 			},
 		},
 		{
 			name: "given overlap and gap",
-			periods: []period{
+			periods: []Period{
 				{
 					from: newTestTime("2024-01-01T00:00:00Z"),
 					to:   newTestTime("2024-01-15T00:00:00Z"),
@@ -125,11 +152,7 @@ func Test_calculate_non_overlapping_periods(t *testing.T) {
 					to:   newTestTime("2024-01-30T00:00:00Z"),
 				},
 			},
-			expected: []period{
-				{
-					from: MinTime,
-					to:   newTestTime("2024-01-01T00:00:00Z"),
-				},
+			expected: []Period{
 				{
 					from: newTestTime("2024-01-01T00:00:00Z"),
 					to:   newTestTime("2024-01-10T00:00:00Z"),
@@ -150,10 +173,6 @@ func Test_calculate_non_overlapping_periods(t *testing.T) {
 					from: newTestTime("2024-01-25T00:00:00Z"),
 					to:   newTestTime("2024-01-30T00:00:00Z"),
 				},
-				{
-					from: newTestTime("2024-01-30T00:00:00Z"),
-					to:   MaxTime,
-				},
 			},
 		},
 		{
@@ -165,7 +184,7 @@ func Test_calculate_non_overlapping_periods(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := calculateNonOverlappingPeriods(tt.periods, MinTime, MaxTime)
+			actual := calculateCompletePeriods(tt.periods)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
@@ -183,14 +202,14 @@ func Test_groupByPeriod(t *testing.T) {
 			periodVariables: timeBoundVariables{
 				{
 					variable: "p1",
-					period: period{
+					period: Period{
 						from: newTestTime("2024-01-01T00:00:00Z"),
 						to:   newTestTime("2024-01-10T00:00:00Z"),
 					},
 				},
 				{
 					variable: "p2",
-					period: period{
+					period: Period{
 						from: newTestTime("2024-01-10T00:00:00Z"),
 						to:   newTestTime("2024-01-15T00:00:00Z"),
 					},
@@ -199,7 +218,7 @@ func Test_groupByPeriod(t *testing.T) {
 			assumedVariables: timeBoundVariables{
 				{
 					variable: "v1",
-					period: period{
+					period: Period{
 						from: newTestTime("2024-01-05T00:00:00Z"),
 						to:   newTestTime("2024-01-12T00:00:00Z"),
 					},
@@ -214,21 +233,21 @@ func Test_groupByPeriod(t *testing.T) {
 			periodVariables: timeBoundVariables{
 				{
 					variable: "p1",
-					period: period{
+					period: Period{
 						from: newTestTime("2024-01-01T00:00:00Z"),
 						to:   newTestTime("2024-01-10T00:00:00Z"),
 					},
 				},
 				{
 					variable: "p2",
-					period: period{
+					period: Period{
 						from: newTestTime("2024-01-10T00:00:00Z"),
 						to:   newTestTime("2024-01-20T00:00:00Z"),
 					},
 				},
 				{
 					variable: "p3",
-					period: period{
+					period: Period{
 						from: newTestTime("2024-01-20T00:00:00Z"),
 						to:   newTestTime("2024-01-30T00:00:00Z"),
 					},
@@ -237,21 +256,21 @@ func Test_groupByPeriod(t *testing.T) {
 			assumedVariables: timeBoundVariables{
 				{
 					variable: "v1",
-					period: period{
+					period: Period{
 						from: newTestTime("2024-01-05T00:00:00Z"),
 						to:   newTestTime("2024-01-08T00:00:00Z"),
 					},
 				},
 				{
 					variable: "v2",
-					period: period{
+					period: Period{
 						from: newTestTime("2024-01-15T00:00:00Z"),
 						to:   newTestTime("2024-01-25T00:00:00Z"),
 					},
 				},
 				{
 					variable: "v3",
-					period: period{
+					period: Period{
 						from: newTestTime("2024-01-05T00:00:00Z"),
 						to:   newTestTime("2024-01-08T00:00:00Z"),
 					},
@@ -267,14 +286,14 @@ func Test_groupByPeriod(t *testing.T) {
 			periodVariables: timeBoundVariables{
 				{
 					variable: "p1",
-					period: period{
+					period: Period{
 						from: newTestTime("2024-01-01T00:00:00Z"),
 						to:   newTestTime("2024-01-10T00:00:00Z"),
 					},
 				},
 				{
 					variable: "p2",
-					period: period{
+					period: Period{
 						from: newTestTime("2024-01-10T00:00:00Z"),
 						to:   newTestTime("2024-01-15T00:00:00Z"),
 					},
@@ -283,7 +302,7 @@ func Test_groupByPeriod(t *testing.T) {
 			assumedVariables: timeBoundVariables{
 				{
 					variable: "v1",
-					period: period{
+					period: Period{
 						from: newTestTime("2024-01-05T00:00:00Z"),
 						to:   newTestTime("2024-01-10T00:00:00Z"),
 					},
@@ -310,20 +329,20 @@ func Test_groupByPeriod(t *testing.T) {
 	}
 }
 
-func Test_periodsOverlap(t *testing.T) {
+func Test_Period_overlaps(t *testing.T) {
 	tests := []struct {
 		name     string
-		a        period
-		b        period
+		a        Period
+		b        Period
 		expected bool
 	}{
 		{
 			name: "touching at end edge, should not overlap",
-			a: period{
+			a: Period{
 				from: newTestTime("2024-01-05T00:00:00Z"),
 				to:   newTestTime("2024-01-10T00:00:00Z"),
 			},
-			b: period{
+			b: Period{
 				from: newTestTime("2024-01-10T00:00:00Z"),
 				to:   newTestTime("2024-01-15T00:00:00Z"),
 			},
@@ -331,13 +350,37 @@ func Test_periodsOverlap(t *testing.T) {
 		},
 		{
 			name: "touching at start edge, should not overlap",
-			a: period{
+			a: Period{
 				from: newTestTime("2024-01-10T00:00:00Z"),
 				to:   newTestTime("2024-01-15T00:00:00Z"),
 			},
-			b: period{
+			b: Period{
 				from: newTestTime("2024-01-05T00:00:00Z"),
 				to:   newTestTime("2024-01-10T00:00:00Z"),
+			},
+			expected: false,
+		},
+		{
+			name: "overlapping",
+			a: Period{
+				from: newTestTime("2024-01-10T00:00:00Z"),
+				to:   newTestTime("2024-01-20T00:00:00Z"),
+			},
+			b: Period{
+				from: newTestTime("2024-01-15T00:00:00Z"),
+				to:   newTestTime("2024-01-25T00:00:00Z"),
+			},
+			expected: true,
+		},
+		{
+			name: "not overlapping",
+			a: Period{
+				from: newTestTime("2024-01-10T00:00:00Z"),
+				to:   newTestTime("2024-01-20T00:00:00Z"),
+			},
+			b: Period{
+				from: newTestTime("2024-01-25T00:00:00Z"),
+				to:   newTestTime("2024-01-30T00:00:00Z"),
 			},
 			expected: false,
 		},
@@ -345,7 +388,7 @@ func Test_periodsOverlap(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := periodsOverlap(tt.a, tt.b)
+			actual := tt.a.Overlaps(tt.b)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}

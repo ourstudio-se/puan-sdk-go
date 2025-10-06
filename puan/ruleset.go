@@ -14,11 +14,11 @@ type timeBoundVariables []timeBoundVariable
 
 type timeBoundVariable struct {
 	variable string
-	period   period
+	period   Period
 }
 
-func (p timeBoundVariables) periods() []period {
-	periods := make([]period, len(p))
+func (p timeBoundVariables) periods() []Period {
+	periods := make([]Period, len(p))
 	for i, periodVariable := range p {
 		periods[i] = periodVariable.period
 	}
@@ -33,18 +33,12 @@ func (p timeBoundVariables) ids() []string {
 	return ids
 }
 
-type period struct {
-	from time.Time
-	to   time.Time
-}
-
 type RuleSetCreator struct {
 	pldag              *pldag.Model
 	preferredVariables []string
 	assumedVariables   []string
 
-	startTime                 time.Time
-	endTime                   time.Time
+	period                    *Period
 	timeBoundAssumedVariables timeBoundVariables
 }
 
@@ -145,23 +139,30 @@ func (c *RuleSetCreator) AssumeInPeriod(
 	variable string,
 	from, to time.Time,
 ) error {
+	period, err := NewPeriod(from, to)
+	if err != nil {
+		return err
+	}
+
 	validityPeriod := timeBoundVariable{
 		variable: variable,
-		period: period{
-			from: from,
-			to:   to,
-		},
+		period:   period,
 	}
 	c.timeBoundAssumedVariables = append(c.timeBoundAssumedVariables, validityPeriod)
 	return nil
 }
 
-func (c *RuleSetCreator) SetStartTime(startTime time.Time) {
-	c.startTime = startTime
-}
+func (c *RuleSetCreator) EnableTime(
+	from, to time.Time,
+) error {
+	period, err := NewPeriod(from, to)
+	if err != nil {
+		return err
+	}
 
-func (c *RuleSetCreator) SetEndTime(endTime time.Time) {
-	c.endTime = endTime
+	c.period = &period
+
+	return nil
 }
 
 func (c *RuleSetCreator) createAssumedConstraints() error {
@@ -216,10 +217,11 @@ func (c *RuleSetCreator) createValidityPeriodConstraints() (timeBoundVariables, 
 	// We also need 2 extra period variables:
 	// {start-of-time}-{start-of-first-period}
 	// {end-of-last-period}-{end-of-time}
-	nonOverlappingPeriods := calculateNonOverlappingPeriods(
-		c.timeBoundAssumedVariables.periods(),
-		c.startTime,
-		c.endTime,
+	periods := []Period{}
+	periods = append(periods, *c.period)
+	periods = append(periods, c.timeBoundAssumedVariables.periods()...)
+	nonOverlappingPeriods := calculateCompletePeriods(
+		periods,
 	)
 
 	// Create variable for each period

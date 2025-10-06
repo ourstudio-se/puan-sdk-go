@@ -1,47 +1,81 @@
 package puan
 
 import (
+	"errors"
 	"sort"
 	"strings"
 	"time"
 )
 
-func calculateNonOverlappingPeriods(
-	periods []period,
-	startTime time.Time,
-	endTime time.Time,
-) []period {
+type Period struct {
+	from time.Time
+	to   time.Time
+}
+
+func NewPeriod(from, to time.Time) (Period, error) {
+	if from.After(to) {
+		return Period{}, errors.New("from time must be before to time")
+	}
+
+	return Period{
+		from: from.Truncate(time.Second),
+		to:   to.Truncate(time.Second),
+	}, nil
+}
+
+func (p Period) From() time.Time {
+	return p.from
+}
+
+func (p Period) To() time.Time {
+	return p.to
+}
+
+// Checks overlap, excluding edges
+func (p Period) Overlaps(other Period) bool {
+	return p.from.Before(other.to) && p.to.After(other.from)
+}
+
+// find all periods without caps or overlaps
+// Input:
+// |---|...................
+// .......|------|.........
+// ...................|---|
+// .........|------|.......
+// Output:
+// |---|--|-|----|-|--|---|
+func calculateCompletePeriods(
+	periods []Period,
+) []Period {
 	if len(periods) == 0 {
 		return nil
 	}
 
-	periodEdges := make(map[time.Time]bool)
-	periodEdges[startTime] = true
-	periodEdges[endTime] = true
+	edges := make(map[time.Time]bool)
 	for _, period := range periods {
-		periodEdges[period.from] = true
-		periodEdges[period.to] = true
+		edges[period.from] = true
+		edges[period.to] = true
 	}
 
-	var sortedPeriodEdges []time.Time
-	for t := range periodEdges {
-		sortedPeriodEdges = append(sortedPeriodEdges, t)
+	var sortedEdges []time.Time
+	for t := range edges {
+		sortedEdges = append(sortedEdges, t)
 	}
-	sort.Slice(sortedPeriodEdges, func(i, j int) bool {
-		return sortedPeriodEdges[i].Before(sortedPeriodEdges[j])
+	sort.Slice(sortedEdges, func(i, j int) bool {
+		return sortedEdges[i].Before(sortedEdges[j])
 	})
 
-	var nonOverlappingPeriods []period
+	var completePeriods []Period
 
-	for i := range len(sortedPeriodEdges) - 1 {
-		period := period{
-			from: sortedPeriodEdges[i],
-			to:   sortedPeriodEdges[i+1],
+	for i := range len(sortedEdges) - 1 {
+		period := Period{
+			from: sortedEdges[i],
+			to:   sortedEdges[i+1],
 		}
-		nonOverlappingPeriods = append(nonOverlappingPeriods, period)
+		completePeriods = append(completePeriods, period)
 	}
 
-	return nonOverlappingPeriods
+	return completePeriods
 }
 
 // '|' separated list of variable names
@@ -57,11 +91,6 @@ func (p periodVariables) variables() []string {
 	return strings.Split(string(p), "|")
 }
 
-// periodsOverlap checks if two periods overlap (excluding touching at edges)
-func periodsOverlap(a, b period) bool {
-	return a.from.Before(b.to) && a.to.After(b.from)
-}
-
 func groupByPeriods(
 	periods timeBoundVariables,
 	assumedVariables timeBoundVariables,
@@ -73,7 +102,7 @@ func groupByPeriods(
 		var overlappingPeriodVars []string
 
 		for _, periodVar := range periods {
-			if periodsOverlap(assumedVar.period, periodVar.period) {
+			if assumedVar.period.Overlaps(periodVar.period) {
 				overlappingPeriodVars = append(overlappingPeriodVars, periodVar.variable)
 			}
 		}
