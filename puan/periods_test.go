@@ -7,6 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var MinTime = time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)
+var MaxTime = time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC)
+
 func Test_calculate_non_overlapping_periods(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -162,7 +165,7 @@ func Test_calculate_non_overlapping_periods(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := calculateNonOverlappingPeriods(tt.periods)
+			actual := calculateNonOverlappingPeriods(tt.periods, MinTime, MaxTime)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}

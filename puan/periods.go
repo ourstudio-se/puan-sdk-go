@@ -6,17 +6,18 @@ import (
 	"time"
 )
 
-var MinTime = time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)
-var MaxTime = time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC)
-
-func calculateNonOverlappingPeriods(periods []period) []period {
+func calculateNonOverlappingPeriods(
+	periods []period,
+	startTime time.Time,
+	endTime time.Time,
+) []period {
 	if len(periods) == 0 {
 		return nil
 	}
 
 	periodEdges := make(map[time.Time]bool)
-	periodEdges[MinTime] = true
-	periodEdges[MaxTime] = true
+	periodEdges[startTime] = true
+	periodEdges[endTime] = true
 	for _, period := range periods {
 		periodEdges[period.from] = true
 		periodEdges[period.to] = true

@@ -144,7 +144,6 @@ func (m *Model) NewPolyhedron() *Polyhedron {
 	return NewPolyhedron(aMatrix, bVector)
 }
 
-// TODO: update to not return period variables?
 func (m *Model) PrimitiveVariables() []string {
 	constraintIDs := make([]string, len(m.constraints))
 	for i := range m.constraints {

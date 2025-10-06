@@ -39,9 +39,12 @@ type period struct {
 }
 
 type RuleSetCreator struct {
-	pldag                     *pldag.Model
-	preferredVariables        []string
-	assumedVariables          []string
+	pldag              *pldag.Model
+	preferredVariables []string
+	assumedVariables   []string
+
+	startTime                 time.Time
+	endTime                   time.Time
 	timeBoundAssumedVariables timeBoundVariables
 }
 
@@ -110,6 +113,20 @@ func (c *RuleSetCreator) Prefer(id ...string) error {
 	return nil
 }
 
+func (c *RuleSetCreator) negatePreferreds(ids []string) ([]string, error) {
+	negatedIDs := make([]string, len(ids))
+	for i, id := range ids {
+		negatedID, err := c.pldag.SetNot(id)
+		if err != nil {
+			return nil, err
+		}
+
+		negatedIDs[i] = negatedID
+	}
+
+	return negatedIDs, nil
+}
+
 func (c *RuleSetCreator) Assume(id ...string) error {
 	dedupedIDs := utils.Dedupe(id)
 	unassumedIDs := utils.Without(dedupedIDs, c.assumedVariables)
@@ -139,18 +156,12 @@ func (c *RuleSetCreator) AssumeInPeriod(
 	return nil
 }
 
-func (c *RuleSetCreator) negatePreferreds(ids []string) ([]string, error) {
-	negatedIDs := make([]string, len(ids))
-	for i, id := range ids {
-		negatedID, err := c.pldag.SetNot(id)
-		if err != nil {
-			return nil, err
-		}
+func (c *RuleSetCreator) SetStartTime(startTime time.Time) {
+	c.startTime = startTime
+}
 
-		negatedIDs[i] = negatedID
-	}
-
-	return negatedIDs, nil
+func (c *RuleSetCreator) SetEndTime(endTime time.Time) {
+	c.endTime = endTime
 }
 
 func (c *RuleSetCreator) createAssumedConstraints() error {
@@ -179,7 +190,7 @@ func (c *RuleSetCreator) Create() (*RuleSet, error) {
 
 	polyhedron := c.pldag.NewPolyhedron()
 	variables := c.pldag.Variables()
-	primitiveVariables := c.pldag.PrimitiveVariables()
+	primitiveVariables := utils.Without(c.pldag.PrimitiveVariables(), periodVariables.ids())
 
 	return &RuleSet{
 		polyhedron:         polyhedron,
@@ -205,7 +216,11 @@ func (c *RuleSetCreator) createValidityPeriodConstraints() (timeBoundVariables, 
 	// We also need 2 extra period variables:
 	// {start-of-time}-{start-of-first-period}
 	// {end-of-last-period}-{end-of-time}
-	nonOverlappingPeriods := calculateNonOverlappingPeriods(c.timeBoundAssumedVariables.periods())
+	nonOverlappingPeriods := calculateNonOverlappingPeriods(
+		c.timeBoundAssumedVariables.periods(),
+		c.startTime,
+		c.endTime,
+	)
 
 	// Create variable for each period
 	periodVariables := make(timeBoundVariables, len(nonOverlappingPeriods))
@@ -234,7 +249,7 @@ func (c *RuleSetCreator) createValidityPeriodConstraints() (timeBoundVariables, 
 	}
 
 	// Create XOR constraint between the period variables
-	xorConstraintID, err := c.pldag.SetXor(constraintIDs...)
+	xorConstraintID, err := c.pldag.SetXor(periodVariables.ids()...)
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +274,7 @@ func (c *RuleSetCreator) createPeriodVariableConstraints(
 
 	var periodVariableID string
 	var err error
-	if pVariables[0] == pVariables[1] {
+	if len(pVariables) == 1 {
 		periodVariableID = pVariables[0]
 	} else {
 		periodVariableID, err = c.pldag.SetOr(pVariables...)
@@ -295,6 +310,14 @@ func (r *RuleSet) Variables() []string {
 
 func (r *RuleSet) PreferredVariables() []string {
 	return r.preferredVariables
+}
+
+func (r *RuleSet) RemoveSupportVariables(solution Solution) (Solution, error) {
+	nonSupportVariables := []string{}
+	nonSupportVariables = append(nonSupportVariables, r.periodVariables.ids()...)
+	nonSupportVariables = append(nonSupportVariables, r.primitiveVariables...)
+
+	return solution.Extract(nonSupportVariables...)
 }
 
 type querySpecification struct {
