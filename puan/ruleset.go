@@ -1,16 +1,29 @@
 package puan
 
 import (
+	"time"
+
 	"github.com/go-errors/errors"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
 
+type timeBoundAssumedVariable struct {
+	variable string
+	period   period
+}
+
+type period struct {
+	from time.Time
+	to   time.Time
+}
+
 type RuleSetCreator struct {
-	pldag              *pldag.Model
-	preferredVariables []string
-	assumedVariables   []string
+	pldag                     *pldag.Model
+	preferredVariables        []string
+	assumedVariables          []string
+	timeBoundAssumedVariables []timeBoundAssumedVariable
 }
 
 type RuleSet struct {
@@ -91,6 +104,21 @@ func (c *RuleSetCreator) Assume(id ...string) error {
 	return nil
 }
 
+func (c *RuleSetCreator) AssumeInPeriod(
+	variable string,
+	from, to time.Time,
+) error {
+	validityPeriod := timeBoundAssumedVariable{
+		variable: variable,
+		period: period{
+			from: from,
+			to:   to,
+		},
+	}
+	c.timeBoundAssumedVariables = append(c.timeBoundAssumedVariables, validityPeriod)
+	return nil
+}
+
 func (c *RuleSetCreator) negatePreferreds(ids []string) ([]string, error) {
 	negatedIDs := make([]string, len(ids))
 	for i, id := range ids {
@@ -134,6 +162,28 @@ func (c *RuleSetCreator) Create() (*RuleSet, error) {
 		variables:          variables,
 		preferredVariables: c.preferredVariables,
 	}, nil
+}
+
+func (c *RuleSetCreator) createValidityPeriodConstraints() error {
+	if len(c.timeBoundAssumedVariables) == 0 {
+		return nil
+	}
+
+	// find all true periods
+	// Input:
+	// ....|-------|........
+	// ........|-------|....
+	// Output:
+	// ....|---|---|---|....
+	// Create variable for each
+	// We also need 2 extra period variables:
+	// {start-of-time}-{start-of-first-period}
+	// {end-of-last-period}-{end-of-time}
+	// For each validity period, group them with their period variables
+	// Create implies constraint between the period variables (OR) and the variables
+	// Create XOR constraint between the period variables
+
+	return nil
 }
 
 func (r *RuleSet) Polyhedron() *pldag.Polyhedron {
