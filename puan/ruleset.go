@@ -235,13 +235,11 @@ func (c *RuleSetCreator) createValidityPeriodConstraints() (timeBoundVariables, 
 		}
 	}
 
-	// For each validity period, group them with their period variables
-	groupedPeriodVariables := groupByPeriod(periodVariables, c.timeBoundAssumedVariables)
+	groupedByPeriods := groupByPeriods(periodVariables, c.timeBoundAssumedVariables)
 
-	// Create implies constraint between the period variables (OR) and the variables
 	var constraintIDs []string
-	for periodVariables, aassumedVariables := range groupedPeriodVariables {
-		constraintID, err := c.createPeriodVariableConstraints(periodVariables, aassumedVariables)
+	for periodVariables, assumedVariables := range groupedByPeriods {
+		constraintID, err := c.createTimeBoundConstraint(periodVariables, assumedVariables)
 		if err != nil {
 			return nil, err
 		}
@@ -249,14 +247,14 @@ func (c *RuleSetCreator) createValidityPeriodConstraints() (timeBoundVariables, 
 	}
 
 	// Create XOR constraint between the period variables
-	xorConstraintID, err := c.pldag.SetXor(periodVariables.ids()...)
+	exactlyOnePeriod, err := c.pldag.SetXor(periodVariables.ids()...)
 	if err != nil {
 		return nil, err
 	}
-
-	if err := c.pldag.Assume(xorConstraintID); err != nil {
+	if err := c.pldag.Assume(exactlyOnePeriod); err != nil {
 		return nil, err
 	}
+
 	for _, constraintID := range constraintIDs {
 		if err := c.pldag.Assume(constraintID); err != nil {
 			return nil, err
@@ -266,34 +264,34 @@ func (c *RuleSetCreator) createValidityPeriodConstraints() (timeBoundVariables, 
 	return periodVariables, nil
 }
 
-func (c *RuleSetCreator) createPeriodVariableConstraints(
+func (c *RuleSetCreator) createTimeBoundConstraint(
 	periodVariables periodVariables,
 	assumedVariables []string,
 ) (string, error) {
-	pVariables := periodVariables.variables()
+	periodIDs := periodVariables.variables()
 
-	var periodVariableID string
+	var combinedPeriodsID string
 	var err error
-	if len(pVariables) == 1 {
-		periodVariableID = pVariables[0]
+	if len(periodIDs) == 1 {
+		combinedPeriodsID = periodIDs[0]
 	} else {
-		periodVariableID, err = c.pldag.SetOr(pVariables...)
+		combinedPeriodsID, err = c.pldag.SetOr(periodIDs...)
 		if err != nil {
 			return "", err
 		}
 	}
 
-	var assumedVariableID string
+	var combinedAssumedID string
 	if len(assumedVariables) == 1 {
-		assumedVariableID = assumedVariables[0]
+		combinedAssumedID = assumedVariables[0]
 	} else {
-		assumedVariableID, err = c.pldag.SetAnd(assumedVariables...)
+		combinedAssumedID, err = c.pldag.SetAnd(assumedVariables...)
 		if err != nil {
 			return "", err
 		}
 	}
 
-	return c.pldag.SetImply(periodVariableID, assumedVariableID)
+	return c.pldag.SetImply(combinedPeriodsID, combinedAssumedID)
 }
 
 func (r *RuleSet) Polyhedron() *pldag.Polyhedron {

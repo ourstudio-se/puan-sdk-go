@@ -44,8 +44,14 @@ func calculateNonOverlappingPeriods(
 	return nonOverlappingPeriods
 }
 
-// | separated list of variable names
+// '|' separated list of variable names
 type periodVariables string
+
+func newPeriodVariables(variables []string) periodVariables {
+	sort.Strings(variables)
+	value := strings.Join(variables, "|")
+	return periodVariables(value)
+}
 
 func (p periodVariables) variables() []string {
 	return strings.Split(string(p), "|")
@@ -53,10 +59,10 @@ func (p periodVariables) variables() []string {
 
 // periodsOverlap checks if two periods overlap (excluding touching at edges)
 func periodsOverlap(a, b period) bool {
-	return a.from.Before(b.to) && b.from.Before(a.to)
+	return a.from.Before(b.to) && a.to.After(b.from)
 }
 
-func groupByPeriod(
+func groupByPeriods(
 	periods timeBoundVariables,
 	assumedVariables timeBoundVariables,
 ) map[periodVariables][]string {
@@ -72,13 +78,8 @@ func groupByPeriod(
 			}
 		}
 
-		// Sort to ensure consistent key
-		sort.Strings(overlappingPeriodVars)
+		key := newPeriodVariables(overlappingPeriodVars)
 
-		// Create the key
-		key := periodVariables(strings.Join(overlappingPeriodVars, "|"))
-
-		// Add the assumed variable to the group
 		grouped[key] = append(grouped[key], assumedVar.variable)
 	}
 
