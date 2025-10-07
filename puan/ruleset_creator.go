@@ -216,7 +216,10 @@ func (c *RuleSetCreator) newValidityPeriodConstraints() (timeBoundVariables, err
 		}
 	}
 
-	groupedByPeriods := groupByPeriods(periodVariables, c.timeBoundAssumedVariables)
+	groupedByPeriods, err := groupByPeriods(periodVariables, c.timeBoundAssumedVariables)
+	if err != nil {
+		return nil, err
+	}
 
 	var constraintIDs []string
 	for periodVariables, assumedVariables := range groupedByPeriods {
@@ -246,10 +249,10 @@ func (c *RuleSetCreator) newValidityPeriodConstraints() (timeBoundVariables, err
 }
 
 func (c *RuleSetCreator) createTimeBoundConstraint(
-	periodVariables periodVariables,
+	periodVariables idsString,
 	assumedVariables []string,
 ) (string, error) {
-	periodIDs := periodVariables.variables()
+	periodIDs := periodVariables.ids()
 
 	var combinedPeriodsID string
 	var err error

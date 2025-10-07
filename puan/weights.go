@@ -115,9 +115,11 @@ func calculateSelectedWeights(
 ) Weights {
 	selectedWeights := make(Weights)
 
-	selectionThreshold := -(notSelectedSum +
-		preferredWeightsSum -
-		minPeriodWeight)
+	selectionThreshold := calculateSelectionThreshold(
+		notSelectedSum,
+		preferredWeightsSum,
+		minPeriodWeight,
+	)
 
 	selectionWeightSum := selectionThreshold
 	for _, selection := range selections {
@@ -132,4 +134,12 @@ func calculateSelectedWeights(
 	}
 
 	return selectedWeights
+}
+
+func calculateSelectionThreshold(
+	notSelectedSum,
+	preferredWeightsSum,
+	minPeriodWeight int,
+) int {
+	return -(notSelectedSum + preferredWeightsSum + minPeriodWeight)
 }

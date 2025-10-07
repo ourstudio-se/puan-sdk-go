@@ -66,6 +66,7 @@ func (p timeBoundVariables) ids() []string {
 
 // find all periods without caps or overlaps
 // Input:
+// |----------------------|
 // |---|...................
 // .......|------|.........
 // ...................|---|
@@ -106,40 +107,49 @@ func calculateCompletePeriods(
 	return completePeriods
 }
 
-// '|' separated list of variable names
+// '|' separated list of variable ids
 // Need to have the variables serialized since it is used as a key in a map
-type periodVariables string
+type idsString string
 
-func newPeriodVariables(variables []string) periodVariables {
+func newIdsString(variables []string) idsString {
 	sort.Strings(variables)
 	value := strings.Join(variables, "|")
-	return periodVariables(value)
+	return idsString(value)
 }
 
-func (p periodVariables) variables() []string {
+func (p idsString) ids() []string {
 	return strings.Split(string(p), "|")
 }
 
 func groupByPeriods(
-	periods timeBoundVariables,
+	periodVariables timeBoundVariables,
 	assumedVariables timeBoundVariables,
-) map[periodVariables][]string {
-	grouped := make(map[periodVariables][]string)
+) (map[idsString][]string, error) {
+	grouped := make(map[idsString][]string)
 
 	// For each assumed variable, find which period variables it overlaps with
-	for _, assumedVar := range assumedVariables {
-		var overlappingPeriodVars []string
-
-		for _, periodVar := range periods {
-			if assumedVar.period.Overlaps(periodVar.period) {
-				overlappingPeriodVars = append(overlappingPeriodVars, periodVar.variable)
-			}
+	for _, assumed := range assumedVariables {
+		key, err := findContainingPeriodIDs(periodVariables, assumed)
+		if err != nil {
+			return nil, err
 		}
-
-		key := newPeriodVariables(overlappingPeriodVars)
-
-		grouped[key] = append(grouped[key], assumedVar.variable)
+		grouped[key] = append(grouped[key], assumed.variable)
 	}
 
-	return grouped
+	return grouped, nil
+}
+
+func findContainingPeriodIDs(
+	periodVariables timeBoundVariables,
+	assumed timeBoundVariable,
+) (idsString, error) {
+	var containingPeriodIDs []string
+
+	for _, periodVariable := range periodVariables {
+		if periodVariable.period.Overlaps(assumed.period) {
+			containingPeriodIDs = append(containingPeriodIDs, periodVariable.variable)
+		}
+	}
+
+	return newIdsString(containingPeriodIDs), nil
 }

@@ -388,37 +388,6 @@ func Test_groupByPeriod(t *testing.T) {
 		expectedGroups   map[string][]string
 	}{
 		{
-			name: "assumed variable overlaps with multiple period variables",
-			periodVariables: timeBoundVariables{
-				{
-					variable: "p1",
-					period: Period{
-						from: newTestTime("2024-01-01T00:00:00Z"),
-						to:   newTestTime("2024-01-10T00:00:00Z"),
-					},
-				},
-				{
-					variable: "p2",
-					period: Period{
-						from: newTestTime("2024-01-10T00:00:00Z"),
-						to:   newTestTime("2024-01-15T00:00:00Z"),
-					},
-				},
-			},
-			assumedVariables: timeBoundVariables{
-				{
-					variable: "v1",
-					period: Period{
-						from: newTestTime("2024-01-05T00:00:00Z"),
-						to:   newTestTime("2024-01-12T00:00:00Z"),
-					},
-				},
-			},
-			expectedGroups: map[string][]string{
-				"p1|p2": {"v1"},
-			},
-		},
-		{
 			name: "multiple assumed variables with different overlaps",
 			periodVariables: timeBoundVariables{
 				{
@@ -471,8 +440,33 @@ func Test_groupByPeriod(t *testing.T) {
 				"p2|p3": {"v2"},
 			},
 		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := groupByPeriods(tt.periodVariables, tt.assumedVariables)
+			assert.NoError(t, err)
+
+			// Convert temp keys to strings for easier comparison
+			actualGroups := make(map[string][]string)
+			for key, vars := range actual {
+				actualGroups[string(key)] = vars
+			}
+
+			assert.Equal(t, tt.expectedGroups, actualGroups)
+		})
+	}
+}
+
+func Test_findContainingPeriodIDs(t *testing.T) {
+	tests := []struct {
+		name            string
+		periodVariables timeBoundVariables
+		assumedVariable timeBoundVariable
+		expected        idsString
+	}{
 		{
-			name: "variable ends at the start of the next period",
+			name: "assumed variable overlaps with multiple period variables",
 			periodVariables: timeBoundVariables{
 				{
 					variable: "p1",
@@ -489,32 +483,76 @@ func Test_groupByPeriod(t *testing.T) {
 					},
 				},
 			},
-			assumedVariables: timeBoundVariables{
+			assumedVariable: timeBoundVariable{
+				variable: "v1",
+				period: Period{
+					from: newTestTime("2024-01-05T00:00:00Z"),
+					to:   newTestTime("2024-01-12T00:00:00Z"),
+				},
+			},
+			expected: "p1|p2",
+		},
+		{
+			name: "variable ends at the start of a period",
+			periodVariables: timeBoundVariables{
 				{
-					variable: "v1",
+					variable: "p1",
 					period: Period{
-						from: newTestTime("2024-01-05T00:00:00Z"),
+						from: newTestTime("2024-01-01T00:00:00Z"),
 						to:   newTestTime("2024-01-10T00:00:00Z"),
 					},
 				},
+				{
+					variable: "p2",
+					period: Period{
+						from: newTestTime("2024-01-10T00:00:00Z"),
+						to:   newTestTime("2024-01-15T00:00:00Z"),
+					},
+				},
 			},
-			expectedGroups: map[string][]string{
-				"p1": {"v1"},
+			assumedVariable: timeBoundVariable{
+				variable: "v1",
+				period: Period{
+					from: newTestTime("2024-01-05T00:00:00Z"),
+					to:   newTestTime("2024-01-10T00:00:00Z"),
+				},
 			},
+			expected: "p1",
+		},
+		{
+			name: "variable starts at the end of a period",
+			periodVariables: timeBoundVariables{
+				{
+					variable: "p1",
+					period: Period{
+						from: newTestTime("2024-01-01T00:00:00Z"),
+						to:   newTestTime("2024-01-10T00:00:00Z"),
+					},
+				},
+				{
+					variable: "p2",
+					period: Period{
+						from: newTestTime("2024-01-10T00:00:00Z"),
+						to:   newTestTime("2024-01-15T00:00:00Z"),
+					},
+				},
+			},
+			assumedVariable: timeBoundVariable{
+				variable: "v1",
+				period: Period{
+					from: newTestTime("2024-01-10T00:00:00Z"),
+					to:   newTestTime("2024-01-20T00:00:00Z"),
+				},
+			},
+			expected: "p2",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := groupByPeriods(tt.periodVariables, tt.assumedVariables)
-
-			// Convert temp keys to strings for easier comparison
-			actualGroups := make(map[string][]string)
-			for key, vars := range actual {
-				actualGroups[string(key)] = vars
-			}
-
-			assert.Equal(t, tt.expectedGroups, actualGroups)
+			actual, err := findContainingPeriodIDs(tt.periodVariables, tt.assumedVariable)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }

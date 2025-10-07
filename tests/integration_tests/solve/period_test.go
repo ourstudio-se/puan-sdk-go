@@ -175,3 +175,46 @@ func Test_optionRequiredInLaterPeriod_andFromInEarlierPeriod_shouldChooseEarlier
 		cleanedSolution,
 	)
 }
+
+func Test_optionSelectableInPeriod_givenOptionSelected_shouldChoosePeriod(t *testing.T) {
+	creator := puan.NewRuleSetCreator()
+
+	_ = creator.AddPrimitives("itemX")
+
+	startTime := time.Now()
+	endTime := startTime.Add(1 * time.Hour)
+
+	creator.EnableTime(startTime, endTime)
+
+	notX, _ := creator.SetNot("itemX")
+	_ = creator.AssumeInPeriod(
+		notX,
+		startTime,
+		startTime.Add(15*time.Minute))
+	_ = creator.AssumeInPeriod(
+		notX,
+		endTime.Add(-15*time.Minute),
+		endTime)
+
+	ruleSet, _ := creator.Create()
+
+	query, _ := ruleSet.NewQuery(puan.QueryInput{
+		Selections: puan.Selections{
+			puan.NewSelectionBuilder("itemX").Build(),
+		},
+	})
+
+	client := glpk.NewClient(url)
+	solution, _ := client.Solve(query)
+	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"itemX":    1,
+			"period_0": 0,
+			"period_1": 1,
+			"period_2": 0,
+		},
+		primitiveSolution,
+	)
+}
