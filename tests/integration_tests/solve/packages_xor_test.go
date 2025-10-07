@@ -27,7 +27,7 @@ func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldGivePreferred(
 	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
+	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -57,7 +57,7 @@ func Test_exactlyOnePackage_selectNotPreferred(t *testing.T) {
 	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
+	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
 	assert.Equal(
 		t,
 		puan.Solution{

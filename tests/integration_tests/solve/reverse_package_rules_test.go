@@ -52,7 +52,7 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
+	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -107,7 +107,7 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
+	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -167,7 +167,7 @@ func Test_twoPackagesWithSharedItems_selectLargestPackage(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
+	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
 	assert.Equal(
 		t,
 		puan.Solution{
