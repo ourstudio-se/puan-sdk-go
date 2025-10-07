@@ -7,9 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var MinTime = time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)
-var MaxTime = time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC)
-
 func Test_NewPeriod(t *testing.T) {
 	from := newTestTime("2024-01-01T00:00:00Z")
 	to := newTestTime("2024-01-31T00:00:00Z")
@@ -97,13 +94,13 @@ func Test_Period_overlaps(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := tt.a.Overlaps(tt.b)
+			actual := tt.a.overlaps(tt.b)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }
 
-func Test_Period_Contains(t *testing.T) {
+func Test_Period_contains(t *testing.T) {
 	tests := []struct {
 		name     string
 		period   Period
@@ -222,7 +219,7 @@ func Test_Period_Contains(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := tt.period.Contains(tt.other)
+			actual := tt.period.contains(tt.other)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
@@ -547,82 +544,71 @@ func Test_toPeriods(t *testing.T) {
 	}
 }
 
-func Test_groupByPeriod(t *testing.T) {
-	tests := []struct {
-		name             string
-		periodVariables  timeBoundVariables
-		assumedVariables timeBoundVariables
-		expectedGroups   map[string][]string
-	}{
+func Test_groupByPeriods(t *testing.T) {
+	periodVariables := timeBoundVariables{
 		{
-			name: "multiple assumed variables with different overlaps",
-			periodVariables: timeBoundVariables{
-				{
-					variable: "p1",
-					period: Period{
-						from: newTestTime("2024-01-01T00:00:00Z"),
-						to:   newTestTime("2024-01-10T00:00:00Z"),
-					},
-				},
-				{
-					variable: "p2",
-					period: Period{
-						from: newTestTime("2024-01-10T00:00:00Z"),
-						to:   newTestTime("2024-01-20T00:00:00Z"),
-					},
-				},
-				{
-					variable: "p3",
-					period: Period{
-						from: newTestTime("2024-01-20T00:00:00Z"),
-						to:   newTestTime("2024-01-30T00:00:00Z"),
-					},
-				},
+			variable: "p1",
+			period: Period{
+				from: newTestTime("2024-01-01T00:00:00Z"),
+				to:   newTestTime("2024-01-10T00:00:00Z"),
 			},
-			assumedVariables: timeBoundVariables{
-				{
-					variable: "v1",
-					period: Period{
-						from: newTestTime("2024-01-05T00:00:00Z"),
-						to:   newTestTime("2024-01-08T00:00:00Z"),
-					},
-				},
-				{
-					variable: "v2",
-					period: Period{
-						from: newTestTime("2024-01-15T00:00:00Z"),
-						to:   newTestTime("2024-01-25T00:00:00Z"),
-					},
-				},
-				{
-					variable: "v3",
-					period: Period{
-						from: newTestTime("2024-01-05T00:00:00Z"),
-						to:   newTestTime("2024-01-08T00:00:00Z"),
-					},
-				},
+		},
+		{
+			variable: "p2",
+			period: Period{
+				from: newTestTime("2024-01-10T00:00:00Z"),
+				to:   newTestTime("2024-01-20T00:00:00Z"),
 			},
-			expectedGroups: map[string][]string{
-				"p1":    {"v1", "v3"},
-				"p2|p3": {"v2"},
+		},
+		{
+			variable: "p3",
+			period: Period{
+				from: newTestTime("2024-01-20T00:00:00Z"),
+				to:   newTestTime("2024-01-30T00:00:00Z"),
+			},
+		},
+	}
+	assumedVariables := timeBoundVariables{
+		{
+			variable: "x",
+			period: Period{
+				from: newTestTime("2024-01-05T00:00:00Z"),
+				to:   newTestTime("2024-01-08T00:00:00Z"),
+			},
+		},
+		{
+			variable: "y",
+			period: Period{
+				from: newTestTime("2024-01-15T00:00:00Z"),
+				to:   newTestTime("2024-01-25T00:00:00Z"),
+			},
+		},
+		{
+			variable: "z",
+			period: Period{
+				from: newTestTime("2024-01-05T00:00:00Z"),
+				to:   newTestTime("2024-01-08T00:00:00Z"),
+			},
+		},
+		{
+			variable: "w",
+			period: Period{
+				from: newTestTime("2024-01-07T00:00:00Z"),
+				to:   newTestTime("2024-01-17T00:00:00Z"),
 			},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			actual, err := groupByPeriods(tt.periodVariables, tt.assumedVariables)
-			assert.NoError(t, err)
+	actual, err := groupByPeriods(periodVariables, assumedVariables)
 
-			// Convert temp keys to strings for easier comparison
-			actualGroups := make(map[string][]string)
-			for key, vars := range actual {
-				actualGroups[string(key)] = vars
-			}
+	assert.NoError(t, err)
 
-			assert.Equal(t, tt.expectedGroups, actualGroups)
-		})
+	expected := map[idsString][]string{
+		"p1":    {"x", "z"},
+		"p2|p3": {"y"},
+		"p1|p2": {"w"},
 	}
+	assert.Equal(t, expected, actual)
 }
 
 func Test_findContainingPeriodIDs(t *testing.T) {

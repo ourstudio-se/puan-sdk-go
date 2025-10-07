@@ -38,12 +38,12 @@ func (p Period) To() time.Time {
 }
 
 // Checks overlap, excluding edges
-func (p Period) Overlaps(other Period) bool {
+func (p Period) overlaps(other Period) bool {
 	return p.from.Before(other.to) && p.to.After(other.from)
 }
 
 // Checks if period contains another, including edges
-func (p Period) Contains(other Period) bool {
+func (p Period) contains(other Period) bool {
 	return !other.from.Before(p.from) && !other.to.After(p.to)
 }
 
@@ -129,10 +129,14 @@ func toPeriods(edges []time.Time) []Period {
 // Need to have the variables serialized since it is used as a key in a map
 type idsString string
 
-func newIdsString(variables []string) idsString {
+func newIdsString(variables []string) (idsString, error) {
+	if len(variables) == 0 {
+		return "", errors.New("at least one variable is required")
+	}
+
 	sort.Strings(variables)
 	value := strings.Join(variables, "|")
-	return idsString(value)
+	return idsString(value), nil
 }
 
 func (p idsString) ids() []string {
@@ -161,17 +165,13 @@ func findContainingPeriodIDs(
 	periodVariables timeBoundVariables,
 	period Period,
 ) (idsString, error) {
-	var containingPeriodIDs []string
+	var overlapingPeriodIDs []string
 
 	for _, periodVariable := range periodVariables {
-		if periodVariable.period.Overlaps(period) {
-			containingPeriodIDs = append(containingPeriodIDs, periodVariable.variable)
+		if periodVariable.period.overlaps(period) {
+			overlapingPeriodIDs = append(overlapingPeriodIDs, periodVariable.variable)
 		}
 	}
 
-	if len(containingPeriodIDs) == 0 {
-		return "", errors.New("assumed variable does not overlap with any period")
-	}
-
-	return newIdsString(containingPeriodIDs), nil
+	return newIdsString(overlapingPeriodIDs)
 }

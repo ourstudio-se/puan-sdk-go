@@ -129,7 +129,7 @@ func (c *RuleSetCreator) newTimeBoundVariable(
 		return timeBoundVariable{}, err
 	}
 
-	if !c.period.Contains(period) {
+	if !c.period.contains(period) {
 		return timeBoundVariable{},
 			errors.Errorf(
 				"period %v is outside of enabled period %v",
