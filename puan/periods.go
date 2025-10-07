@@ -1,10 +1,11 @@
 package puan
 
 import (
-	"errors"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/go-errors/errors"
 )
 
 type Period struct {
@@ -13,8 +14,13 @@ type Period struct {
 }
 
 func NewPeriod(from, to time.Time) (Period, error) {
-	if from.After(to) {
-		return Period{}, errors.New("from time must be before to time")
+	if !to.After(from) {
+		return Period{},
+			errors.Errorf(
+				"from time %v must be before to time %v",
+				from,
+				to,
+			)
 	}
 
 	return Period{
@@ -64,7 +70,7 @@ func (p timeBoundVariables) ids() []string {
 	return ids
 }
 
-// find all periods without caps or overlaps
+// find all periods without caps or overlaps, sorted by start time
 // Input:
 // |----------------------|
 // |---|...................
@@ -80,6 +86,13 @@ func calculateCompletePeriods(
 		return nil
 	}
 
+	sortedEdges := getSortedPeriodEdges(periods)
+	completePeriods := toPeriods(sortedEdges)
+
+	return completePeriods
+}
+
+func getSortedPeriodEdges(periods []Period) []time.Time {
 	edges := make(map[time.Time]bool)
 	for _, period := range periods {
 		edges[period.from] = true
@@ -94,17 +107,22 @@ func calculateCompletePeriods(
 		return sortedEdges[i].Before(sortedEdges[j])
 	})
 
-	var completePeriods []Period
+	return sortedEdges
+}
 
-	for i := range len(sortedEdges) - 1 {
-		period := Period{
-			from: sortedEdges[i],
-			to:   sortedEdges[i+1],
-		}
-		completePeriods = append(completePeriods, period)
+func toPeriods(edges []time.Time) []Period {
+	if len(edges) < 2 {
+		return nil
 	}
 
-	return completePeriods
+	periods := make([]Period, len(edges)-1)
+	for i := range len(edges) - 1 {
+		periods[i] = Period{
+			from: edges[i],
+			to:   edges[i+1],
+		}
+	}
+	return periods
 }
 
 // '|' separated list of variable ids
@@ -127,12 +145,12 @@ func groupByPeriods(
 ) (map[idsString][]string, error) {
 	grouped := make(map[idsString][]string)
 
-	// For each assumed variable, find which period variables it overlaps with
 	for _, assumed := range assumedVariables {
-		key, err := findContainingPeriodIDs(periodVariables, assumed)
+		key, err := findContainingPeriodIDs(periodVariables, assumed.period)
 		if err != nil {
 			return nil, err
 		}
+
 		grouped[key] = append(grouped[key], assumed.variable)
 	}
 
@@ -141,14 +159,18 @@ func groupByPeriods(
 
 func findContainingPeriodIDs(
 	periodVariables timeBoundVariables,
-	assumed timeBoundVariable,
+	period Period,
 ) (idsString, error) {
 	var containingPeriodIDs []string
 
 	for _, periodVariable := range periodVariables {
-		if periodVariable.period.Overlaps(assumed.period) {
+		if periodVariable.period.Overlaps(period) {
 			containingPeriodIDs = append(containingPeriodIDs, periodVariable.variable)
 		}
+	}
+
+	if len(containingPeriodIDs) == 0 {
+		return "", errors.New("assumed variable does not overlap with any period")
 	}
 
 	return newIdsString(containingPeriodIDs), nil

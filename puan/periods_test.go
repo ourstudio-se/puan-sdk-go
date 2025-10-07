@@ -30,6 +30,14 @@ func Test_NewPeriod_givenFromAfterTo_shouldReturnError(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func Test_NewPeriod_givenFromEqualToTo_shouldReturnError(t *testing.T) {
+	from := newTestTime("2024-01-31T00:00:00Z")
+	to := from
+
+	_, err := NewPeriod(from, to)
+
+	assert.Error(t, err)
+}
 func Test_Period_overlaps(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -380,6 +388,165 @@ func Test_calculateCompletePeriods(t *testing.T) {
 	}
 }
 
+func Test_getSortedPeriodEdges(t *testing.T) {
+	tests := []struct {
+		name     string
+		periods  []Period
+		expected []time.Time
+	}{
+		{
+			name: "single period",
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-01T00:00:00Z"),
+					to:   newTestTime("2024-01-31T00:00:00Z"),
+				},
+			},
+			expected: []time.Time{
+				newTestTime("2024-01-01T00:00:00Z"),
+				newTestTime("2024-01-31T00:00:00Z"),
+			},
+		},
+		{
+			name: "multiple periods with unique edges",
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-01T00:00:00Z"),
+					to:   newTestTime("2024-01-10T00:00:00Z"),
+				},
+				{
+					from: newTestTime("2024-01-15T00:00:00Z"),
+					to:   newTestTime("2024-01-20T00:00:00Z"),
+				},
+			},
+			expected: []time.Time{
+				newTestTime("2024-01-01T00:00:00Z"),
+				newTestTime("2024-01-10T00:00:00Z"),
+				newTestTime("2024-01-15T00:00:00Z"),
+				newTestTime("2024-01-20T00:00:00Z"),
+			},
+		},
+		{
+			name: "multiple periods with shared edges",
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-01T00:00:00Z"),
+					to:   newTestTime("2024-01-10T00:00:00Z"),
+				},
+				{
+					from: newTestTime("2024-01-10T00:00:00Z"),
+					to:   newTestTime("2024-01-20T00:00:00Z"),
+				},
+			},
+			expected: []time.Time{
+				newTestTime("2024-01-01T00:00:00Z"),
+				newTestTime("2024-01-10T00:00:00Z"),
+				newTestTime("2024-01-20T00:00:00Z"),
+			},
+		},
+		{
+			name:     "empty input",
+			periods:  []Period{},
+			expected: nil,
+		},
+		{
+			name: "multiple periods randomly ordered",
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-10T00:00:00Z"),
+					to:   newTestTime("2024-01-20T00:00:00Z"),
+				},
+				{
+					from: newTestTime("2024-01-10T00:00:00Z"),
+					to:   newTestTime("2024-01-01T00:00:00Z"),
+				},
+				{
+					from: newTestTime("2023-12-20T00:00:00Z"),
+					to:   newTestTime("2023-12-10T00:00:00Z"),
+				},
+			},
+			expected: []time.Time{
+				newTestTime("2023-12-10T00:00:00Z"),
+				newTestTime("2023-12-20T00:00:00Z"),
+				newTestTime("2024-01-01T00:00:00Z"),
+				newTestTime("2024-01-10T00:00:00Z"),
+				newTestTime("2024-01-20T00:00:00Z"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := getSortedPeriodEdges(tt.periods)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
+func Test_toPeriods(t *testing.T) {
+	tests := []struct {
+		name     string
+		edges    []time.Time
+		expected []Period
+	}{
+		{
+			name: "two edges create one period",
+			edges: []time.Time{
+				newTestTime("2024-01-01T00:00:00Z"),
+				newTestTime("2024-01-31T00:00:00Z"),
+			},
+			expected: []Period{
+				{
+					from: newTestTime("2024-01-01T00:00:00Z"),
+					to:   newTestTime("2024-01-31T00:00:00Z"),
+				},
+			},
+		},
+		{
+			name: "multiple edges create consecutive periods",
+			edges: []time.Time{
+				newTestTime("2024-01-01T00:00:00Z"),
+				newTestTime("2024-01-10T00:00:00Z"),
+				newTestTime("2024-01-15T00:00:00Z"),
+				newTestTime("2024-01-20T00:00:00Z"),
+			},
+			expected: []Period{
+				{
+					from: newTestTime("2024-01-01T00:00:00Z"),
+					to:   newTestTime("2024-01-10T00:00:00Z"),
+				},
+				{
+					from: newTestTime("2024-01-10T00:00:00Z"),
+					to:   newTestTime("2024-01-15T00:00:00Z"),
+				},
+				{
+					from: newTestTime("2024-01-15T00:00:00Z"),
+					to:   newTestTime("2024-01-20T00:00:00Z"),
+				},
+			},
+		},
+		{
+			name: "single edge creates no periods",
+			edges: []time.Time{
+				newTestTime("2024-01-01T00:00:00Z"),
+			},
+			expected: nil,
+		},
+		{
+			name:     "no edges create no periods",
+			edges:    nil,
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := toPeriods(tt.edges)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
 func Test_groupByPeriod(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -460,10 +627,10 @@ func Test_groupByPeriod(t *testing.T) {
 
 func Test_findContainingPeriodIDs(t *testing.T) {
 	tests := []struct {
-		name            string
-		periodVariables timeBoundVariables
-		assumedVariable timeBoundVariable
-		expected        idsString
+		name             string
+		periodVariables  timeBoundVariables
+		comparisonPeriod Period
+		expected         idsString
 	}{
 		{
 			name: "assumed variable overlaps with multiple period variables",
@@ -483,12 +650,9 @@ func Test_findContainingPeriodIDs(t *testing.T) {
 					},
 				},
 			},
-			assumedVariable: timeBoundVariable{
-				variable: "v1",
-				period: Period{
-					from: newTestTime("2024-01-05T00:00:00Z"),
-					to:   newTestTime("2024-01-12T00:00:00Z"),
-				},
+			comparisonPeriod: Period{
+				from: newTestTime("2024-01-05T00:00:00Z"),
+				to:   newTestTime("2024-01-12T00:00:00Z"),
 			},
 			expected: "p1|p2",
 		},
@@ -510,12 +674,9 @@ func Test_findContainingPeriodIDs(t *testing.T) {
 					},
 				},
 			},
-			assumedVariable: timeBoundVariable{
-				variable: "v1",
-				period: Period{
-					from: newTestTime("2024-01-05T00:00:00Z"),
-					to:   newTestTime("2024-01-10T00:00:00Z"),
-				},
+			comparisonPeriod: Period{
+				from: newTestTime("2024-01-05T00:00:00Z"),
+				to:   newTestTime("2024-01-10T00:00:00Z"),
 			},
 			expected: "p1",
 		},
@@ -537,12 +698,9 @@ func Test_findContainingPeriodIDs(t *testing.T) {
 					},
 				},
 			},
-			assumedVariable: timeBoundVariable{
-				variable: "v1",
-				period: Period{
-					from: newTestTime("2024-01-10T00:00:00Z"),
-					to:   newTestTime("2024-01-20T00:00:00Z"),
-				},
+			comparisonPeriod: Period{
+				from: newTestTime("2024-01-10T00:00:00Z"),
+				to:   newTestTime("2024-01-20T00:00:00Z"),
 			},
 			expected: "p2",
 		},
@@ -550,11 +708,33 @@ func Test_findContainingPeriodIDs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := findContainingPeriodIDs(tt.periodVariables, tt.assumedVariable)
+			actual, err := findContainingPeriodIDs(tt.periodVariables, tt.comparisonPeriod)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
+}
+
+func Test_findContainingPeriodIDs_givenComparisonPeriodOutsideOfPeriods_shouldReturnError(
+	t *testing.T,
+) {
+	periodVariables := timeBoundVariables{
+		{
+			variable: "p1",
+			period: Period{
+				from: newTestTime("2024-01-01T00:00:00Z"),
+				to:   newTestTime("2024-01-10T00:00:00Z"),
+			},
+		},
+	}
+	comparisonPeriod := Period{
+		from: newTestTime("2024-01-15T00:00:00Z"),
+		to:   newTestTime("2024-01-20T00:00:00Z"),
+	}
+
+	_, err := findContainingPeriodIDs(periodVariables, comparisonPeriod)
+
+	assert.Error(t, err)
 }
 
 func newTestTime(value string) time.Time {
