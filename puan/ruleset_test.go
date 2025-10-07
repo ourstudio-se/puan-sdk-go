@@ -288,3 +288,85 @@ func Test_validateSelectionIDs_givenEmptySelection(t *testing.T) {
 
 	assert.NoError(t, err)
 }
+
+func Test_RuleSet_FindPeriodInSolution_givenSingleMatchingPeriod_shouldReturnPeriod(
+	t *testing.T,
+) {
+	period1 := Period{
+		from: newTestTime("2024-01-01T00:00:00Z"),
+		to:   newTestTime("2024-01-31T00:00:00Z"),
+	}
+	period2 := Period{
+		from: newTestTime("2024-02-01T00:00:00Z"),
+		to:   newTestTime("2024-02-28T00:00:00Z"),
+	}
+
+	ruleSet := &RuleSet{
+		periodVariables: timeBoundVariables{
+			{variable: "period1", period: period1},
+			{variable: "period2", period: period2},
+		},
+	}
+
+	solution := Solution{
+		"period1": 1,
+		"period2": 0,
+	}
+
+	result, err := ruleSet.FindPeriodInSolution(solution)
+
+	assert.NoError(t, err)
+	assert.Equal(t, period1, result)
+}
+
+func Test_RuleSet_FindPeriodInSolution_givenNoMatchingPeriod_shouldReturnError(
+	t *testing.T,
+) {
+	period := Period{
+		from: newTestTime("2024-01-01T00:00:00Z"),
+		to:   newTestTime("2024-01-31T00:00:00Z"),
+	}
+
+	ruleSet := &RuleSet{
+		periodVariables: timeBoundVariables{
+			{variable: "period1", period: period},
+		},
+	}
+
+	solution := Solution{
+		"period1": 0,
+	}
+
+	_, err := ruleSet.FindPeriodInSolution(solution)
+
+	assert.Error(t, err)
+}
+
+func Test_RuleSet_FindPeriodInSolution_givenMultipleMatchingPeriods_shouldReturnError(
+	t *testing.T,
+) {
+	period1 := Period{
+		from: newTestTime("2024-01-01T00:00:00Z"),
+		to:   newTestTime("2024-01-31T00:00:00Z"),
+	}
+	period2 := Period{
+		from: newTestTime("2024-02-01T00:00:00Z"),
+		to:   newTestTime("2024-02-28T00:00:00Z"),
+	}
+
+	ruleSet := &RuleSet{
+		periodVariables: timeBoundVariables{
+			{variable: "period1", period: period1},
+			{variable: "period2", period: period2},
+		},
+	}
+
+	solution := Solution{
+		"period1": 1,
+		"period2": 1,
+	}
+
+	_, err := ruleSet.FindPeriodInSolution(solution)
+
+	assert.Error(t, err)
+}

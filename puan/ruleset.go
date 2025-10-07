@@ -59,6 +59,29 @@ func (r *RuleSet) RemoveSupportVariables(solution Solution) (Solution, error) {
 	return solution.Extract(nonSupportVariables...)
 }
 
+func (r *RuleSet) FindPeriodInSolution(solution Solution) (Period, error) {
+	var period *Period
+	for _, periodVariable := range r.periodVariables {
+		if isSet := solution[periodVariable.variable]; isSet == 1 {
+			if period != nil {
+				return Period{},
+					errors.Errorf(
+						"multiple periods found: %v and %v",
+						period,
+						periodVariable.period,
+					)
+			}
+			period = &periodVariable.period
+		}
+	}
+
+	if period == nil {
+		return Period{}, errors.New("period not found for solution")
+	}
+
+	return *period, nil
+}
+
 type QueryInput struct {
 	Selections Selections
 	From       *time.Time
