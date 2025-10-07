@@ -36,6 +36,34 @@ func (p Period) Overlaps(other Period) bool {
 	return p.from.Before(other.to) && p.to.After(other.from)
 }
 
+// Checks if period contains another, including edges
+func (p Period) Contains(other Period) bool {
+	return !other.from.Before(p.from) && !other.to.After(p.to)
+}
+
+type timeBoundVariables []timeBoundVariable
+
+type timeBoundVariable struct {
+	variable string
+	period   Period
+}
+
+func (p timeBoundVariables) periods() []Period {
+	periods := make([]Period, len(p))
+	for i, periodVariable := range p {
+		periods[i] = periodVariable.period
+	}
+	return periods
+}
+
+func (p timeBoundVariables) ids() []string {
+	ids := make([]string, len(p))
+	for i, periodVariable := range p {
+		ids[i] = periodVariable.variable
+	}
+	return ids
+}
+
 // find all periods without caps or overlaps
 // Input:
 // |---|...................
@@ -79,6 +107,7 @@ func calculateCompletePeriods(
 }
 
 // '|' separated list of variable names
+// Need to have the variables serialized since it is used as a key in a map
 type periodVariables string
 
 func newPeriodVariables(variables []string) periodVariables {

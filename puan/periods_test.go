@@ -30,6 +30,196 @@ func Test_NewPeriod_givenFromAfterTo_shouldReturnError(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func Test_Period_overlaps(t *testing.T) {
+	tests := []struct {
+		name     string
+		a        Period
+		b        Period
+		expected bool
+	}{
+		{
+			name: "touching at end edge, should not overlap",
+			a: Period{
+				from: newTestTime("2024-01-05T00:00:00Z"),
+				to:   newTestTime("2024-01-10T00:00:00Z"),
+			},
+			b: Period{
+				from: newTestTime("2024-01-10T00:00:00Z"),
+				to:   newTestTime("2024-01-15T00:00:00Z"),
+			},
+			expected: false,
+		},
+		{
+			name: "touching at start edge, should not overlap",
+			a: Period{
+				from: newTestTime("2024-01-10T00:00:00Z"),
+				to:   newTestTime("2024-01-15T00:00:00Z"),
+			},
+			b: Period{
+				from: newTestTime("2024-01-05T00:00:00Z"),
+				to:   newTestTime("2024-01-10T00:00:00Z"),
+			},
+			expected: false,
+		},
+		{
+			name: "overlapping",
+			a: Period{
+				from: newTestTime("2024-01-10T00:00:00Z"),
+				to:   newTestTime("2024-01-20T00:00:00Z"),
+			},
+			b: Period{
+				from: newTestTime("2024-01-15T00:00:00Z"),
+				to:   newTestTime("2024-01-25T00:00:00Z"),
+			},
+			expected: true,
+		},
+		{
+			name: "not overlapping",
+			a: Period{
+				from: newTestTime("2024-01-10T00:00:00Z"),
+				to:   newTestTime("2024-01-20T00:00:00Z"),
+			},
+			b: Period{
+				from: newTestTime("2024-01-25T00:00:00Z"),
+				to:   newTestTime("2024-01-30T00:00:00Z"),
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.a.Overlaps(tt.b)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
+func Test_Period_Contains(t *testing.T) {
+	tests := []struct {
+		name     string
+		period   Period
+		other    Period
+		expected bool
+	}{
+		{
+			name: "period contains another with exact same boundaries",
+			period: Period{
+				from: newTestTime("2024-01-01T00:00:00Z"),
+				to:   newTestTime("2024-01-31T00:00:00Z"),
+			},
+			other: Period{
+				from: newTestTime("2024-01-01T00:00:00Z"),
+				to:   newTestTime("2024-01-31T00:00:00Z"),
+			},
+			expected: true,
+		},
+		{
+			name: "period fully contains another smaller period",
+			period: Period{
+				from: newTestTime("2024-01-01T00:00:00Z"),
+				to:   newTestTime("2024-01-31T00:00:00Z"),
+			},
+			other: Period{
+				from: newTestTime("2024-01-10T00:00:00Z"),
+				to:   newTestTime("2024-01-20T00:00:00Z"),
+			},
+			expected: true,
+		},
+		{
+			name: "period contains another at start edge",
+			period: Period{
+				from: newTestTime("2024-01-01T00:00:00Z"),
+				to:   newTestTime("2024-01-31T00:00:00Z"),
+			},
+			other: Period{
+				from: newTestTime("2024-01-01T00:00:00Z"),
+				to:   newTestTime("2024-01-15T00:00:00Z"),
+			},
+			expected: true,
+		},
+		{
+			name: "period contains another at end edge",
+			period: Period{
+				from: newTestTime("2024-01-01T00:00:00Z"),
+				to:   newTestTime("2024-01-31T00:00:00Z"),
+			},
+			other: Period{
+				from: newTestTime("2024-01-15T00:00:00Z"),
+				to:   newTestTime("2024-01-31T00:00:00Z"),
+			},
+			expected: true,
+		},
+		{
+			name: "period does not contain another - extends before start",
+			period: Period{
+				from: newTestTime("2024-01-10T00:00:00Z"),
+				to:   newTestTime("2024-01-31T00:00:00Z"),
+			},
+			other: Period{
+				from: newTestTime("2024-01-05T00:00:00Z"),
+				to:   newTestTime("2024-01-20T00:00:00Z"),
+			},
+			expected: false,
+		},
+		{
+			name: "period does not contain another - extends after end",
+			period: Period{
+				from: newTestTime("2024-01-01T00:00:00Z"),
+				to:   newTestTime("2024-01-20T00:00:00Z"),
+			},
+			other: Period{
+				from: newTestTime("2024-01-10T00:00:00Z"),
+				to:   newTestTime("2024-01-31T00:00:00Z"),
+			},
+			expected: false,
+		},
+		{
+			name: "period does not contain another - completely before",
+			period: Period{
+				from: newTestTime("2024-01-15T00:00:00Z"),
+				to:   newTestTime("2024-01-31T00:00:00Z"),
+			},
+			other: Period{
+				from: newTestTime("2024-01-01T00:00:00Z"),
+				to:   newTestTime("2024-01-10T00:00:00Z"),
+			},
+			expected: false,
+		},
+		{
+			name: "period does not contain another - completely after",
+			period: Period{
+				from: newTestTime("2024-01-01T00:00:00Z"),
+				to:   newTestTime("2024-01-10T00:00:00Z"),
+			},
+			other: Period{
+				from: newTestTime("2024-01-15T00:00:00Z"),
+				to:   newTestTime("2024-01-31T00:00:00Z"),
+			},
+			expected: false,
+		},
+		{
+			name: "period does not contain another - other is larger",
+			period: Period{
+				from: newTestTime("2024-01-10T00:00:00Z"),
+				to:   newTestTime("2024-01-20T00:00:00Z"),
+			},
+			other: Period{
+				from: newTestTime("2024-01-01T00:00:00Z"),
+				to:   newTestTime("2024-01-31T00:00:00Z"),
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.period.Contains(tt.other)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
 func Test_calculateCompletePeriods(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -325,71 +515,6 @@ func Test_groupByPeriod(t *testing.T) {
 			}
 
 			assert.Equal(t, tt.expectedGroups, actualGroups)
-		})
-	}
-}
-
-func Test_Period_overlaps(t *testing.T) {
-	tests := []struct {
-		name     string
-		a        Period
-		b        Period
-		expected bool
-	}{
-		{
-			name: "touching at end edge, should not overlap",
-			a: Period{
-				from: newTestTime("2024-01-05T00:00:00Z"),
-				to:   newTestTime("2024-01-10T00:00:00Z"),
-			},
-			b: Period{
-				from: newTestTime("2024-01-10T00:00:00Z"),
-				to:   newTestTime("2024-01-15T00:00:00Z"),
-			},
-			expected: false,
-		},
-		{
-			name: "touching at start edge, should not overlap",
-			a: Period{
-				from: newTestTime("2024-01-10T00:00:00Z"),
-				to:   newTestTime("2024-01-15T00:00:00Z"),
-			},
-			b: Period{
-				from: newTestTime("2024-01-05T00:00:00Z"),
-				to:   newTestTime("2024-01-10T00:00:00Z"),
-			},
-			expected: false,
-		},
-		{
-			name: "overlapping",
-			a: Period{
-				from: newTestTime("2024-01-10T00:00:00Z"),
-				to:   newTestTime("2024-01-20T00:00:00Z"),
-			},
-			b: Period{
-				from: newTestTime("2024-01-15T00:00:00Z"),
-				to:   newTestTime("2024-01-25T00:00:00Z"),
-			},
-			expected: true,
-		},
-		{
-			name: "not overlapping",
-			a: Period{
-				from: newTestTime("2024-01-10T00:00:00Z"),
-				to:   newTestTime("2024-01-20T00:00:00Z"),
-			},
-			b: Period{
-				from: newTestTime("2024-01-25T00:00:00Z"),
-				to:   newTestTime("2024-01-30T00:00:00Z"),
-			},
-			expected: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			actual := tt.a.Overlaps(tt.b)
-			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }
