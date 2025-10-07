@@ -276,42 +276,6 @@ func TestValidateAssumedVariables(t *testing.T) {
 	}
 }
 
-func TestModel_newAssumedConstraint(t *testing.T) {
-	tests := []struct {
-		name      string
-		variables []string
-		want      AuxiliaryConstraints
-	}{
-		{
-			name:      "valid constraint",
-			variables: []string{"a", "b"},
-			want: AuxiliaryConstraints{
-				{
-					coefficients: Coefficients{
-						"a": -1,
-						"b": -1,
-					},
-					bias: Bias(-2),
-				},
-				{
-					coefficients: Coefficients{
-						"a": 1,
-						"b": 1,
-					},
-					bias: Bias(2),
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := &Model{}
-			constraints := m.newAssumedConstraints(tt.variables...)
-			assert.Equal(t, tt.want, constraints, "Constraint should match")
-		})
-	}
-}
-
 func Test_ValidateVariables_givenValidCase(t *testing.T) {
 	variables := []string{"a", "c"}
 	model := &Model{

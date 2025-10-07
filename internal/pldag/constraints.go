@@ -234,3 +234,34 @@ type Bias int
 func (b Bias) negate() Bias {
 	return -b - 1
 }
+
+func NewAssumedConstraints(variables ...string) AuxiliaryConstraints {
+	negativeCoefficient := newNegativeAssumedConstraint(variables...)
+	positiveCoefficient := newPositiveAssumedConstraint(variables...)
+
+	return AuxiliaryConstraints{negativeCoefficient, positiveCoefficient}
+}
+
+func newNegativeAssumedConstraint(variables ...string) AuxiliaryConstraint {
+	coefficients := make(Coefficients, len(variables))
+	for _, id := range variables {
+		coefficients[id] = -1
+	}
+
+	bias := Bias(-len(variables))
+	constraint := newAuxiliaryConstraint(coefficients, bias)
+
+	return constraint
+}
+
+func newPositiveAssumedConstraint(variables ...string) AuxiliaryConstraint {
+	coefficients := make(Coefficients, len(variables))
+	for _, id := range variables {
+		coefficients[id] = 1
+	}
+
+	bias := Bias(len(variables))
+	constraint := newAuxiliaryConstraint(coefficients, bias)
+
+	return constraint
+}

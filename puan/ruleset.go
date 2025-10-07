@@ -74,6 +74,7 @@ func (r *RuleSet) NewQuery(input QueryInput) (*Query, error) {
 
 	extendedSelections := selections.modifySelections()
 	impactingSelections := getImpactingSelections(extendedSelections)
+
 	specification, err := r.newQuerySpecification(impactingSelections, input.From)
 	if err != nil {
 		return nil, err
@@ -153,9 +154,11 @@ func (r *RuleSet) newQuerySpecification(
 		return nil, err
 	}
 
-	err = ruleSet.forbidPassedPeriods(from)
-	if err != nil {
-		return nil, err
+	if from != nil {
+		err = ruleSet.forbidPassedPeriods(*from)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &querySpecification{
@@ -277,50 +280,34 @@ func (r *RuleSet) newRow(coefficients pldag.Coefficients) ([]int, error) {
 	return row, nil
 }
 
-func (r *RuleSet) forbidPassedPeriods(from *time.Time) error {
-	if from == nil {
-		return nil
-	}
-
-	var passedPeriodIDs []string
-	for _, periodVariable := range r.periodVariables {
-		if periodVariable.period.to.Before(*from) {
-			passedPeriodIDs = append(passedPeriodIDs, periodVariable.variable)
-		}
-	}
+func (r *RuleSet) forbidPassedPeriods(from time.Time) error {
+	passedPeriods := r.periodVariables.passed(from)
+	passedPeriodIDs := passedPeriods.ids()
 
 	if len(passedPeriodIDs) == 0 {
 		return nil
 	}
 
-	passedPeriodsConstraint, err := pldag.NewAtMostConstraint(passedPeriodIDs, 0)
+	constraint, err := pldag.NewAtMostConstraint(passedPeriodIDs, 0)
 	if err != nil {
 		return err
 	}
-	if err := r.setConstraint(passedPeriodsConstraint); err != nil {
+
+	if err := r.setConstraint(constraint); err != nil {
 		return err
 	}
 
-	if err := r.assumeAuxiliaryConstraint(passedPeriodsConstraint.ID()); err != nil {
-		return err
-	}
-
-	return nil
+	return r.assume(constraint.ID())
 }
 
-func (r *RuleSet) assumeAuxiliaryConstraint(id string) error {
-	row, err := r.newRow(map[string]int{id: 1})
-	if err != nil {
-		return err
+func (r *RuleSet) assume(id string) error {
+	constraints := pldag.NewAssumedConstraints(id)
+	for _, constraint := range constraints {
+		err := r.setAuxiliaryConstraint(constraint)
+		if err != nil {
+			return err
+		}
 	}
-	r.polyhedron.Extend(row, pldag.Bias(1))
-
-	row2, err := r.newRow(map[string]int{id: -1})
-	if err != nil {
-		return err
-	}
-
-	r.polyhedron.Extend(row2, pldag.Bias(-1))
 
 	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
+	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
 
 type Period struct {
@@ -68,6 +69,12 @@ func (p timeBoundVariables) ids() []string {
 		ids[i] = periodVariable.variable
 	}
 	return ids
+}
+
+func (p timeBoundVariables) passed(timestamp time.Time) timeBoundVariables {
+	return utils.Filter(p, func(periodVariable timeBoundVariable) bool {
+		return periodVariable.period.to.Before(timestamp)
+	})
 }
 
 // find all periods without caps or overlaps, sorted by start time

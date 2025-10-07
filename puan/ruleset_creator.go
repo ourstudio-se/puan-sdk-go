@@ -158,7 +158,12 @@ func (c *RuleSetCreator) EnableTime(
 }
 
 func (c *RuleSetCreator) Create() (*RuleSet, error) {
-	periodVariables, err := c.newValidityPeriodConstraints()
+	periodVariables, err := c.newPeriodVariables()
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.createPeriodConstraints(periodVariables)
 	if err != nil {
 		return nil, err
 	}
@@ -181,26 +186,13 @@ func (c *RuleSetCreator) Create() (*RuleSet, error) {
 	}, nil
 }
 
-func (c *RuleSetCreator) newValidityPeriodConstraints() (timeBoundVariables, error) {
+func (c *RuleSetCreator) newPeriodVariables() (timeBoundVariables, error) {
 	if len(c.timeBoundAssumedVariables) == 0 {
 		return nil, nil
 	}
 
-	// find all true periods
-	// Input:
-	// ....|-------|........
-	// ........|-------|....
-	// Output:
-	// ....|---|---|---|....
-	// Create variable for each
-	// We also need 2 extra period variables:
-	// {start-of-time}-{start-of-first-period}
-	// {end-of-last-period}-{end-of-time}
-	periods := []Period{}
-	periods = append(periods, *c.period)
-	periods = append(periods, c.timeBoundAssumedVariables.periods()...)
 	nonOverlappingPeriods := calculateCompletePeriods(
-		periods,
+		c.periods(),
 	)
 
 	// Create variable for each period
@@ -216,66 +208,85 @@ func (c *RuleSetCreator) newValidityPeriodConstraints() (timeBoundVariables, err
 		}
 	}
 
+	return periodVariables, nil
+}
+
+func (c *RuleSetCreator) periods() []Period {
+	periods := []Period{}
+	periods = append(periods, *c.period)
+	periods = append(periods, c.timeBoundAssumedVariables.periods()...)
+	return periods
+}
+
+func (c *RuleSetCreator) createPeriodConstraints(periodVariables timeBoundVariables) error {
+	if len(c.timeBoundAssumedVariables) == 0 {
+		return nil
+	}
+
 	groupedByPeriods, err := groupByPeriods(periodVariables, c.timeBoundAssumedVariables)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var constraintIDs []string
-	for periodVariables, assumedVariables := range groupedByPeriods {
-		constraintID, err := c.createTimeBoundConstraint(periodVariables, assumedVariables)
+	for serializedPeriodIDs, assumedIDs := range groupedByPeriods {
+		periodIDs := serializedPeriodIDs.ids()
+		constraintID, err := c.setTimeBoundConstraint(periodIDs, assumedIDs)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		constraintIDs = append(constraintIDs, constraintID)
 	}
 
-	// Create XOR constraint between the period variables
+	// Choose exactly one period
 	exactlyOnePeriod, err := c.pldag.SetXor(periodVariables.ids()...)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	if err := c.pldag.Assume(exactlyOnePeriod); err != nil {
-		return nil, err
-	}
+	constraintIDs = append(constraintIDs, exactlyOnePeriod)
 
-	for _, constraintID := range constraintIDs {
-		if err := c.pldag.Assume(constraintID); err != nil {
-			return nil, err
-		}
-	}
-
-	return periodVariables, nil
+	return c.Assume(constraintIDs...)
 }
 
-func (c *RuleSetCreator) createTimeBoundConstraint(
-	periodVariables idsString,
-	assumedVariables []string,
+func (c *RuleSetCreator) setTimeBoundConstraint(
+	periodIDs []string,
+	assumedIDs []string,
 ) (string, error) {
-	periodIDs := periodVariables.ids()
-
-	var combinedPeriodsID string
-	var err error
-	if len(periodIDs) == 1 {
-		combinedPeriodsID = periodIDs[0]
-	} else {
-		combinedPeriodsID, err = c.pldag.SetOr(periodIDs...)
-		if err != nil {
-			return "", err
-		}
+	combinedPeriodsID, err := c.setSingleOrOR(periodIDs...)
+	if err != nil {
+		return "", err
 	}
 
-	var combinedAssumedID string
-	if len(assumedVariables) == 1 {
-		combinedAssumedID = assumedVariables[0]
-	} else {
-		combinedAssumedID, err = c.pldag.SetAnd(assumedVariables...)
-		if err != nil {
-			return "", err
-		}
+	combinedAssumedID, err := c.setSingleOrAnd(assumedIDs...)
+	if err != nil {
+		return "", err
 	}
 
 	return c.pldag.SetImply(combinedPeriodsID, combinedAssumedID)
+}
+
+func (c *RuleSetCreator) setSingleOrOR(ids ...string) (string, error) {
+	if len(ids) == 0 {
+		return "", errors.New("at least one id is required")
+	}
+
+	if len(ids) == 1 {
+		return ids[0], nil
+	}
+
+	return c.pldag.SetOr(ids...)
+}
+
+func (c *RuleSetCreator) setSingleOrAnd(ids ...string) (string, error) {
+	if len(ids) == 0 {
+		return "", errors.New("at least one id is required")
+	}
+
+	if len(ids) == 1 {
+		return ids[0], nil
+	}
+
+	return c.pldag.SetAnd(ids...)
 }
 
 func (c *RuleSetCreator) createAssumeConstraints() error {
@@ -283,7 +294,7 @@ func (c *RuleSetCreator) createAssumeConstraints() error {
 		return nil
 	}
 
-	root, err := c.pldag.SetAnd(c.assumedVariables...)
+	root, err := c.setSingleOrAnd(c.assumedVariables...)
 	if err != nil {
 		return err
 	}
