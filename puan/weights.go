@@ -29,13 +29,13 @@ func (w Weights) sum() int {
 }
 
 func calculateWeights(
-	primitives []string,
+	selectableIDs []string,
 	selections QuerySelections,
 	preferredIDs []string,
 	periodIDs []string,
 ) Weights {
-	notSelectedPrimitives := utils.Without(primitives, selections.ids())
-	notSelectedWeights := calculatedNotSelectedWeights(notSelectedPrimitives)
+	notSelectedIDs := utils.Without(selectableIDs, selections.ids())
+	notSelectedWeights := calculatedNotSelectedWeights(notSelectedIDs)
 	notSelectedSum := notSelectedWeights.sum()
 
 	preferredWeights := calculatePreferredWeights(preferredIDs, notSelectedSum)
@@ -59,10 +59,10 @@ func calculateWeights(
 	return weights
 }
 
-func calculatedNotSelectedWeights(primitives []string) Weights {
+func calculatedNotSelectedWeights(selectableIDs []string) Weights {
 	notSelectedWeights := make(Weights)
-	for _, primitive := range primitives {
-		notSelectedWeights[primitive] = NOT_SELECTED_WEIGHT
+	for _, id := range selectableIDs {
+		notSelectedWeights[id] = NOT_SELECTED_WEIGHT
 	}
 
 	return notSelectedWeights

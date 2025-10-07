@@ -25,7 +25,7 @@ func Test_optionalVariant_selectNotPreferred(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -54,7 +54,7 @@ func Test_optionalVariant_selectPreferred(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -84,7 +84,7 @@ func Test_optionalVariant_deselectingVariant_shouldGiveEmptySolution(t *testing.
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -113,7 +113,7 @@ func Test_optionalVariant_changeVariant(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -142,7 +142,7 @@ func Test_optionalVariant_selectItemInAnotherVariant_shouldChangeVariant(t *test
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -165,7 +165,7 @@ func Test_optionalVariant_noSelection_shouldGiveEmptySolution(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{

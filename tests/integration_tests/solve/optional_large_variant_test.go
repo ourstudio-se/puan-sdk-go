@@ -29,7 +29,7 @@ func Test_optionalLargeVariantWithXOR_removePreselectedItem(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -62,7 +62,7 @@ func Test_optionalLargeVariantWithXOR_shouldChangeVariant(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -90,7 +90,7 @@ func Test_optionalLargeVariantWithXOR_noSelection(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -120,7 +120,7 @@ func Test_optionalLargeVariantWithXOR_singleItemSelection(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{

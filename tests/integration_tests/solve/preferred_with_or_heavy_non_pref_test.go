@@ -22,7 +22,7 @@ func Test_heavyNonPreferredWithOr_emptySelection(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleset.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -49,7 +49,7 @@ func Test_heavyNonPreferredWithOr_preferSelection(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleset.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -76,7 +76,7 @@ func Test_heavyNonPreferredWithOr_notPreferSelection(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleset.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -104,7 +104,7 @@ func Test_heavyNonPreferredWithOr_bothPackagesSelection(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleset.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{

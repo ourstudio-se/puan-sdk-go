@@ -16,14 +16,14 @@ func Test_RuleSet_copy_shouldBeEqual(t *testing.T) {
 	bVector := fake.New[[]int]()
 	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
 	variables := fake.New[[]string]()
-	primitiveVariables := fake.New[[]string]()
+	selectableVariables := fake.New[[]string]()
 	preferredVariables := fake.New[[]string]()
 	periodVariables := fake.New[[]timeBoundVariable]()
 
 	original := &RuleSet{}
 	original.polyhedron = polyhedron
 	original.variables = variables
-	original.primitiveVariables = primitiveVariables
+	original.selectableVariables = selectableVariables
 	original.preferredVariables = preferredVariables
 	original.periodVariables = periodVariables
 	ccopy := original.copy()

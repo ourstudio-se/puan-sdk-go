@@ -10,11 +10,11 @@ import (
 )
 
 type RuleSet struct {
-	polyhedron         *pldag.Polyhedron
-	primitiveVariables []string
-	variables          []string
-	preferredVariables []string
-	periodVariables    timeBoundVariables
+	polyhedron          *pldag.Polyhedron
+	selectableVariables []string
+	variables           []string
+	preferredVariables  []string
+	periodVariables     timeBoundVariables
 }
 
 // For when creating a rule set from a serialized representation
@@ -23,15 +23,15 @@ func HydrateRuleSet(
 	aMatrix [][]int,
 	bVector []int,
 	variables []string,
-	primitiveVariables []string,
+	selectableVariables []string,
 	preferredVariables []string,
 ) *RuleSet {
 	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
 	return &RuleSet{
-		polyhedron:         polyhedron,
-		primitiveVariables: primitiveVariables,
-		variables:          variables,
-		preferredVariables: preferredVariables,
+		polyhedron:          polyhedron,
+		selectableVariables: selectableVariables,
+		variables:           variables,
+		preferredVariables:  preferredVariables,
 	}
 }
 
@@ -39,8 +39,8 @@ func (r *RuleSet) Polyhedron() *pldag.Polyhedron {
 	return r.polyhedron
 }
 
-func (r *RuleSet) PrimitiveVariables() []string {
-	return r.primitiveVariables
+func (r *RuleSet) SelectableVariables() []string {
+	return r.selectableVariables
 }
 
 func (r *RuleSet) Variables() []string {
@@ -54,7 +54,7 @@ func (r *RuleSet) PreferredVariables() []string {
 func (r *RuleSet) RemoveSupportVariables(solution Solution) (Solution, error) {
 	nonSupportVariables := []string{}
 	nonSupportVariables = append(nonSupportVariables, r.periodVariables.ids()...)
-	nonSupportVariables = append(nonSupportVariables, r.primitiveVariables...)
+	nonSupportVariables = append(nonSupportVariables, r.selectableVariables...)
 
 	return solution.Extract(nonSupportVariables...)
 }
@@ -80,7 +80,7 @@ func (r *RuleSet) NewQuery(input QueryInput) (*Query, error) {
 	}
 
 	weights := calculateWeights(
-		specification.ruleSet.primitiveVariables,
+		specification.ruleSet.selectableVariables,
 		specification.querySelections,
 		specification.ruleSet.preferredVariables,
 		specification.ruleSet.periodVariables.ids(),
@@ -119,8 +119,8 @@ func (r *RuleSet) copy() *RuleSet {
 	variableIDs := make([]string, len(r.variables))
 	copy(variableIDs, r.variables)
 
-	primitiveVariables := make([]string, len(r.primitiveVariables))
-	copy(primitiveVariables, r.primitiveVariables)
+	selectableVariables := make([]string, len(r.selectableVariables))
+	copy(selectableVariables, r.selectableVariables)
 
 	preferredIDs := make([]string, len(r.preferredVariables))
 	copy(preferredIDs, r.preferredVariables)
@@ -129,11 +129,11 @@ func (r *RuleSet) copy() *RuleSet {
 	copy(periodVariables, r.periodVariables)
 
 	return &RuleSet{
-		polyhedron:         polyhedron,
-		primitiveVariables: primitiveVariables,
-		variables:          variableIDs,
-		preferredVariables: preferredIDs,
-		periodVariables:    periodVariables,
+		polyhedron:          polyhedron,
+		selectableVariables: selectableVariables,
+		variables:           variableIDs,
+		preferredVariables:  preferredIDs,
+		periodVariables:     periodVariables,
 	}
 }
 

@@ -70,7 +70,7 @@ func main() {
 	}
 
 	// Extract the solution for the primitive variables
-	primitiveSolution, err := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, err := solution.Extract(ruleSet.SelectableVariables()...)
 	if err != nil {
 		panic(err)
 	}

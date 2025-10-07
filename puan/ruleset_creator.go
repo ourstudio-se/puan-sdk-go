@@ -170,14 +170,14 @@ func (c *RuleSetCreator) Create() (*RuleSet, error) {
 
 	polyhedron := c.pldag.NewPolyhedron()
 	variables := c.pldag.Variables()
-	primitiveVariables := utils.Without(c.pldag.PrimitiveVariables(), periodVariables.ids())
+	selectableVariables := utils.Without(c.pldag.PrimitiveVariables(), periodVariables.ids())
 
 	return &RuleSet{
-		polyhedron:         polyhedron,
-		primitiveVariables: primitiveVariables,
-		variables:          variables,
-		preferredVariables: c.preferredVariables,
-		periodVariables:    periodVariables,
+		polyhedron:          polyhedron,
+		selectableVariables: selectableVariables,
+		variables:           variables,
+		preferredVariables:  c.preferredVariables,
+		periodVariables:     periodVariables,
 	}, nil
 }
 

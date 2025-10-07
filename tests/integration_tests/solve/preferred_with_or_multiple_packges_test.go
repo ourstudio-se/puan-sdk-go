@@ -22,7 +22,7 @@ func Test_multiplePackagesWithOr_noSelectionExpectPreferred(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleset.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -51,7 +51,7 @@ func Test_multiplePackagesWithOr_selectPackageB(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleset.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -80,7 +80,7 @@ func Test_multiplePackagesWithOr_selectPackageC(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleset.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -111,7 +111,7 @@ func Test_multiplePackagesWithOr_allSelectedExceptA(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleset.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{

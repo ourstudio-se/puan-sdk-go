@@ -38,7 +38,7 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -71,7 +71,7 @@ func Test_packageImpliesAnotherPackage_addAndRemove_shouldGiveEmptySolution(t *t
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -107,7 +107,7 @@ func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldGivePreferred(t 
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -153,7 +153,7 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldGivePreferred(t *testing.T) 
 	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -199,7 +199,7 @@ func Test_implicationChain_shouldGiveAll(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -239,7 +239,7 @@ func Test_multiplePackagesWithXOR_shouldGiveLastSelected(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -323,7 +323,7 @@ func Test_packageInDefaultConfig(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -373,7 +373,7 @@ func Test_selectPackageWithItemAfterSingleConflictingItemSelection_shouldGivePac
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -419,7 +419,7 @@ func Test_changeVariant_shouldGiveLastSelected(t *testing.T) {
 	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -483,7 +483,7 @@ func Test_subComponentsAndPackageInDefaultConfig(t *testing.T) {
 	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -536,7 +536,7 @@ func Test_duplicatedPreferred(t *testing.T) {
 	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -596,7 +596,7 @@ func Test_xorBetweenPackagesAndItems_shouldGiveLastSelection(t *testing.T) {
 	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -660,7 +660,7 @@ func Test_xorBetweenPackagesAndItemsWithPreferred_shouldGiveLastSelection(t *tes
 	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -731,7 +731,7 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -766,7 +766,7 @@ func Test_removingItemInAddedPackage_shouldRemovePackageAsWell(t *testing.T) {
 	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -807,7 +807,7 @@ func Test_removePackageWithSubselection_shouldGiveEmptySolution(t *testing.T) {
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, _ := solution.Extract(ruleSet.SelectableVariables()...)
 	assert.Equal(
 		t,
 		puan.Solution{
