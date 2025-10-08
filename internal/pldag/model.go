@@ -114,7 +114,7 @@ func (m *Model) SetOneOrNone(variables ...string) (string, error) {
 	deduped := utils.Dedupe(variables)
 
 	if len(deduped) < 2 {
-		return "", errors.Errorf("at least one variable is required, got %v", deduped)
+		return "", errors.Errorf("at least two variables are required, got %v", deduped)
 	}
 
 	return m.setAtMost(deduped, 1)
