@@ -1,147 +1,46 @@
 package puan
 
 import (
+	"time"
+
 	"github.com/go-errors/errors"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
 
-type RuleSetCreator struct {
-	pldag              *pldag.Model
-	preferredVariables []string
-	assumedVariables   []string
-}
-
 type RuleSet struct {
-	polyhedron         *pldag.Polyhedron
-	primitiveVariables []string
-	variables          []string
-	preferredVariables []string
+	polyhedron          *pldag.Polyhedron
+	selectableVariables []string
+	variables           []string
+	preferredVariables  []string
+	periodVariables     timeBoundVariables
 }
 
-func NewRuleSetCreator() *RuleSetCreator {
-	return &RuleSetCreator{
-		pldag: pldag.New(),
-	}
-}
-
-func (c *RuleSetCreator) AddPrimitives(primitives ...string) error {
-	return c.pldag.SetPrimitives(primitives...)
-}
-
-func (c *RuleSetCreator) SetAnd(variables ...string) (string, error) {
-	return c.pldag.SetAnd(variables...)
-}
-
-func (c *RuleSetCreator) SetOr(variables ...string) (string, error) {
-	return c.pldag.SetOr(variables...)
-}
-
-func (c *RuleSetCreator) SetNot(variable ...string) (string, error) {
-	return c.pldag.SetNot(variable...)
-}
-
-func (c *RuleSetCreator) SetImply(condition, consequence string) (string, error) {
-	return c.pldag.SetImply(condition, consequence)
-}
-
-func (c *RuleSetCreator) SetXor(variables ...string) (string, error) {
-	return c.pldag.SetXor(variables...)
-}
-
-func (c *RuleSetCreator) SetOneOrNone(variables ...string) (string, error) {
-	return c.pldag.SetOneOrNone(variables...)
-}
-
-func (c *RuleSetCreator) SetEquivalent(variableOne, variableTwo string) (string, error) {
-	return c.pldag.SetEquivalent(variableOne, variableTwo)
-}
-
-func (c *RuleSetCreator) Prefer(id ...string) error {
-	dedupedIDs := utils.Dedupe(id)
-	unpreferredIDs := utils.Without(dedupedIDs, c.preferredVariables)
-
-	err := c.pldag.ValidateVariables(unpreferredIDs...)
-	if err != nil {
-		return err
-	}
-
-	negatedIDs, err := c.negatePreferreds(unpreferredIDs)
-	if err != nil {
-		return err
-	}
-
-	c.preferredVariables = append(c.preferredVariables, negatedIDs...)
-
-	return nil
-}
-
-func (c *RuleSetCreator) Assume(id ...string) error {
-	dedupedIDs := utils.Dedupe(id)
-	unassumedIDs := utils.Without(dedupedIDs, c.assumedVariables)
-
-	err := c.pldag.ValidateVariables(unassumedIDs...)
-	if err != nil {
-		return err
-	}
-
-	c.assumedVariables = append(c.assumedVariables, unassumedIDs...)
-
-	return nil
-}
-
-func (c *RuleSetCreator) negatePreferreds(ids []string) ([]string, error) {
-	negatedIDs := make([]string, len(ids))
-	for i, id := range ids {
-		negatedID, err := c.pldag.SetNot(id)
-		if err != nil {
-			return nil, err
-		}
-
-		negatedIDs[i] = negatedID
-	}
-
-	return negatedIDs, nil
-}
-
-func (c *RuleSetCreator) createAssumedConstraints() error {
-	if len(c.assumedVariables) == 0 {
-		return nil
-	}
-
-	root, err := c.pldag.SetAnd(c.assumedVariables...)
-	if err != nil {
-		return err
-	}
-
-	return c.pldag.Assume(root)
-}
-
-func (c *RuleSetCreator) Create() (*RuleSet, error) {
-	err := c.createAssumedConstraints()
-	if err != nil {
-		return nil, err
-	}
-
-	polyhedron := c.pldag.NewPolyhedron()
-	variables := c.pldag.Variables()
-	primitiveVariables := c.pldag.PrimitiveVariables()
-
+// For when creating a rule set from a serialized representation
+// When setting up new rule sets, use RuleSetCreator instead
+func HydrateRuleSet(
+	aMatrix [][]int,
+	bVector []int,
+	variables []string,
+	selectableVariables []string,
+	preferredVariables []string,
+) *RuleSet {
+	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
 	return &RuleSet{
-		polyhedron:         polyhedron,
-		primitiveVariables: primitiveVariables,
-		variables:          variables,
-		preferredVariables: c.preferredVariables,
-	}, nil
+		polyhedron:          polyhedron,
+		selectableVariables: selectableVariables,
+		variables:           variables,
+		preferredVariables:  preferredVariables,
+	}
 }
 
 func (r *RuleSet) Polyhedron() *pldag.Polyhedron {
 	return r.polyhedron
 }
 
-func (r *RuleSet) PrimitiveVariables() []string {
-	return r.primitiveVariables
+func (r *RuleSet) SelectableVariables() []string {
+	return r.selectableVariables
 }
 
 func (r *RuleSet) Variables() []string {
@@ -152,12 +51,45 @@ func (r *RuleSet) PreferredVariables() []string {
 	return r.preferredVariables
 }
 
-type querySpecification struct {
-	ruleSet         *RuleSet
-	querySelections QuerySelections
+func (r *RuleSet) RemoveSupportVariables(solution Solution) (Solution, error) {
+	nonSupportVariables := []string{}
+	nonSupportVariables = append(nonSupportVariables, r.periodVariables.ids()...)
+	nonSupportVariables = append(nonSupportVariables, r.selectableVariables...)
+
+	return solution.Extract(nonSupportVariables...)
 }
 
-func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
+func (r *RuleSet) FindPeriodInSolution(solution Solution) (Period, error) {
+	var period *Period
+	for _, periodVariable := range r.periodVariables {
+		if isSet := solution[periodVariable.variable]; isSet == 1 {
+			if period != nil {
+				return Period{},
+					errors.Errorf(
+						"multiple periods found: %v and %v",
+						period,
+						periodVariable.period,
+					)
+			}
+			period = &periodVariable.period
+		}
+	}
+
+	if period == nil {
+		return Period{}, errors.New("period not found for solution")
+	}
+
+	return *period, nil
+}
+
+type QueryInput struct {
+	Selections Selections
+	From       *time.Time
+}
+
+func (r *RuleSet) NewQuery(input QueryInput) (*Query, error) {
+	selections := input.Selections
+
 	err := r.validateSelectionIDs(selections.ids())
 	if err != nil {
 		return nil, err
@@ -165,15 +97,17 @@ func (r *RuleSet) NewQuery(selections Selections) (*Query, error) {
 
 	extendedSelections := selections.modifySelections()
 	impactingSelections := getImpactingSelections(extendedSelections)
-	specification, err := r.newQuerySpecification(impactingSelections)
+
+	specification, err := r.newQuerySpecification(impactingSelections, input.From)
 	if err != nil {
 		return nil, err
 	}
 
 	weights := calculateWeights(
-		specification.ruleSet.primitiveVariables,
+		specification.ruleSet.selectableVariables,
 		specification.querySelections,
 		specification.ruleSet.preferredVariables,
+		specification.ruleSet.periodVariables.ids(),
 	)
 
 	query := NewQuery(
@@ -209,26 +143,45 @@ func (r *RuleSet) copy() *RuleSet {
 	variableIDs := make([]string, len(r.variables))
 	copy(variableIDs, r.variables)
 
-	primitiveVariables := make([]string, len(r.primitiveVariables))
-	copy(primitiveVariables, r.primitiveVariables)
+	selectableVariables := make([]string, len(r.selectableVariables))
+	copy(selectableVariables, r.selectableVariables)
 
 	preferredIDs := make([]string, len(r.preferredVariables))
 	copy(preferredIDs, r.preferredVariables)
 
+	periodVariables := make([]timeBoundVariable, len(r.periodVariables))
+	copy(periodVariables, r.periodVariables)
+
 	return &RuleSet{
-		polyhedron:         polyhedron,
-		primitiveVariables: primitiveVariables,
-		variables:          variableIDs,
-		preferredVariables: preferredIDs,
+		polyhedron:          polyhedron,
+		selectableVariables: selectableVariables,
+		variables:           variableIDs,
+		preferredVariables:  preferredIDs,
+		periodVariables:     periodVariables,
 	}
 }
 
-func (r *RuleSet) newQuerySpecification(selections Selections) (*querySpecification, error) {
+type querySpecification struct {
+	ruleSet         *RuleSet
+	querySelections QuerySelections
+}
+
+func (r *RuleSet) newQuerySpecification(
+	selections Selections,
+	from *time.Time,
+) (*querySpecification, error) {
 	ruleSet := r.copy()
 
 	querySelections, err := ruleSet.newQuerySelections(selections)
 	if err != nil {
 		return nil, err
+	}
+
+	if from != nil {
+		err = ruleSet.forbidPassedPeriods(*from)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &querySpecification{
@@ -350,20 +303,34 @@ func (r *RuleSet) newRow(coefficients pldag.Coefficients) ([]int, error) {
 	return row, nil
 }
 
-// For when creating a rule set from a serialized representation
-// When setting up new rule sets, use RuleSetCreator instead
-func HydrateRuleSet(
-	aMatrix [][]int,
-	bVector []int,
-	variables []string,
-	primitiveVariables []string,
-	preferredVariables []string,
-) *RuleSet {
-	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
-	return &RuleSet{
-		polyhedron:         polyhedron,
-		primitiveVariables: primitiveVariables,
-		variables:          variables,
-		preferredVariables: preferredVariables,
+func (r *RuleSet) forbidPassedPeriods(from time.Time) error {
+	passedPeriods := r.periodVariables.passed(from)
+	passedPeriodIDs := passedPeriods.ids()
+
+	if len(passedPeriodIDs) == 0 {
+		return nil
 	}
+
+	constraint, err := pldag.NewAtMostConstraint(passedPeriodIDs, 0)
+	if err != nil {
+		return err
+	}
+
+	if err := r.setConstraint(constraint); err != nil {
+		return err
+	}
+
+	return r.assume(constraint.ID())
+}
+
+func (r *RuleSet) assume(id string) error {
+	constraints := pldag.NewAssumedConstraints(id)
+	for _, constraint := range constraints {
+		err := r.setAuxiliaryConstraint(constraint)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

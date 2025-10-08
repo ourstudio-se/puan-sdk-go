@@ -1,6 +1,7 @@
 package puan
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/google/uuid"
@@ -15,21 +16,19 @@ func Test_RuleSet_copy_shouldBeEqual(t *testing.T) {
 	bVector := fake.New[[]int]()
 	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
 	variables := fake.New[[]string]()
-	primitiveVariables := fake.New[[]string]()
+	selectableVariables := fake.New[[]string]()
 	preferredVariables := fake.New[[]string]()
+	periodVariables := fake.New[[]timeBoundVariable]()
 
 	original := &RuleSet{}
 	original.polyhedron = polyhedron
 	original.variables = variables
-	original.primitiveVariables = primitiveVariables
+	original.selectableVariables = selectableVariables
 	original.preferredVariables = preferredVariables
-
+	original.periodVariables = periodVariables
 	ccopy := original.copy()
 
-	assert.Equal(t, polyhedron, ccopy.polyhedron)
-	assert.Equal(t, variables, ccopy.variables)
-	assert.Equal(t, primitiveVariables, ccopy.primitiveVariables)
-	assert.Equal(t, preferredVariables, ccopy.preferredVariables)
+	assert.True(t, reflect.DeepEqual(original, ccopy))
 }
 
 func Test_RuleSet_copy_givenChangeToCopy_shouldNotChangeOriginal(t *testing.T) {
@@ -288,4 +287,86 @@ func Test_validateSelectionIDs_givenEmptySelection(t *testing.T) {
 	err := ruleSet.validateSelectionIDs(selection.ids())
 
 	assert.NoError(t, err)
+}
+
+func Test_RuleSet_FindPeriodInSolution_givenSingleMatchingPeriod_shouldReturnPeriod(
+	t *testing.T,
+) {
+	period1 := Period{
+		from: newTestTime("2024-01-01T00:00:00Z"),
+		to:   newTestTime("2024-01-31T00:00:00Z"),
+	}
+	period2 := Period{
+		from: newTestTime("2024-02-01T00:00:00Z"),
+		to:   newTestTime("2024-02-28T00:00:00Z"),
+	}
+
+	ruleSet := &RuleSet{
+		periodVariables: timeBoundVariables{
+			{variable: "period1", period: period1},
+			{variable: "period2", period: period2},
+		},
+	}
+
+	solution := Solution{
+		"period1": 1,
+		"period2": 0,
+	}
+
+	result, err := ruleSet.FindPeriodInSolution(solution)
+
+	assert.NoError(t, err)
+	assert.Equal(t, period1, result)
+}
+
+func Test_RuleSet_FindPeriodInSolution_givenNoMatchingPeriod_shouldReturnError(
+	t *testing.T,
+) {
+	period := Period{
+		from: newTestTime("2024-01-01T00:00:00Z"),
+		to:   newTestTime("2024-01-31T00:00:00Z"),
+	}
+
+	ruleSet := &RuleSet{
+		periodVariables: timeBoundVariables{
+			{variable: "period1", period: period},
+		},
+	}
+
+	solution := Solution{
+		"period1": 0,
+	}
+
+	_, err := ruleSet.FindPeriodInSolution(solution)
+
+	assert.Error(t, err)
+}
+
+func Test_RuleSet_FindPeriodInSolution_givenMultipleMatchingPeriods_shouldReturnError(
+	t *testing.T,
+) {
+	period1 := Period{
+		from: newTestTime("2024-01-01T00:00:00Z"),
+		to:   newTestTime("2024-01-31T00:00:00Z"),
+	}
+	period2 := Period{
+		from: newTestTime("2024-02-01T00:00:00Z"),
+		to:   newTestTime("2024-02-28T00:00:00Z"),
+	}
+
+	ruleSet := &RuleSet{
+		periodVariables: timeBoundVariables{
+			{variable: "period1", period: period1},
+			{variable: "period2", period: period2},
+		},
+	}
+
+	solution := Solution{
+		"period1": 1,
+		"period2": 1,
+	}
+
+	_, err := ruleSet.FindPeriodInSolution(solution)
+
+	assert.Error(t, err)
 }

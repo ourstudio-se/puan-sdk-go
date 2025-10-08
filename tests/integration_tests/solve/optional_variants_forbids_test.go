@@ -32,10 +32,10 @@ func Test_optionalVariantsWithForbids_shouldReturnPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemC").WithSubSelectionID("itemD").Build(),
 	}
 
-	query, _ := ruleset.NewQuery(selections)
+	query, _ := ruleset.NewQuery(puan.QueryInput{Selections: selections})
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
+	primitiveSolution, _ := ruleset.RemoveSupportVariables(solution)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -70,10 +70,10 @@ func Test_optionalVariantsWithForbids_shouldReturnNOTPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemA").WithSubSelectionID("itemB").Build(),
 	}
 
-	query, _ := ruleset.NewQuery(selections)
+	query, _ := ruleset.NewQuery(puan.QueryInput{Selections: selections})
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
+	primitiveSolution, _ := ruleset.RemoveSupportVariables(solution)
 	assert.Equal(
 		t,
 		puan.Solution{

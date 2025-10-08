@@ -109,7 +109,7 @@ func Test_calculateSelectedWeights_oneSelected_shouldReturnWeights(t *testing.T)
 	notSelectedSum := -2
 	preferredWeightsSum := -1
 
-	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum)
+	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum, 0)
 	expected := Weights{
 		"a": 4,
 	}
@@ -131,7 +131,7 @@ func Test_calculateSelectedWeights_twoSelected_shouldReturnWeights(t *testing.T)
 	notSelectedSum := -4
 	preferredWeightsSum := -2
 
-	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum)
+	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum, 0)
 	expected := Weights{
 		"a": 7,
 		"b": 14,
@@ -154,7 +154,7 @@ func Test_calculateSelectedWeights_twoSelected_withRemoveAction(t *testing.T) {
 	notSelectedSum := -4
 	preferredWeightsSum := -2
 
-	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum)
+	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum, 0)
 	expected := Weights{
 		"a": 7,
 		"b": -14,
@@ -167,8 +167,39 @@ func Test_calculateSelectedWeights_noSelection_shouldReturnEmptyWeights(t *testi
 	notSelectedSum := -1
 	preferredWeightsSum := -1
 
-	actual := calculateSelectedWeights(nil, notSelectedSum, preferredWeightsSum)
+	actual := calculateSelectedWeights(nil, notSelectedSum, preferredWeightsSum, 0)
 	expected := Weights{}
+
+	assert.Equal(t, expected, actual)
+}
+
+func Test_calculateSelectedWeights_givenSelectionsPreferredWeightsAndPeriodWeight(
+	t *testing.T,
+) {
+	selections := QuerySelections{
+		{
+			id:     "a",
+			action: ADD,
+		},
+		{
+			id:     "b",
+			action: ADD,
+		},
+	}
+	notSelectedSum := -4
+	preferredWeightsSum := -2
+	minPeriodWeight := -8
+
+	actual := calculateSelectedWeights(
+		selections,
+		notSelectedSum,
+		preferredWeightsSum,
+		minPeriodWeight,
+	)
+	expected := Weights{
+		"a": 15,
+		"b": 30,
+	}
 
 	assert.Equal(t, expected, actual)
 }
@@ -183,7 +214,7 @@ func Test_calculateWeights(t *testing.T) {
 		},
 	}
 
-	actual := calculateWeights(primitives, selections, preferredIDs)
+	actual := calculateWeights(primitives, selections, preferredIDs, nil)
 	expected := Weights{
 		"a": 8,
 		"b": -2,
@@ -192,4 +223,54 @@ func Test_calculateWeights(t *testing.T) {
 	}
 
 	assert.Equal(t, expected, actual)
+}
+
+func Test_calculateSelectionThreshold(t *testing.T) {
+	testCases := []struct {
+		name                string
+		notSelectedSum      int
+		preferredWeightsSum int
+		minPeriodWeight     int
+		expected            int
+	}{
+		{
+			name:                "all zeros",
+			notSelectedSum:      0,
+			preferredWeightsSum: 0,
+			minPeriodWeight:     0,
+			expected:            0,
+		},
+		{
+			name:                "all negative values",
+			notSelectedSum:      -10,
+			preferredWeightsSum: -5,
+			minPeriodWeight:     -3,
+			expected:            18,
+		},
+		{
+			name:                "all positive values",
+			notSelectedSum:      10,
+			preferredWeightsSum: 5,
+			minPeriodWeight:     3,
+			expected:            -18,
+		},
+		{
+			name:                "mixed values",
+			notSelectedSum:      -4,
+			preferredWeightsSum: -2,
+			minPeriodWeight:     0,
+			expected:            6,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := calculateSelectionThreshold(
+				tc.notSelectedSum,
+				tc.preferredWeightsSum,
+				tc.minPeriodWeight,
+			)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
 }

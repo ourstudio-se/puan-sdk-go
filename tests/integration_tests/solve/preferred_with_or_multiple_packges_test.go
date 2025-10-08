@@ -18,11 +18,11 @@ func Test_multiplePackagesWithOr_noSelectionExpectPreferred(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	query, _ := ruleset.NewQuery(selections)
+	query, _ := ruleset.NewQuery(puan.QueryInput{Selections: selections})
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
+	primitiveSolution, _ := ruleset.RemoveSupportVariables(solution)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -47,11 +47,11 @@ func Test_multiplePackagesWithOr_selectPackageB(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	query, _ := ruleset.NewQuery(selections)
+	query, _ := ruleset.NewQuery(puan.QueryInput{Selections: selections})
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
+	primitiveSolution, _ := ruleset.RemoveSupportVariables(solution)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -76,11 +76,11 @@ func Test_multiplePackagesWithOr_selectPackageC(t *testing.T) {
 		puan.NewSelectionBuilder("packageC").Build(),
 	}
 
-	query, _ := ruleset.NewQuery(selections)
+	query, _ := ruleset.NewQuery(puan.QueryInput{Selections: selections})
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
+	primitiveSolution, _ := ruleset.RemoveSupportVariables(solution)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -107,11 +107,11 @@ func Test_multiplePackagesWithOr_allSelectedExceptA(t *testing.T) {
 		puan.NewSelectionBuilder("packageD").Build(),
 	}
 
-	query, _ := ruleset.NewQuery(selections)
+	query, _ := ruleset.NewQuery(puan.QueryInput{Selections: selections})
 
 	client := glpk.NewClient(url)
 	solution, _ := client.Solve(query)
-	primitiveSolution, _ := solution.Extract(ruleset.PrimitiveVariables()...)
+	primitiveSolution, _ := ruleset.RemoveSupportVariables(solution)
 	assert.Equal(
 		t,
 		puan.Solution{

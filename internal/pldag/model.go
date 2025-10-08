@@ -43,6 +43,11 @@ func (m *Model) SetPrimitives(primitives ...string) error {
 
 func (m *Model) SetAnd(variables ...string) (string, error) {
 	deduped := utils.Dedupe(variables)
+
+	if len(deduped) < 2 {
+		return "", errors.Errorf("at least two variables are required, got %v", deduped)
+	}
+
 	id, err := m.setAtLeast(deduped, len(deduped))
 	if err != nil {
 		return "", err
@@ -53,6 +58,11 @@ func (m *Model) SetAnd(variables ...string) (string, error) {
 
 func (m *Model) SetOr(variables ...string) (string, error) {
 	deduped := utils.Dedupe(variables)
+
+	if len(deduped) < 2 {
+		return "", errors.Errorf("at least two variables are required, got %v", deduped)
+	}
+
 	id, err := m.setAtLeast(deduped, 1)
 	if err != nil {
 		return "", err
@@ -81,11 +91,18 @@ func (m *Model) SetImply(condition, consequence string) (string, error) {
 }
 
 func (m *Model) SetXor(variables ...string) (string, error) {
-	atLeastID, err := m.setAtLeast(variables, 1)
+	deduped := utils.Dedupe(variables)
+
+	if len(deduped) < 2 {
+		return "", errors.Errorf("at least two variables are required, got %v", deduped)
+	}
+
+	atLeastID, err := m.setAtLeast(deduped, 1)
 	if err != nil {
 		return "", err
 	}
-	atMostID, err := m.setAtMost(variables, 1)
+
+	atMostID, err := m.setAtMost(deduped, 1)
 	if err != nil {
 		return "", err
 	}
@@ -95,6 +112,11 @@ func (m *Model) SetXor(variables ...string) (string, error) {
 
 func (m *Model) SetOneOrNone(variables ...string) (string, error) {
 	deduped := utils.Dedupe(variables)
+
+	if len(deduped) < 2 {
+		return "", errors.Errorf("at least two variables are required, got %v", deduped)
+	}
+
 	return m.setAtMost(deduped, 1)
 }
 
@@ -120,7 +142,7 @@ func (m *Model) Assume(variables ...string) error {
 
 	newAssumed := utils.Without(variables, m.assumeConstraints.coefficientIDs())
 
-	constraints := m.newAssumedConstraints(newAssumed...)
+	constraints := NewAssumedConstraints(newAssumed...)
 	m.assumeConstraints = append(m.assumeConstraints, constraints...)
 
 	return nil
@@ -157,37 +179,6 @@ func (m *Model) PrimitiveVariables() []string {
 
 func (m *Model) Variables() []string {
 	return m.variables
-}
-
-func (m *Model) newAssumedConstraints(variables ...string) AuxiliaryConstraints {
-	negativeCoefficient := m.newNegativeAssumedConstraint(variables...)
-	positiveCoefficient := m.newPositiveAssumedConstraint(variables...)
-
-	return AuxiliaryConstraints{negativeCoefficient, positiveCoefficient}
-}
-
-func (m *Model) newNegativeAssumedConstraint(variables ...string) AuxiliaryConstraint {
-	coefficients := make(Coefficients, len(variables))
-	for _, id := range variables {
-		coefficients[id] = -1
-	}
-
-	bias := Bias(-len(variables))
-	constraint := newAuxiliaryConstraint(coefficients, bias)
-
-	return constraint
-}
-
-func (m *Model) newPositiveAssumedConstraint(variables ...string) AuxiliaryConstraint {
-	coefficients := make(Coefficients, len(variables))
-	for _, id := range variables {
-		coefficients[id] = 1
-	}
-
-	bias := Bias(len(variables))
-	constraint := newAuxiliaryConstraint(coefficients, bias)
-
-	return constraint
 }
 
 func (m *Model) ValidateVariables(variables ...string) error {

@@ -57,7 +57,7 @@ func main() {
 	}
 
 	// Create the query for solver
-	query, err := ruleSet.NewQuery(selections)
+	query, err := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 	if err != nil {
 		panic(err)
 	}
@@ -70,7 +70,7 @@ func main() {
 	}
 
 	// Extract the solution for the primitive variables
-	primitiveSolution, err := solution.Extract(ruleSet.PrimitiveVariables()...)
+	primitiveSolution, err := solution.Extract(ruleSet.SelectableVariables()...)
 	if err != nil {
 		panic(err)
 	}

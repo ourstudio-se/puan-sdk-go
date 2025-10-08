@@ -93,3 +93,13 @@ func Dedupe[T comparable](elements []T) []T {
 
 	return result
 }
+
+func Filter[T any](slice []T, predicate func(T) bool) []T {
+	var result []T
+	for _, e := range slice {
+		if predicate(e) {
+			result = append(result, e)
+		}
+	}
+	return result
+}

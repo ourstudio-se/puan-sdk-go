@@ -8,6 +8,13 @@ import (
 
 const NOT_SELECTED_WEIGHT = -2
 
+// weights on periods are [0, -12, -24, ..., -12(n-1)]
+// where n is the number of periods
+// periods are assumed to be ordered by start time
+//
+// This constant can be tweaked to change the weight of periods
+const PERIOD_WEIGHT_MULTIPLIER = NOT_SELECTED_WEIGHT * 6
+
 type Weights map[string]int
 
 func (w Weights) concat(weightsToConcat Weights) Weights {
@@ -28,32 +35,40 @@ func (w Weights) sum() int {
 }
 
 func calculateWeights(
-	primitives []string,
+	selectableIDs []string,
 	selections QuerySelections,
 	preferredIDs []string,
+	periodIDs []string,
 ) Weights {
-	notSelectedPrimitives := utils.Without(primitives, selections.ids())
-	notSelectedWeights := calculatedNotSelectedWeights(notSelectedPrimitives)
+	notSelectedIDs := utils.Without(selectableIDs, selections.ids())
+	notSelectedWeights := calculatedNotSelectedWeights(notSelectedIDs)
 	notSelectedSum := notSelectedWeights.sum()
+
 	preferredWeights := calculatePreferredWeights(preferredIDs, notSelectedSum)
 	sumOfPreferredWeights := preferredWeights.sum()
+
+	periodWeights := calculatePeriodWeights(periodIDs)
+	minPeriodWeight := calculateMinPeriodWeight(periodIDs)
+
 	selectedWeights := calculateSelectedWeights(
 		selections,
 		notSelectedSum,
 		sumOfPreferredWeights,
+		minPeriodWeight,
 	)
 
 	weights := notSelectedWeights.
 		concat(selectedWeights).
-		concat(preferredWeights)
+		concat(preferredWeights).
+		concat(periodWeights)
 
 	return weights
 }
 
-func calculatedNotSelectedWeights(primitives []string) Weights {
+func calculatedNotSelectedWeights(selectableIDs []string) Weights {
 	notSelectedWeights := make(Weights)
-	for _, primitive := range primitives {
-		notSelectedWeights[primitive] = NOT_SELECTED_WEIGHT
+	for _, id := range selectableIDs {
+		notSelectedWeights[id] = NOT_SELECTED_WEIGHT
 	}
 
 	return notSelectedWeights
@@ -77,13 +92,41 @@ func calculatePreferredWeights(
 	return preferredWeights
 }
 
+func calculatePeriodWeights(
+	periodIDs []string,
+) Weights {
+	periodWeights := make(Weights)
+	for i, periodID := range periodIDs {
+		periodWeights[periodID] = i * PERIOD_WEIGHT_MULTIPLIER
+	}
+
+	return periodWeights
+}
+
+func calculateMinPeriodWeight(
+	periodIDs []string,
+) int {
+	if len(periodIDs) == 0 {
+		return 0
+	}
+
+	return (len(periodIDs) - 1) * PERIOD_WEIGHT_MULTIPLIER
+}
+
 func calculateSelectedWeights(
 	selections QuerySelections,
 	notSelectedSum,
 	preferredWeightsSum int,
+	minPeriodWeight int,
 ) Weights {
 	selectedWeights := make(Weights)
-	selectionThreshold := -(notSelectedSum + preferredWeightsSum)
+
+	selectionThreshold := calculateSelectionThreshold(
+		notSelectedSum,
+		preferredWeightsSum,
+		minPeriodWeight,
+	)
+
 	selectionWeightSum := selectionThreshold
 	for _, selection := range selections {
 		weight := selectionWeightSum + 1
@@ -97,4 +140,12 @@ func calculateSelectedWeights(
 	}
 
 	return selectedWeights
+}
+
+func calculateSelectionThreshold(
+	notSelectedSum,
+	preferredWeightsSum,
+	minPeriodWeight int,
+) int {
+	return -(notSelectedSum + preferredWeightsSum + minPeriodWeight)
 }
