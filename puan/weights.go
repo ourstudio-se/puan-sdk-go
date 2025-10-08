@@ -8,7 +8,7 @@ import (
 
 const NOT_SELECTED_WEIGHT = -2
 
-// weights on period is [0, -12, -24, ..., -12(n-1)]
+// weights on periods are [0, -12, -24, ..., -12(n-1)]
 // where n is the number of periods
 // periods are assumed to be ordered by start time
 //
