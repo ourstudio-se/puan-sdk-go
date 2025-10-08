@@ -172,13 +172,13 @@ func findContainingPeriodIDs(
 	periodVariables timeBoundVariables,
 	period Period,
 ) (idsString, error) {
-	var overlapingPeriodIDs []string
+	var overlappingPeriodIDs []string
 
 	for _, periodVariable := range periodVariables {
 		if periodVariable.period.overlaps(period) {
-			overlapingPeriodIDs = append(overlapingPeriodIDs, periodVariable.variable)
+			overlappingPeriodIDs = append(overlappingPeriodIDs, periodVariable.variable)
 		}
 	}
 
-	return newIdsString(overlapingPeriodIDs)
+	return newIdsString(overlappingPeriodIDs)
 }
