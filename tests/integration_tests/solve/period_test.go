@@ -43,7 +43,7 @@ func Test_itemIncludedInPeriod(t *testing.T) {
 	)
 }
 
-// Many items are included, but later non of them are. The solver should choose the later period,
+// Many items are included, but later none of them are. The solver should choose the later period,
 // since the cost-savings of not having the items out weights the punishment of choosing the
 // later period.
 func Test_manyItemsIncludedInPeriod_shouldChooseLaterPeriod(t *testing.T) {
