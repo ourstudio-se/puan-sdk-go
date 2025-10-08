@@ -1,6 +1,6 @@
 services:
   glpk-api:
-    image: ourstudio/rust-glpk-api:latest
+    image: ourstudio/rust-glpk-api:0.1.6
     ports:
       - "9000:9000"
     restart: unless-stopped
