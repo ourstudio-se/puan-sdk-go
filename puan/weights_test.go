@@ -173,6 +173,37 @@ func Test_calculateSelectedWeights_noSelection_shouldReturnEmptyWeights(t *testi
 	assert.Equal(t, expected, actual)
 }
 
+func Test_calculateSelectedWeights_givenSelectionsPreferredWeightsAndPeriodWeight(
+	t *testing.T,
+) {
+	selections := QuerySelections{
+		{
+			id:     "a",
+			action: ADD,
+		},
+		{
+			id:     "b",
+			action: ADD,
+		},
+	}
+	notSelectedSum := -4
+	preferredWeightsSum := -2
+	minPeriodWeight := -8
+
+	actual := calculateSelectedWeights(
+		selections,
+		notSelectedSum,
+		preferredWeightsSum,
+		minPeriodWeight,
+	)
+	expected := Weights{
+		"a": 15,
+		"b": 30,
+	}
+
+	assert.Equal(t, expected, actual)
+}
+
 func Test_calculateWeights(t *testing.T) {
 	primitives := []string{"a", "b", "c"}
 	preferredIDs := []string{"e"}
@@ -192,4 +223,54 @@ func Test_calculateWeights(t *testing.T) {
 	}
 
 	assert.Equal(t, expected, actual)
+}
+
+func Test_calculateSelectionThreshold(t *testing.T) {
+	testCases := []struct {
+		name                string
+		notSelectedSum      int
+		preferredWeightsSum int
+		minPeriodWeight     int
+		expected            int
+	}{
+		{
+			name:                "all zeros",
+			notSelectedSum:      0,
+			preferredWeightsSum: 0,
+			minPeriodWeight:     0,
+			expected:            0,
+		},
+		{
+			name:                "all negative values",
+			notSelectedSum:      -10,
+			preferredWeightsSum: -5,
+			minPeriodWeight:     -3,
+			expected:            18,
+		},
+		{
+			name:                "all positive values",
+			notSelectedSum:      10,
+			preferredWeightsSum: 5,
+			minPeriodWeight:     3,
+			expected:            -18,
+		},
+		{
+			name:                "mixed values",
+			notSelectedSum:      -4,
+			preferredWeightsSum: -2,
+			minPeriodWeight:     0,
+			expected:            6,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := calculateSelectionThreshold(
+				tc.notSelectedSum,
+				tc.preferredWeightsSum,
+				tc.minPeriodWeight,
+			)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
 }
