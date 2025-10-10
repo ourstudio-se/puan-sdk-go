@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -163,4 +164,41 @@ func Test_SortedBy(t *testing.T) {
 
 	got := SortedBy(in, func(s struct{ id string }) string { return s.id })
 	assert.Equal(t, want, got)
+}
+
+func Test_SortedBy_withMap(t *testing.T) {
+	m1 := fake.New[map[string]string]()
+	m2 := fake.New[map[string]string]()
+
+	type obj struct {
+		id string
+		m  map[string]string
+	}
+
+	in := []obj{
+		{
+			id: "c",
+			m:  m1,
+		},
+		{
+			id: "a",
+			m:  m2,
+		},
+	}
+
+	want := []obj{
+		{
+			id: "a",
+			m:  m2,
+		},
+		{
+			id: "c",
+			m:  m1,
+		},
+	}
+
+	got := SortedBy(in, func(o obj) string { return o.id })
+	if !reflect.DeepEqual(want, got) {
+		t.Fatalf("SortedBy() = %v, want %v", got, want)
+	}
 }

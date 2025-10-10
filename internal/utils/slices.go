@@ -118,7 +118,9 @@ func Sort[T cmp.Ordered](slice []T) []T {
 }
 
 func SortedBy[T any, K cmp.Ordered](in []T, key func(T) K) []T {
-	out := slices.Clone(in)
+	out := make([]T, len(in))
+	copy(out, in)
+
 	slices.SortFunc(out, func(a, b T) int {
 		return cmp.Compare(key(a), key(b))
 	})
