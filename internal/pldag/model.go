@@ -152,7 +152,7 @@ func (m *Model) AssumedConstraints() AuxiliaryConstraints {
 	return m.assumeConstraints
 }
 
-func BuildPolyhedron(
+func CreatePolyhedron(
 	variables []string,
 	constraints Constraints,
 	assumeConstraints AuxiliaryConstraints,

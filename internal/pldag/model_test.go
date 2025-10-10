@@ -133,7 +133,7 @@ func TestModel_NewPolyhedron(t *testing.T) {
 	implyID, _ := model.SetImply("w", xorID)
 	_ = model.Assume(implyID)
 
-	lp := BuildPolyhedron(model.variables, model.constraints, model.assumeConstraints)
+	lp := CreatePolyhedron(model.variables, model.constraints, model.assumeConstraints)
 
 	expectedVector := []int{0, 1, 1, 2, 4, 0, 1, 1, 1, -1, 0, 0, -2, 1, -1, 0, -1, 1}
 	expectedMatrix := [][]int{
@@ -176,7 +176,7 @@ func TestModel_NewPolyhedron_withImpliesOr(t *testing.T) {
 	if err != nil {
 		assert.NoError(t, err)
 	}
-	lp := BuildPolyhedron(model.variables, model.constraints, model.assumeConstraints)
+	lp := CreatePolyhedron(model.variables, model.constraints, model.assumeConstraints)
 
 	expectedVector := []int{1, 1, 1, 0, -1, 0, -1, 1}
 	expectedMatrix := [][]int{

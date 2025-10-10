@@ -187,7 +187,7 @@ func (c *RuleSetCreator) Create() (*RuleSet, error) {
 
 	assumedConstraints := c.model.AssumedConstraints()
 
-	polyhedron := pldag.BuildPolyhedron(
+	polyhedron := pldag.CreatePolyhedron(
 		sortedVariables,
 		sortedConstraints,
 		assumedConstraints,
