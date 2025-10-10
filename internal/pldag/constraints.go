@@ -15,6 +15,7 @@ type Constraint struct {
 	coefficients Coefficients
 	bias         Bias
 }
+
 type Constraints []Constraint
 
 func NewAtLeastConstraint(variables []string, amount int) (Constraint, error) {

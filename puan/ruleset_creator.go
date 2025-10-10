@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
+
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
@@ -173,14 +174,26 @@ func (c *RuleSetCreator) Create() (*RuleSet, error) {
 		return nil, err
 	}
 
-	polyhedron := c.pldag.NewPolyhedron()
-	variables := c.pldag.Variables()
+	// Sort variables and constraints to ensure
+	// consistent order in the polyhedron,
+	// this to facilitate testing
+	sortedVariables := utils.Sort(c.pldag.Variables())
+	sortedConstraints := utils.SortedBy(c.pldag.Constraints(), func(c pldag.Constraint) string { return c.ID() })
+
+	assumedConstraints := c.pldag.AssumedConstraints()
+
+	polyhedron := pldag.BuildPolyhedron(
+		sortedVariables,
+		sortedConstraints,
+		assumedConstraints,
+	)
+
 	selectableVariables := utils.Without(c.pldag.PrimitiveVariables(), periodVariables.ids())
 
 	return &RuleSet{
 		polyhedron:          polyhedron,
 		selectableVariables: selectableVariables,
-		variables:           variables,
+		variables:           sortedVariables,
 		preferredVariables:  c.preferredVariables,
 		periodVariables:     periodVariables,
 	}, nil

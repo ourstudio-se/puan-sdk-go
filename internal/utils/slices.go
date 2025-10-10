@@ -1,6 +1,11 @@
 package utils
 
-import "github.com/go-errors/errors"
+import (
+	"cmp"
+	"slices"
+
+	"github.com/go-errors/errors"
+)
 
 func Without[T comparable](sliceA []T, sliceB []T) []T {
 	var result []T
@@ -102,4 +107,21 @@ func Filter[T any](slice []T, predicate func(T) bool) []T {
 		}
 	}
 	return result
+}
+
+func Sort[T cmp.Ordered](slice []T) []T {
+	sorted := make([]T, len(slice))
+	copy(sorted, slice)
+
+	slices.Sort(sorted)
+	return sorted
+}
+
+func SortedBy[T any, K cmp.Ordered](in []T, key func(T) K) []T {
+	out := slices.Clone(in)
+	slices.SortFunc(out, func(a, b T) int {
+		return cmp.Compare(key(a), key(b))
+	})
+
+	return out
 }
