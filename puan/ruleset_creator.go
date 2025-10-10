@@ -178,7 +178,12 @@ func (c *RuleSetCreator) Create() (*RuleSet, error) {
 	// consistent order in the polyhedron,
 	// this to facilitate testing
 	sortedVariables := utils.Sort(c.pldag.Variables())
-	sortedConstraints := utils.SortedBy(c.pldag.Constraints(), func(c pldag.Constraint) string { return c.ID() })
+	sortedConstraints := utils.SortedBy(
+		c.pldag.Constraints(),
+		func(c pldag.Constraint) string {
+			return c.ID()
+		},
+	)
 
 	assumedConstraints := c.pldag.AssumedConstraints()
 
