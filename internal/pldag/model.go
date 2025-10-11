@@ -148,16 +148,24 @@ func (m *Model) Assume(variables ...string) error {
 	return nil
 }
 
-func (m *Model) NewPolyhedron() *Polyhedron {
+func (m *Model) AssumedConstraints() AuxiliaryConstraints {
+	return m.assumeConstraints
+}
+
+func CreatePolyhedron(
+	variables []string,
+	constraints Constraints,
+	assumeConstraints AuxiliaryConstraints,
+) *Polyhedron {
 	var aMatrix [][]int
 	var bVector []int
 
-	constraintsWithSupport := m.toAuxiliaryConstraintsWithSupport()
+	constraintsWithSupport := toAuxiliaryConstraintsWithSupport(constraints)
 	var constraintsInMatrix AuxiliaryConstraints
 	constraintsInMatrix = append(constraintsInMatrix, constraintsWithSupport...)
-	constraintsInMatrix = append(constraintsInMatrix, m.assumeConstraints...)
+	constraintsInMatrix = append(constraintsInMatrix, assumeConstraints...)
 	for _, c := range constraintsInMatrix {
-		row := c.asMatrixRow(m.variables)
+		row := c.asMatrixRow(variables)
 		bias := int(c.bias)
 		aMatrix = append(aMatrix, row)
 		bVector = append(bVector, bias)
@@ -191,15 +199,15 @@ func (m *Model) ValidateVariables(variables ...string) error {
 	return nil
 }
 
-func (m *Model) toAuxiliaryConstraintsWithSupport() AuxiliaryConstraints {
-	var constraints AuxiliaryConstraints
-	for _, c := range m.constraints {
+func toAuxiliaryConstraintsWithSupport(constraints Constraints) AuxiliaryConstraints {
+	var auxiliaryConstraints AuxiliaryConstraints
+	for _, c := range constraints {
 		supportImpliesConstraint, constraintImpliesSupport := c.ToAuxiliaryConstraintsWithSupport()
-		constraints = append(constraints, supportImpliesConstraint)
-		constraints = append(constraints, constraintImpliesSupport)
+		auxiliaryConstraints = append(auxiliaryConstraints, supportImpliesConstraint)
+		auxiliaryConstraints = append(auxiliaryConstraints, constraintImpliesSupport)
 	}
 
-	return constraints
+	return auxiliaryConstraints
 }
 
 func (m *Model) setAtLeast(variables []string, amount int) (string, error) {
@@ -230,6 +238,10 @@ func (m *Model) setConstraint(c Constraint) {
 
 	m.variables = append(m.variables, c.id)
 	m.constraints = append(m.constraints, c)
+}
+
+func (m *Model) Constraints() Constraints {
+	return m.constraints
 }
 
 func (m *Model) idAlreadyExists(id string) bool {
