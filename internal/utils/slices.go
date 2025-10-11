@@ -109,7 +109,7 @@ func Filter[T any](slice []T, predicate func(T) bool) []T {
 	return result
 }
 
-func Sort[T cmp.Ordered](slice []T) []T {
+func Sorted[T cmp.Ordered](slice []T) []T {
 	sorted := make([]T, len(slice))
 	copy(sorted, slice)
 

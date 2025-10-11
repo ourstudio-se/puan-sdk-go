@@ -177,7 +177,7 @@ func (c *RuleSetCreator) Create() (*RuleSet, error) {
 	// Sort variables and constraints to ensure
 	// consistent order in the polyhedron,
 	// this to facilitate testing
-	sortedVariables := utils.Sort(c.model.Variables())
+	sortedVariables := utils.Sorted(c.model.Variables())
 	sortedConstraints := utils.SortedBy(
 		c.model.Constraints(),
 		func(c pldag.Constraint) string {
