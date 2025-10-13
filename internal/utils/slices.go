@@ -117,12 +117,12 @@ func Sorted[T cmp.Ordered](slice []T) []T {
 	return sorted
 }
 
-func SortedBy[T any, K cmp.Ordered](in []T, key func(T) K) []T {
+func SortedBy[T any, K cmp.Ordered](in []T, predicate func(T) K) []T {
 	out := make([]T, len(in))
 	copy(out, in)
 
 	slices.SortFunc(out, func(a, b T) int {
-		return cmp.Compare(key(a), key(b))
+		return cmp.Compare(predicate(a), predicate(b))
 	})
 
 	return out
