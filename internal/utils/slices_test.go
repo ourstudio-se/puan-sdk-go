@@ -135,3 +135,61 @@ func Test_Dedupe_givenEmptySlice(t *testing.T) {
 
 	assert.Equal(t, expected, actual)
 }
+
+func Test_Sorted_givenUnsortedIntSlice(t *testing.T) {
+	slice := []int{5, 3, 4, 1, 2}
+	actual := Sorted(slice)
+	expected := []int{1, 2, 3, 4, 5}
+
+	assert.Equal(t, expected, actual)
+}
+
+func Test_Sorted_givenUnsortedStringSlice(t *testing.T) {
+	slice := []string{"e", "c", "d", "a", "b"}
+	actual := Sorted(slice)
+	expected := []string{"a", "b", "c", "d", "e"}
+
+	assert.Equal(t, expected, actual)
+}
+
+func Test_SortedBy(t *testing.T) {
+	m1 := fake.New[map[string]string]()
+	m2 := fake.New[map[string]string]()
+	s1 := fake.New[[]string]()
+	s2 := fake.New[[]string]()
+
+	type obj struct {
+		id string
+		m  map[string]string
+		s  []string
+	}
+
+	in := []obj{
+		{
+			id: "c",
+			m:  m1,
+			s:  s1,
+		},
+		{
+			id: "a",
+			m:  m2,
+			s:  s2,
+		},
+	}
+
+	want := []obj{
+		{
+			id: "a",
+			m:  m2,
+			s:  s2,
+		},
+		{
+			id: "c",
+			m:  m1,
+			s:  s1,
+		},
+	}
+
+	got := SortedBy(in, func(o obj) string { return o.id })
+	assert.Equal(t, want, got)
+}

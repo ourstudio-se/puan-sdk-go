@@ -5,12 +5,13 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
+
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
 
 type RuleSetCreator struct {
-	pldag              *pldag.Model
+	model              *pldag.Model
 	preferredVariables []string
 	assumedVariables   []string
 
@@ -20,47 +21,47 @@ type RuleSetCreator struct {
 
 func NewRuleSetCreator() *RuleSetCreator {
 	return &RuleSetCreator{
-		pldag: pldag.New(),
+		model: pldag.New(),
 	}
 }
 
 func (c *RuleSetCreator) AddPrimitives(primitives ...string) error {
-	return c.pldag.SetPrimitives(primitives...)
+	return c.model.SetPrimitives(primitives...)
 }
 
 func (c *RuleSetCreator) SetAnd(variables ...string) (string, error) {
-	return c.pldag.SetAnd(variables...)
+	return c.model.SetAnd(variables...)
 }
 
 func (c *RuleSetCreator) SetOr(variables ...string) (string, error) {
-	return c.pldag.SetOr(variables...)
+	return c.model.SetOr(variables...)
 }
 
 func (c *RuleSetCreator) SetNot(variable ...string) (string, error) {
-	return c.pldag.SetNot(variable...)
+	return c.model.SetNot(variable...)
 }
 
 func (c *RuleSetCreator) SetImply(condition, consequence string) (string, error) {
-	return c.pldag.SetImply(condition, consequence)
+	return c.model.SetImply(condition, consequence)
 }
 
 func (c *RuleSetCreator) SetXor(variables ...string) (string, error) {
-	return c.pldag.SetXor(variables...)
+	return c.model.SetXor(variables...)
 }
 
 func (c *RuleSetCreator) SetOneOrNone(variables ...string) (string, error) {
-	return c.pldag.SetOneOrNone(variables...)
+	return c.model.SetOneOrNone(variables...)
 }
 
 func (c *RuleSetCreator) SetEquivalent(variableOne, variableTwo string) (string, error) {
-	return c.pldag.SetEquivalent(variableOne, variableTwo)
+	return c.model.SetEquivalent(variableOne, variableTwo)
 }
 
 func (c *RuleSetCreator) Prefer(ids ...string) error {
 	dedupedIDs := utils.Dedupe(ids)
 	unpreferredIDs := utils.Without(dedupedIDs, c.preferredVariables)
 
-	err := c.pldag.ValidateVariables(unpreferredIDs...)
+	err := c.model.ValidateVariables(unpreferredIDs...)
 	if err != nil {
 		return err
 	}
@@ -78,7 +79,7 @@ func (c *RuleSetCreator) Prefer(ids ...string) error {
 func (c *RuleSetCreator) negatePreferreds(ids []string) ([]string, error) {
 	negatedIDs := make([]string, len(ids))
 	for i, id := range ids {
-		negatedID, err := c.pldag.SetNot(id)
+		negatedID, err := c.model.SetNot(id)
 		if err != nil {
 			return nil, err
 		}
@@ -93,7 +94,7 @@ func (c *RuleSetCreator) Assume(ids ...string) error {
 	dedupedIDs := utils.Dedupe(ids)
 	unassumedIDs := utils.Without(dedupedIDs, c.assumedVariables)
 
-	err := c.pldag.ValidateVariables(unassumedIDs...)
+	err := c.model.ValidateVariables(unassumedIDs...)
 	if err != nil {
 		return err
 	}
@@ -173,14 +174,31 @@ func (c *RuleSetCreator) Create() (*RuleSet, error) {
 		return nil, err
 	}
 
-	polyhedron := c.pldag.NewPolyhedron()
-	variables := c.pldag.Variables()
-	selectableVariables := utils.Without(c.pldag.PrimitiveVariables(), periodVariables.ids())
+	// Sort variables and constraints to ensure
+	// consistent order in the polyhedron,
+	// this to facilitate testing
+	sortedVariables := utils.Sorted(c.model.Variables())
+	sortedConstraints := utils.SortedBy(
+		c.model.Constraints(),
+		func(c pldag.Constraint) string {
+			return c.ID()
+		},
+	)
+
+	assumedConstraints := c.model.AssumedConstraints()
+
+	polyhedron := pldag.CreatePolyhedron(
+		sortedVariables,
+		sortedConstraints,
+		assumedConstraints,
+	)
+
+	selectableVariables := utils.Without(c.model.PrimitiveVariables(), periodVariables.ids())
 
 	return &RuleSet{
 		polyhedron:          polyhedron,
 		selectableVariables: selectableVariables,
-		variables:           variables,
+		variables:           sortedVariables,
 		preferredVariables:  c.preferredVariables,
 		periodVariables:     periodVariables,
 	}, nil
@@ -203,7 +221,7 @@ func (c *RuleSetCreator) newPeriodVariables() (timeBoundVariables, error) {
 			period:   period,
 		}
 		periodVariables[i] = period
-		if err := c.pldag.SetPrimitives(period.variable); err != nil {
+		if err := c.model.SetPrimitives(period.variable); err != nil {
 			return nil, err
 		}
 	}
@@ -239,7 +257,7 @@ func (c *RuleSetCreator) createPeriodConstraints(periodVariables timeBoundVariab
 	}
 
 	// Choose exactly one period
-	exactlyOnePeriod, err := c.pldag.SetXor(periodVariables.ids()...)
+	exactlyOnePeriod, err := c.model.SetXor(periodVariables.ids()...)
 	if err != nil {
 		return err
 	}
@@ -262,7 +280,7 @@ func (c *RuleSetCreator) setTimeBoundConstraint(
 		return "", err
 	}
 
-	return c.pldag.SetImply(combinedPeriodsID, combinedAssumedID)
+	return c.model.SetImply(combinedPeriodsID, combinedAssumedID)
 }
 
 func (c *RuleSetCreator) setSingleOrOR(ids ...string) (string, error) {
@@ -274,7 +292,7 @@ func (c *RuleSetCreator) setSingleOrOR(ids ...string) (string, error) {
 		return ids[0], nil
 	}
 
-	return c.pldag.SetOr(ids...)
+	return c.model.SetOr(ids...)
 }
 
 func (c *RuleSetCreator) setSingleOrAnd(ids ...string) (string, error) {
@@ -286,7 +304,7 @@ func (c *RuleSetCreator) setSingleOrAnd(ids ...string) (string, error) {
 		return ids[0], nil
 	}
 
-	return c.pldag.SetAnd(ids...)
+	return c.model.SetAnd(ids...)
 }
 
 func (c *RuleSetCreator) createAssumeConstraints() error {
@@ -299,5 +317,5 @@ func (c *RuleSetCreator) createAssumeConstraints() error {
 		return err
 	}
 
-	return c.pldag.Assume(root)
+	return c.model.Assume(root)
 }
