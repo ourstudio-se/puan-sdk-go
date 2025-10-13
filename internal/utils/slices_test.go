@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -192,7 +191,5 @@ func Test_SortedBy(t *testing.T) {
 	}
 
 	got := SortedBy(in, func(o obj) string { return o.id })
-	if !reflect.DeepEqual(want, got) {
-		t.Fatalf("SortedBy() = %v, want %v", got, want)
-	}
+	assert.Equal(t, want, got)
 }
