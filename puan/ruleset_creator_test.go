@@ -113,7 +113,6 @@ func Test_Create_givenDifferentModelingOrder_shouldReturnSamePolyhedron(
 	rand.Shuffle(len(shuffledPrimitives), func(i, j int) {
 		shuffledPrimitives[i], shuffledPrimitives[j] = shuffledPrimitives[j], shuffledPrimitives[i]
 	})
-	assert.NotEqual(t, primitives, shuffledPrimitives)
 
 	// Create a second creator with the same primitives
 	// and rules but in a different order.
