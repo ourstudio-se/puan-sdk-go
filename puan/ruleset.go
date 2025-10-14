@@ -10,12 +10,12 @@ import (
 )
 
 type RuleSet struct {
-	polyhedron          *pldag.Polyhedron
-	selectableVariables []string
-	variables           []string
-	freeVariables       []string
-	preferredVariables  []string
-	periodVariables     timeBoundVariables
+	polyhedron           *pldag.Polyhedron
+	selectableVariables  []string
+	variables            []string
+	independentVariables []string
+	preferredVariables   []string
+	periodVariables      timeBoundVariables
 }
 
 // For when creating a rule set from a serialized representation
@@ -49,7 +49,7 @@ func (r *RuleSet) Variables() []string {
 }
 
 func (r *RuleSet) FreeVariables() []string {
-	return r.freeVariables
+	return r.independentVariables
 }
 
 func (r *RuleSet) PreferredVariables() []string {
@@ -62,6 +62,11 @@ func (r *RuleSet) RemoveSupportVariables(solution Solution) (Solution, error) {
 	nonSupportVariables = append(nonSupportVariables, r.selectableVariables...)
 
 	return solution.Extract(nonSupportVariables...)
+}
+
+func (r *RuleSet) RemoveAndAddStuff(solution Solution, selections IndependentSelections) (Solution, error) {
+
+	return solution, nil
 }
 
 func (r *RuleSet) FindPeriodInSolution(solution Solution) (Period, error) {
@@ -92,20 +97,22 @@ type QueryInput struct {
 	From       *time.Time
 }
 
-func (r *RuleSet) NewQuery(input QueryInput) (*Query, error) {
+func (r *RuleSet) NewQuery(input QueryInput) (*Query, IndependentSelections, error) {
 	selections := input.Selections
 
 	err := r.validateSelectionIDs(selections.ids())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	extendedSelections := selections.modifySelections()
+	dependantSelections, independentSelections := r.categorizeSelections(selections)
+
+	extendedSelections := dependantSelections.modifySelections()
 	impactingSelections := getImpactingSelections(extendedSelections)
 
 	specification, err := r.newQuerySpecification(impactingSelections, input.From)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	weights := calculateWeights(
@@ -121,14 +128,18 @@ func (r *RuleSet) NewQuery(input QueryInput) (*Query, error) {
 		weights,
 	)
 
-	return query, nil
+	return query, independentSelections, nil
 }
 
-func (r *RuleSet) CategorizeSelections(selections Selections) (Selections, Selections) {
-	dependantSelections := extractDependantSelections(selections, r.freeVariables)
-	freeSelections := extractFreeSelections(selections, r.freeVariables)
+func (r *RuleSet) categorizeSelections(selections Selections) (Selections, IndependentSelections, error) {
+	err := r.validateSelectionIDs(selections.ids())
+	if err != nil {
+		return nil, nil, err
+	}
+	dependantSelections := extractDependantSelections(selections, r.independentVariables)
+	independentSelections := extractIndependentSelections(selections, r.independentVariables)
 
-	return dependantSelections, freeSelections
+	return dependantSelections, independentSelections, nil
 }
 
 func extractDependantSelections(selections Selections, freeVariables []string) Selections {
@@ -143,50 +154,44 @@ func extractDependantSelections(selections Selections, freeVariables []string) S
 	return newSelections
 }
 
-func extractDependantSelection(selection Selection, freeVariables []string) *Selection {
-	if !utils.ContainsAny(selection.ids(), freeVariables) {
-		return &selection
+func extractDependantSelection(selection Selection, freeVariables []string) (*Selection, error) {
+	if utils.ContainsAny(selection.subSelectionIDs, freeVariables) {
+		return nil, errors.Errorf(
+			"cannot have independent variables in composite selection: %v",
+			selection,
+		)
 	}
 
 	if utils.Contains(freeVariables, selection.id) {
-		return nil
+		return nil, nil
 	}
 
-	newSubselectionIDs := utils.Without(selection.subSelectionIDs, freeVariables)
-	withoutFreeVariables := newSelection(
-		selection.action,
-		selection.id,
-		newSubselectionIDs,
-	)
-
-	return &withoutFreeVariables
+	return &selection, nil
 }
 
-func extractFreeSelections(selections Selections, freeVariables []string) Selections {
-	var freeSelections Selections
-	for _, freeVariable := range freeVariables {
-		selection := extractFreeSelection(selections, freeVariable)
+func extractIndependentSelections(selections Selections, independentVariables []string) IndependentSelections {
+	var independentSelections IndependentSelections
+	for _, variable := range independentVariables {
+		selection := extractIndependentSelection(selections, variable)
 		if selection != nil {
-			freeSelections = append(freeSelections, *selection)
+			independentSelections = append(independentSelections, *selection)
 		}
 	}
 
-	return freeSelections
+	return independentSelections
 }
 
-func extractFreeSelection(selections Selections, freeVariable string) *Selection {
-	var newFreeSelection Selection
-	for _, selection := range selections {
+func extractIndependentSelection(selections Selections, freeVariable string) *IndependentSelection {
+	// reverse loop for prioritizing the latest selection action
+	for i := len(selections) - 1; i >= 0; i-- {
+		selection := selections[i]
 		if utils.Contains(selection.ids(), freeVariable) {
-			newFreeSelection = NewSelectionBuilder(freeVariable).
-				WithAction(selection.action).
-				Build()
-
-			// no break, we want the last action if multiple.
+			independentSelection := selection.toIndependentSelection()
+			return &independentSelection
 		}
 	}
 
-	return &newFreeSelection
+	return nil
 }
 
 func (r *RuleSet) validateSelectionIDs(ids []string) error {
@@ -213,8 +218,8 @@ func (r *RuleSet) copy() *RuleSet {
 	variableIDs := make([]string, len(r.variables))
 	copy(variableIDs, r.variables)
 
-	freeVariablesIDs := make([]string, len(r.freeVariables))
-	copy(freeVariablesIDs, r.freeVariables)
+	freeVariablesIDs := make([]string, len(r.independentVariables))
+	copy(freeVariablesIDs, r.independentVariables)
 
 	selectableVariables := make([]string, len(r.selectableVariables))
 	copy(selectableVariables, r.selectableVariables)
@@ -226,12 +231,12 @@ func (r *RuleSet) copy() *RuleSet {
 	copy(periodVariables, r.periodVariables)
 
 	return &RuleSet{
-		polyhedron:          polyhedron,
-		selectableVariables: selectableVariables,
-		variables:           variableIDs,
-		freeVariables:       freeVariablesIDs,
-		preferredVariables:  preferredIDs,
-		periodVariables:     periodVariables,
+		polyhedron:           polyhedron,
+		selectableVariables:  selectableVariables,
+		variables:            variableIDs,
+		independentVariables: freeVariablesIDs,
+		preferredVariables:   preferredIDs,
+		periodVariables:      periodVariables,
 	}
 }
 

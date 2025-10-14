@@ -52,6 +52,10 @@ func (s Selection) isComposite() bool {
 	return len(s.subSelectionIDs) > 0
 }
 
+func (s Selection) toIndependentSelection() IndependentSelection {
+	return newIndependentSelection(s.id, s.action)
+}
+
 func newSelection(action Action, id string, subSelectionIDs []string) Selection {
 	return Selection{
 		id:              id,
@@ -154,18 +158,20 @@ func (s Selection) modifySelection() Selections {
 	return Selections{s}
 }
 
-func (s Selections) AsSolution() Solution {
-	solution := Solution{}
-	for _, selection := range s {
-		solution[selection.id] = boolToInt(selection.action == ADD)
-	}
+type DependentSelections []DependentSelection
 
-	return solution
+type DependentSelection struct {
+	id     string
+	action Action
 }
 
-func boolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
+type IndependentSelections []IndependentSelection
+
+type IndependentSelection struct {
+	id     string
+	action Action
+}
+
+func newIndependentSelection(id string, action Action) IndependentSelection {
+	return IndependentSelection{id: id, action: action}
 }

@@ -57,10 +57,8 @@ func main() {
 		puan.NewSelectionBuilder("freeVariable").Build(),
 	}
 
-	dependantSelections, freeSelections := ruleSet.CategorizeSelections(selections)
-
 	// Create the query for solver
-	query, err := ruleSet.NewQuery(puan.QueryInput{Selections: dependantSelections})
+	query, independentSelections, err := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
 	if err != nil {
 		panic(err)
 	}
@@ -73,12 +71,7 @@ func main() {
 	}
 
 	// Extract the solution for the primitive variables
-	primitiveSolution, err := solution.Extract(ruleSet.SelectableVariables()...)
-	if err != nil {
-		panic(err)
-	}
-	newSolution := freeSelections.AsSolution()
-	freeSolution, err := newSolution.Extract(ruleSet.FreeVariables()...)
+	primitiveSolution, err := ruleSet.RemoveAndAddStuff(solution, independentSelections)
 	if err != nil {
 		panic(err)
 	}
@@ -86,5 +79,4 @@ func main() {
 	fmt.Println("x: ", primitiveSolution["x"]) // = 1
 	fmt.Println("y: ", primitiveSolution["y"]) // = 1
 	fmt.Println("z: ", primitiveSolution["z"]) // = 0
-	fmt.Println("freeVariable: ", freeSolution["freeVariable"])
 }
