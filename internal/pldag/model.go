@@ -9,16 +9,18 @@ import (
 )
 
 type Model struct {
-	variables         []string
-	constraints       Constraints
-	assumeConstraints AuxiliaryConstraints
+	variables            []string
+	constraints          Constraints
+	assumeConstraints    AuxiliaryConstraints
+	variableInConstraint map[string]bool
 }
 
 func New() *Model {
 	return &Model{
-		variables:         []string{},
-		constraints:       Constraints{},
-		assumeConstraints: AuxiliaryConstraints{},
+		variables:            []string{},
+		constraints:          Constraints{},
+		assumeConstraints:    AuxiliaryConstraints{},
+		variableInConstraint: map[string]bool{},
 	}
 }
 
@@ -199,6 +201,28 @@ func (m *Model) ValidateVariables(variables ...string) error {
 	return nil
 }
 
+func (m *Model) FreeVariables() []string {
+	var freeVariables []string
+	for _, variable := range m.variables {
+		if m.isFree(variable) {
+			freeVariables = append(freeVariables, variable)
+		}
+	}
+
+	return freeVariables
+}
+
+func (m *Model) isFree(variable string) bool {
+	isUsed := m.variableInConstraint[variable]
+	if isUsed {
+		return false
+	}
+
+	isConstraint := utils.Contains(m.constraints.ids(), variable)
+
+	return !isConstraint
+}
+
 func toAuxiliaryConstraintsWithSupport(constraints Constraints) AuxiliaryConstraints {
 	var auxiliaryConstraints AuxiliaryConstraints
 	for _, c := range constraints {
@@ -216,6 +240,7 @@ func (m *Model) setAtLeast(variables []string, amount int) (string, error) {
 		return "", err
 	}
 
+	m.setVariablesInConstraint(variables)
 	m.setConstraint(constraint)
 
 	return constraint.id, nil
@@ -226,6 +251,8 @@ func (m *Model) setAtMost(variables []string, amount int) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	m.setVariablesInConstraint(variables)
 	m.setConstraint(constraint)
 
 	return constraint.id, nil
@@ -238,6 +265,12 @@ func (m *Model) setConstraint(c Constraint) {
 
 	m.variables = append(m.variables, c.id)
 	m.constraints = append(m.constraints, c)
+}
+
+func (m *Model) setVariablesInConstraint(variables []string) {
+	for _, variable := range variables {
+		m.variableInConstraint[variable] = true
+	}
 }
 
 func (m *Model) Constraints() Constraints {

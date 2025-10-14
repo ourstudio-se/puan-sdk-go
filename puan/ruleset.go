@@ -13,6 +13,7 @@ type RuleSet struct {
 	polyhedron          *pldag.Polyhedron
 	selectableVariables []string
 	variables           []string
+	freeVariables       []string
 	preferredVariables  []string
 	periodVariables     timeBoundVariables
 }
@@ -45,6 +46,10 @@ func (r *RuleSet) SelectableVariables() []string {
 
 func (r *RuleSet) Variables() []string {
 	return r.variables
+}
+
+func (r *RuleSet) FreeVariables() []string {
+	return r.freeVariables
 }
 
 func (r *RuleSet) PreferredVariables() []string {
@@ -119,6 +124,71 @@ func (r *RuleSet) NewQuery(input QueryInput) (*Query, error) {
 	return query, nil
 }
 
+func (r *RuleSet) CategorizeSelections(selections Selections) (Selections, Selections) {
+	dependantSelections := extractDependantSelections(selections, r.freeVariables)
+	freeSelections := extractFreeSelections(selections, r.freeVariables)
+
+	return dependantSelections, freeSelections
+}
+
+func extractDependantSelections(selections Selections, freeVariables []string) Selections {
+	var newSelections Selections
+	for _, selection := range selections {
+		s := extractDependantSelection(selection, freeVariables)
+		if s != nil {
+			newSelections = append(newSelections, *s)
+		}
+	}
+
+	return newSelections
+}
+
+func extractDependantSelection(selection Selection, freeVariables []string) *Selection {
+	if !utils.ContainsAny(selection.ids(), freeVariables) {
+		return &selection
+	}
+
+	if utils.Contains(freeVariables, selection.id) {
+		return nil
+	}
+
+	newSubselectionIDs := utils.Without(selection.subSelectionIDs, freeVariables)
+	withoutFreeVariables := newSelection(
+		selection.action,
+		selection.id,
+		newSubselectionIDs,
+	)
+
+	return &withoutFreeVariables
+}
+
+func extractFreeSelections(selections Selections, freeVariables []string) Selections {
+	var freeSelections Selections
+	for _, freeVariable := range freeVariables {
+		selection := extractFreeSelection(selections, freeVariable)
+		if selection != nil {
+			freeSelections = append(freeSelections, *selection)
+		}
+	}
+
+	return freeSelections
+}
+
+func extractFreeSelection(selections Selections, freeVariable string) *Selection {
+	var newFreeSelection Selection
+	for _, selection := range selections {
+		if utils.Contains(selection.ids(), freeVariable) {
+			newFreeSelection = NewSelectionBuilder(freeVariable).
+				WithAction(selection.action).
+				Build()
+
+			// no break, we want the last action if multiple.
+		}
+	}
+
+	return &newFreeSelection
+}
+
 func (r *RuleSet) validateSelectionIDs(ids []string) error {
 	for _, id := range ids {
 		if utils.Contains(r.variables, id) {
@@ -143,6 +213,9 @@ func (r *RuleSet) copy() *RuleSet {
 	variableIDs := make([]string, len(r.variables))
 	copy(variableIDs, r.variables)
 
+	freeVariablesIDs := make([]string, len(r.freeVariables))
+	copy(freeVariablesIDs, r.freeVariables)
+
 	selectableVariables := make([]string, len(r.selectableVariables))
 	copy(selectableVariables, r.selectableVariables)
 
@@ -156,6 +229,7 @@ func (r *RuleSet) copy() *RuleSet {
 		polyhedron:          polyhedron,
 		selectableVariables: selectableVariables,
 		variables:           variableIDs,
+		freeVariables:       freeVariablesIDs,
 		preferredVariables:  preferredIDs,
 		periodVariables:     periodVariables,
 	}

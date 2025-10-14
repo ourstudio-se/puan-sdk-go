@@ -153,3 +153,19 @@ func (s Selection) modifySelection() Selections {
 
 	return Selections{s}
 }
+
+func (s Selections) AsSolution() Solution {
+	solution := Solution{}
+	for _, selection := range s {
+		solution[selection.id] = boolToInt(selection.action == ADD)
+	}
+
+	return solution
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}

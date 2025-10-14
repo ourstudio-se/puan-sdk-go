@@ -13,7 +13,7 @@ func main() {
 	creator := puan.NewRuleSetCreator()
 
 	// Adds x, y, z as boolean primitive variables
-	_ = creator.AddPrimitives([]string{"x", "y", "z"}...)
+	_ = creator.AddPrimitives([]string{"x", "y", "z", "freeVariable"}...)
 
 	// Create a simple and between x and y
 	xyID, err := creator.SetAnd("x", "y")
@@ -54,10 +54,13 @@ func main() {
 	// Custom selections, which in this specific case will override the preferred variable z
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("y").Build(),
+		puan.NewSelectionBuilder("freeVariable").Build(),
 	}
 
+	dependantSelections, freeSelections := ruleSet.CategorizeSelections(selections)
+
 	// Create the query for solver
-	query, err := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
+	query, err := ruleSet.NewQuery(puan.QueryInput{Selections: dependantSelections})
 	if err != nil {
 		panic(err)
 	}
@@ -74,7 +77,14 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	newSolution := freeSelections.AsSolution()
+	freeSolution, err := newSolution.Extract(ruleSet.FreeVariables()...)
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Println("x: ", primitiveSolution["x"]) // = 1
 	fmt.Println("y: ", primitiveSolution["y"]) // = 1
 	fmt.Println("z: ", primitiveSolution["z"]) // = 0
+	fmt.Println("freeVariable: ", freeSolution["freeVariable"])
 }

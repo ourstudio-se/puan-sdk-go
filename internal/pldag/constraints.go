@@ -18,6 +18,15 @@ type Constraint struct {
 
 type Constraints []Constraint
 
+func (c Constraints) ids() []string {
+	ids := make([]string, len(c))
+	for i, constraint := range c {
+		ids[i] = constraint.id
+	}
+
+	return ids
+}
+
 func NewAtLeastConstraint(variables []string, amount int) (Constraint, error) {
 	if err := validateConstraintInput(variables, amount); err != nil {
 		return Constraint{}, err

@@ -174,10 +174,15 @@ func (c *RuleSetCreator) Create() (*RuleSet, error) {
 		return nil, err
 	}
 
+	freeVariables := c.model.FreeVariables()
+
+	affectingVariables := utils.Without(c.model.Variables(), freeVariables)
+	affectingSelectableVariables := utils.Without(c.model.PrimitiveVariables(), periodVariables.ids())
+
 	// Sort variables and constraints to ensure
 	// consistent order in the polyhedron,
 	// this to facilitate testing
-	sortedVariables := utils.Sorted(c.model.Variables())
+	sortedAffectingVariables := utils.Sorted(affectingVariables)
 	sortedConstraints := utils.SortedBy(
 		c.model.Constraints(),
 		func(c pldag.Constraint) string {
@@ -188,17 +193,16 @@ func (c *RuleSetCreator) Create() (*RuleSet, error) {
 	assumedConstraints := c.model.AssumedConstraints()
 
 	polyhedron := pldag.CreatePolyhedron(
-		sortedVariables,
+		sortedAffectingVariables,
 		sortedConstraints,
 		assumedConstraints,
 	)
 
-	selectableVariables := utils.Without(c.model.PrimitiveVariables(), periodVariables.ids())
-
 	return &RuleSet{
 		polyhedron:          polyhedron,
-		selectableVariables: selectableVariables,
-		variables:           sortedVariables,
+		selectableVariables: affectingSelectableVariables,
+		variables:           sortedAffectingVariables,
+		freeVariables:       freeVariables,
 		preferredVariables:  c.preferredVariables,
 		periodVariables:     periodVariables,
 	}, nil
