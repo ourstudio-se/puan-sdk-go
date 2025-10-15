@@ -620,7 +620,7 @@ func Test_findContainingPeriodIDs(t *testing.T) {
 		expected         idsString
 	}{
 		{
-			name: "assumed variable overlaps with multiple period dependantVariables",
+			name: "assumed variable overlaps with multiple period variables",
 			periodVariables: timeBoundVariables{
 				{
 					variable: "p1",
