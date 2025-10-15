@@ -40,7 +40,7 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 	preferred, _ := creator.SetImply("packageA", "itemN")
 	_ = creator.Prefer(preferred)
 
-	ruleSet, err := creator.Create()
+	ruleset, err := creator.Create()
 	assert.NoError(t, err)
 
 	selections := puan.Selections{
@@ -48,11 +48,8 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 		puan.NewSelectionBuilder("itemN").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -63,7 +60,7 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 			"itemN":    1,
 			"itemM":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -96,18 +93,15 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 	preferredVariant, _ := creator.SetImply("packageA", "itemX")
 	_ = creator.Prefer(preferredVariant)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -116,7 +110,7 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 			"itemY":    1,
 			"itemZ":    1,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -156,18 +150,15 @@ func Test_twoPackagesWithSharedItems_selectLargestPackage(t *testing.T) {
 		reversedPackageB,
 	)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").Build(),
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -177,6 +168,6 @@ func Test_twoPackagesWithSharedItems_selectLargestPackage(t *testing.T) {
 			"itemY":    1,
 			"itemZ":    1,
 		},
-		primitiveSolution,
+		solution,
 	)
 }

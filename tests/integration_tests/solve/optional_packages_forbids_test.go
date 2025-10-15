@@ -29,10 +29,8 @@ func Test_optionalPackagesWithForbids_changeToSmallerPackage(t *testing.T) {
 		puan.NewSelectionBuilder("packageC").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -45,7 +43,7 @@ func Test_optionalPackagesWithForbids_changeToSmallerPackage(t *testing.T) {
 			"itemY":    0,
 			"itemZ":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -67,10 +65,8 @@ func Test_optionalPackagesWithForbids_changeToLargerPackage(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemN").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -83,7 +79,7 @@ func Test_optionalPackagesWithForbids_changeToLargerPackage(t *testing.T) {
 			"itemY":    1,
 			"itemZ":    1,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -92,10 +88,8 @@ func Test_optionalPackagesWithForbids_noSelection(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -108,11 +102,11 @@ func Test_optionalPackagesWithForbids_noSelection(t *testing.T) {
 			"itemY":    0,
 			"itemZ":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
-func optionalPackagesWithForbids() *puan.RuleSet {
+func optionalPackagesWithForbids() *puan.Ruleset {
 	creator := puan.NewRuleSetCreator()
 	_ = creator.AddPrimitives("packageA", "packageB", "packageC", "itemN", "itemM", "itemX", "itemY", "itemZ")
 

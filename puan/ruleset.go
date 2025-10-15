@@ -1,15 +1,17 @@
 package puan
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/go-errors/errors"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
+	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
 )
 
-type RuleSet struct {
+type Ruleset struct {
 	polyhedron           *pldag.Polyhedron
 	selectableVariables  []string
 	dependantVariables   []string
@@ -26,9 +28,9 @@ func HydrateRuleSet(
 	variables []string,
 	selectableVariables []string,
 	preferredVariables []string,
-) *RuleSet {
+) *Ruleset {
 	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
-	return &RuleSet{
+	return &Ruleset{
 		polyhedron:          polyhedron,
 		selectableVariables: selectableVariables,
 		dependantVariables:  variables,
@@ -36,27 +38,27 @@ func HydrateRuleSet(
 	}
 }
 
-func (r *RuleSet) Polyhedron() *pldag.Polyhedron {
+func (r *Ruleset) Polyhedron() *pldag.Polyhedron {
 	return r.polyhedron
 }
 
-func (r *RuleSet) SelectableVariables() []string {
+func (r *Ruleset) SelectableVariables() []string {
 	return r.selectableVariables
 }
 
-func (r *RuleSet) Variables() []string {
+func (r *Ruleset) Variables() []string {
 	return r.dependantVariables
 }
 
-func (r *RuleSet) FreeVariables() []string {
+func (r *Ruleset) FreeVariables() []string {
 	return r.independentVariables
 }
 
-func (r *RuleSet) PreferredVariables() []string {
+func (r *Ruleset) PreferredVariables() []string {
 	return r.preferredVariables
 }
 
-func (r *RuleSet) RemoveSupportVariables(solution Solution) (Solution, error) {
+func (r *Ruleset) RemoveSupportVariables(solution Solution) (Solution, error) {
 	nonSupportVariables := []string{}
 	nonSupportVariables = append(nonSupportVariables, r.periodVariables.ids()...)
 	nonSupportVariables = append(nonSupportVariables, r.selectableVariables...)
@@ -64,12 +66,7 @@ func (r *RuleSet) RemoveSupportVariables(solution Solution) (Solution, error) {
 	return solution.Extract(nonSupportVariables...)
 }
 
-func (r *RuleSet) RemoveAndAddStuff(solution Solution, selections IndependentSelections) (Solution, error) {
-
-	return solution, nil
-}
-
-func (r *RuleSet) FindPeriodInSolution(solution Solution) (Period, error) {
+func (r *Ruleset) FindPeriodInSolution(solution Solution) (Period, error) {
 	var period *Period
 	for _, periodVariable := range r.periodVariables {
 		if isSet := solution[periodVariable.variable]; isSet == 1 {
@@ -92,34 +89,7 @@ func (r *RuleSet) FindPeriodInSolution(solution Solution) (Period, error) {
 	return *period, nil
 }
 
-type QueryInput struct {
-	Selections Selections
-	From       *time.Time
-}
-
-func (r *RuleSet) NewQuery(input QueryInput) (*Query, error) {
-	specification, err := r.newQuerySpecification(input.Selections, input.From)
-	if err != nil {
-		return nil, err
-	}
-
-	weights := calculateWeights(
-		specification.ruleSet.selectableVariables,
-		specification.querySelections,
-		specification.ruleSet.preferredVariables,
-		specification.ruleSet.periodVariables.ids(),
-	)
-
-	query := NewQuery(
-		specification.ruleSet.polyhedron,
-		specification.ruleSet.dependantVariables,
-		weights,
-	)
-
-	return query, nil
-}
-
-func (r *RuleSet) copy() *RuleSet {
+func (r *Ruleset) copy() *Ruleset {
 	aMatrix := make([][]int, len(r.polyhedron.A()))
 	copy(aMatrix, r.polyhedron.A())
 
@@ -128,11 +98,11 @@ func (r *RuleSet) copy() *RuleSet {
 
 	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
 
-	variableIDs := make([]string, len(r.dependantVariables))
-	copy(variableIDs, r.dependantVariables)
+	dependantVariableIDs := make([]string, len(r.dependantVariables))
+	copy(dependantVariableIDs, r.dependantVariables)
 
-	freeVariablesIDs := make([]string, len(r.independentVariables))
-	copy(freeVariablesIDs, r.independentVariables)
+	independentVariablesIDs := make([]string, len(r.independentVariables))
+	copy(independentVariablesIDs, r.independentVariables)
 
 	selectableVariables := make([]string, len(r.selectableVariables))
 	copy(selectableVariables, r.selectableVariables)
@@ -143,49 +113,49 @@ func (r *RuleSet) copy() *RuleSet {
 	periodVariables := make([]timeBoundVariable, len(r.periodVariables))
 	copy(periodVariables, r.periodVariables)
 
-	return &RuleSet{
+	return &Ruleset{
 		polyhedron:           polyhedron,
 		selectableVariables:  selectableVariables,
-		dependantVariables:   variableIDs,
-		independentVariables: freeVariablesIDs,
+		dependantVariables:   dependantVariableIDs,
+		independentVariables: independentVariablesIDs,
 		preferredVariables:   preferredIDs,
 		periodVariables:      periodVariables,
 	}
 }
 
 type querySpecification struct {
-	ruleSet         *RuleSet
-	querySelections QuerySelections
+	ruleset          *Ruleset
+	weightSelections weights.Selections
 }
 
-func (r *RuleSet) newQuerySpecification(
+func (r *Ruleset) newQuerySpecification(
 	selections Selections,
 	from *time.Time,
 ) (*querySpecification, error) {
-	ruleSet := r.copy()
+	ruleset := r.copy()
 
-	querySelections, err := ruleSet.newQuerySelections(selections)
+	weightSelections, err := ruleset.newWeightSelections(selections)
 	if err != nil {
 		return nil, err
 	}
 
 	if from != nil {
-		err = ruleSet.forbidPassedPeriods(*from)
+		err = ruleset.forbidPassedPeriods(*from)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return &querySpecification{
-		ruleSet:         ruleSet,
-		querySelections: querySelections,
+		ruleset:          ruleset,
+		weightSelections: weightSelections,
 	}, nil
 }
 
-func (r *RuleSet) newQuerySelections(selections Selections) (QuerySelections, error) {
-	querySelections := make(QuerySelections, len(selections))
+func (r *Ruleset) newWeightSelections(selections Selections) (weights.Selections, error) {
+	querySelections := make(weights.Selections, len(selections))
 	for i, selection := range selections {
-		querySelection, err := r.newQuerySelection(selection)
+		querySelection, err := r.newWeighSelection(selection)
 		if err != nil {
 			return nil, err
 		}
@@ -196,20 +166,21 @@ func (r *RuleSet) newQuerySelections(selections Selections) (QuerySelections, er
 	return querySelections, nil
 }
 
-func (r *RuleSet) newQuerySelection(selection Selection) (QuerySelection, error) {
+func (r *Ruleset) newWeighSelection(selection Selection) (weights.Selection, error) {
 	id, err := r.obtainQuerySelectionID(selection)
 	if err != nil {
-		return QuerySelection{}, err
+		return weights.Selection{}, err
 	}
 
-	querySelection := QuerySelection{
-		id:     id,
-		action: selection.action,
+	weightSelection, err := weights.NewSelection(id, weights.Action(selection.action))
+	if err != nil {
+		return weights.Selection{}, err
 	}
-	return querySelection, nil
+
+	return weightSelection, nil
 }
 
-func (r *RuleSet) obtainQuerySelectionID(selection Selection) (string, error) {
+func (r *Ruleset) obtainQuerySelectionID(selection Selection) (string, error) {
 	if selection.isComposite() {
 		return r.setCompositeSelectionConstraint(selection.ids())
 	}
@@ -217,7 +188,7 @@ func (r *RuleSet) obtainQuerySelectionID(selection Selection) (string, error) {
 	return selection.id, nil
 }
 
-func (r *RuleSet) setCompositeSelectionConstraint(ids []string) (string, error) {
+func (r *Ruleset) setCompositeSelectionConstraint(ids []string) (string, error) {
 	constraint, err := newCompositeSelectionConstraint(ids)
 	if err != nil {
 		return "", err
@@ -236,7 +207,7 @@ func newCompositeSelectionConstraint(ids []string) (pldag.Constraint, error) {
 	return pldag.NewAtLeastConstraint(dedupedIDs, len(dedupedIDs))
 }
 
-func (r *RuleSet) setConstraintIfNotExist(constraint pldag.Constraint) error {
+func (r *Ruleset) setConstraintIfNotExist(constraint pldag.Constraint) error {
 	if r.constraintExists(constraint) {
 		return nil
 	}
@@ -244,14 +215,15 @@ func (r *RuleSet) setConstraintIfNotExist(constraint pldag.Constraint) error {
 	return r.setConstraint(constraint)
 }
 
-func (r *RuleSet) constraintExists(constraint pldag.Constraint) bool {
+func (r *Ruleset) constraintExists(constraint pldag.Constraint) bool {
 	return utils.Contains(r.dependantVariables, constraint.ID())
 }
 
-func (r *RuleSet) setConstraint(constraint pldag.Constraint) error {
+func (r *Ruleset) setConstraint(constraint pldag.Constraint) error {
 	r.polyhedron.AddEmptyColumn()
-
+	fmt.Println("in setContraint", r.dependantVariables)
 	r.dependantVariables = append(r.dependantVariables, constraint.ID())
+	fmt.Println("in setContraint after", r.dependantVariables)
 
 	supportImpliesConstraint, constraintImpliesSupport :=
 		constraint.ToAuxiliaryConstraintsWithSupport()
@@ -269,7 +241,7 @@ func (r *RuleSet) setConstraint(constraint pldag.Constraint) error {
 	return nil
 }
 
-func (r *RuleSet) setAuxiliaryConstraint(constraint pldag.AuxiliaryConstraint) error {
+func (r *Ruleset) setAuxiliaryConstraint(constraint pldag.AuxiliaryConstraint) error {
 	row, err := r.newRow(constraint.Coefficients())
 	if err != nil {
 		return err
@@ -280,7 +252,7 @@ func (r *RuleSet) setAuxiliaryConstraint(constraint pldag.AuxiliaryConstraint) e
 	return nil
 }
 
-func (r *RuleSet) newRow(coefficients pldag.Coefficients) ([]int, error) {
+func (r *Ruleset) newRow(coefficients pldag.Coefficients) ([]int, error) {
 	row := make([]int, len(r.dependantVariables))
 
 	for id, value := range coefficients {
@@ -295,7 +267,7 @@ func (r *RuleSet) newRow(coefficients pldag.Coefficients) ([]int, error) {
 	return row, nil
 }
 
-func (r *RuleSet) forbidPassedPeriods(from time.Time) error {
+func (r *Ruleset) forbidPassedPeriods(from time.Time) error {
 	passedPeriods := r.periodVariables.passed(from)
 	passedPeriodIDs := passedPeriods.ids()
 
@@ -315,7 +287,7 @@ func (r *RuleSet) forbidPassedPeriods(from time.Time) error {
 	return r.assume(constraint.ID())
 }
 
-func (r *RuleSet) assume(id string) error {
+func (r *Ruleset) assume(id string) error {
 	constraints := pldag.NewAssumedConstraints(id)
 	for _, constraint := range constraints {
 		err := r.setAuxiliaryConstraint(constraint)

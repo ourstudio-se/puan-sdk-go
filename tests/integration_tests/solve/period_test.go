@@ -4,9 +4,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
 	"github.com/ourstudio-se/puan-sdk-go/puan"
-	"github.com/stretchr/testify/assert"
 )
 
 // An item is included, but later is not. The solver should choose the earlier period
@@ -27,11 +28,8 @@ func Test_itemIncludedInPeriod(t *testing.T) {
 
 	ruleSet, _ := creator.Create()
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(nil, ruleSet, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -39,7 +37,7 @@ func Test_itemIncludedInPeriod(t *testing.T) {
 			"period_0": 1,
 			"period_1": 0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -71,11 +69,8 @@ func Test_manyItemsIncludedInPeriod_shouldChooseLaterPeriod(t *testing.T) {
 
 	ruleSet, _ := creator.Create()
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	cleanedSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(nil, ruleSet, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -88,7 +83,7 @@ func Test_manyItemsIncludedInPeriod_shouldChooseLaterPeriod(t *testing.T) {
 			"period_0": 0,
 			"period_1": 1,
 		},
-		cleanedSolution,
+		solution,
 	)
 }
 
@@ -110,11 +105,8 @@ func Test_itemIncludedInLaterPeriod_shouldChooseEarlierPeriod(t *testing.T) {
 
 	ruleSet, _ := creator.Create()
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(nil, ruleSet, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -122,7 +114,7 @@ func Test_itemIncludedInLaterPeriod_shouldChooseEarlierPeriod(t *testing.T) {
 			"period_0": 1,
 			"period_1": 0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -145,11 +137,8 @@ func Test_itemIncludedInLaterPeriod_andFromInLaterPeriod_shouldChooseLaterPeriod
 	ruleSet, _ := creator.Create()
 
 	from := startTime.Add(45 * time.Minute)
-	query, _ := ruleSet.NewQuery(puan.QueryInput{From: &from})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	cleanedSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(nil, ruleSet, &from)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -157,7 +146,7 @@ func Test_itemIncludedInLaterPeriod_andFromInLaterPeriod_shouldChooseLaterPeriod
 			"period_0": 0,
 			"period_1": 1,
 		},
-		cleanedSolution,
+		solution,
 	)
 }
 
@@ -183,11 +172,8 @@ func Test_itemIncludedInLaterPeriod_andFromInEarlierPeriod_shouldChooseEarlierPe
 	ruleSet, _ := creator.Create()
 
 	from := startTime.Add(15 * time.Minute)
-	query, _ := ruleSet.NewQuery(puan.QueryInput{From: &from})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	cleanedSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(nil, ruleSet, &from)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -195,7 +181,7 @@ func Test_itemIncludedInLaterPeriod_andFromInEarlierPeriod_shouldChooseEarlierPe
 			"period_0": 1,
 			"period_1": 0,
 		},
-		cleanedSolution,
+		solution,
 	)
 }
 
@@ -222,16 +208,11 @@ func Test_itemSelectableInPeriod_givenItemSelected_shouldChoosePeriod(t *testing
 		endTime)
 
 	ruleSet, _ := creator.Create()
-
-	query, _ := ruleSet.NewQuery(puan.QueryInput{
-		Selections: puan.Selections{
-			puan.NewSelectionBuilder("itemX").Build(),
-		},
-	})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	selections := puan.Selections{
+		puan.NewSelectionBuilder("itemX").Build(),
+	}
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -240,7 +221,7 @@ func Test_itemSelectableInPeriod_givenItemSelected_shouldChoosePeriod(t *testing
 			"period_1": 1,
 			"period_2": 0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -302,15 +283,11 @@ func Test_itemSelectableInPeriod_andManyItemsIncludedInThatPeriod_givenItemSelec
 
 	ruleSet, _ := creator.Create()
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{
-		Selections: puan.Selections{
-			puan.NewSelectionBuilder("itemX").Build(),
-		},
-	})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	selections := puan.Selections{
+		puan.NewSelectionBuilder("itemX").Build(),
+	}
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -331,7 +308,7 @@ func Test_itemSelectableInPeriod_andManyItemsIncludedInThatPeriod_givenItemSelec
 			"period_1": 1,
 			"period_2": 0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -369,11 +346,9 @@ func Test_includedPackageInEarlierPeriod_withPreferred_shouldChooseEarlierPeriod
 
 	ruleSet, _ := creator.Create()
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{})
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(nil, ruleSet, nil)
 
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -386,6 +361,6 @@ func Test_includedPackageInEarlierPeriod_withPreferred_shouldChooseEarlierPeriod
 			"period_0": 1,
 			"period_1": 0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }

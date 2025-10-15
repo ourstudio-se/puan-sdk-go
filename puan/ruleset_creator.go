@@ -158,7 +158,7 @@ func (c *RuleSetCreator) EnableTime(
 	return nil
 }
 
-func (c *RuleSetCreator) Create() (*RuleSet, error) {
+func (c *RuleSetCreator) Create() (*Ruleset, error) {
 	periodVariables, err := c.newPeriodVariables()
 	if err != nil {
 		return nil, err
@@ -197,7 +197,7 @@ func (c *RuleSetCreator) Create() (*RuleSet, error) {
 		assumedConstraints,
 	)
 
-	return &RuleSet{
+	return &Ruleset{
 		polyhedron:           polyhedron,
 		selectableVariables:  selectableVariables,
 		dependantVariables:   sortedDependentVariables,

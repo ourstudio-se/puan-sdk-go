@@ -158,13 +158,6 @@ func (s Selection) modifySelection() Selections {
 	return Selections{s}
 }
 
-type DependentSelections []DependentSelection
-
-type DependentSelection struct {
-	id     string
-	action Action
-}
-
 type IndependentSelections []IndependentSelection
 
 type IndependentSelection struct {

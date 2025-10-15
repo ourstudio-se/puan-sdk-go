@@ -32,10 +32,8 @@ func Test_optionalVariantsWithForbids_shouldReturnPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemC").WithSubSelectionID("itemD").Build(),
 	}
 
-	query, _ := ruleset.NewQuery(puan.QueryInput{Selections: selections})
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleset.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -45,7 +43,7 @@ func Test_optionalVariantsWithForbids_shouldReturnPreferred(t *testing.T) {
 			"itemC":    1,
 			"itemD":    1,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -70,10 +68,8 @@ func Test_optionalVariantsWithForbids_shouldReturnNOTPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemA").WithSubSelectionID("itemB").Build(),
 	}
 
-	query, _ := ruleset.NewQuery(puan.QueryInput{Selections: selections})
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleset.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -83,11 +79,11 @@ func Test_optionalVariantsWithForbids_shouldReturnNOTPreferred(t *testing.T) {
 			"itemC":    0,
 			"itemD":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
-func optionalVariantsWithForbids() *puan.RuleSet {
+func optionalVariantsWithForbids() *puan.Ruleset {
 	creator := puan.NewRuleSetCreator()
 
 	_ = creator.AddPrimitives("itemA", "itemB", "itemC", "itemD", "packageX")
@@ -125,7 +121,7 @@ func optionalVariantsWithForbids() *puan.RuleSet {
 
 	_ = creator.Prefer(preferredPackageXItemC, preferredPackageXItemD)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
-	return ruleSet
+	return ruleset
 }

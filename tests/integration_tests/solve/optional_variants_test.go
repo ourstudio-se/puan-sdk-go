@@ -15,17 +15,14 @@ import (
 // Description: Package A has two variants: (A, itemX) and (A, itemY, itemZ) with the latter
 // being preferred. We select (A, itemX) and expect the result configuration (A, itemX)
 func Test_optionalVariant_selectNotPreferred(t *testing.T) {
-	ruleSet := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
+	ruleset := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -34,7 +31,7 @@ func Test_optionalVariant_selectNotPreferred(t *testing.T) {
 			"itemY":    0,
 			"itemZ":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -50,11 +47,8 @@ func Test_optionalVariant_selectPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -63,7 +57,7 @@ func Test_optionalVariant_selectPreferred(t *testing.T) {
 			"itemY":    1,
 			"itemZ":    1,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -80,11 +74,8 @@ func Test_optionalVariant_deselectingVariant_shouldGiveEmptySolution(t *testing.
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").WithAction(puan.REMOVE).Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -93,7 +84,7 @@ func Test_optionalVariant_deselectingVariant_shouldGiveEmptySolution(t *testing.
 			"itemY":    0,
 			"itemZ":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -109,11 +100,8 @@ func Test_optionalVariant_changeVariant(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -122,7 +110,7 @@ func Test_optionalVariant_changeVariant(t *testing.T) {
 			"itemY":    0,
 			"itemZ":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -138,11 +126,8 @@ func Test_optionalVariant_selectItemInAnotherVariant_shouldChangeVariant(t *test
 		puan.NewSelectionBuilder("itemY").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -151,7 +136,7 @@ func Test_optionalVariant_selectItemInAnotherVariant_shouldChangeVariant(t *test
 			"itemY":    1,
 			"itemZ":    1,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -161,11 +146,8 @@ func Test_optionalVariant_noSelection_shouldGiveEmptySolution(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -174,11 +156,11 @@ func Test_optionalVariant_noSelection_shouldGiveEmptySolution(t *testing.T) {
 			"itemY":    0,
 			"itemZ":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
-func optionalVariantsWithXORBetweenItemsLargeVariantPreferred() *puan.RuleSet {
+func optionalVariantsWithXORBetweenItemsLargeVariantPreferred() *puan.Ruleset {
 	creator := puan.NewRuleSetCreator()
 	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemZ")
 

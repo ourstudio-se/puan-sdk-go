@@ -59,11 +59,11 @@ func main() {
 		puan.NewSelectionBuilder("free-variable").Build(),
 	}
 
-	// Client
-	client := glpk.NewClient("http://127.0.0.1:9000")
-
-	// Solve with the client, ruleset and selections
-	solution, err := puan.Solve(client, ruleSet, selections, nil)
+	// Create a solution creator with a GLPK client
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient("http://127.0.0.1:9000"))
+	
+	// Create the solution
+	solution, err := solutionCreator.Create(selections, ruleSet, nil)
 	if err != nil {
 		panic(err)
 	}
