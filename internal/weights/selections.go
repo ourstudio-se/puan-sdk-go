@@ -2,8 +2,10 @@ package weights
 
 import "github.com/go-errors/errors"
 
-const ADD Action = "ADD"
-const REMOVE Action = "REMOVE"
+const (
+	ADD    Action = "ADD"
+	REMOVE Action = "REMOVE"
+)
 
 type Action string
 
@@ -24,7 +26,7 @@ func NewSelection(id string, action Action) (Selection, error) {
 }
 
 func invalidAction(action Action) bool {
-	return !(action == ADD || action == REMOVE)
+	return action != ADD && action != REMOVE
 }
 
 type Selections []Selection

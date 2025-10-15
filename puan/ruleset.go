@@ -1,7 +1,6 @@
 package puan
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -153,17 +152,17 @@ func (r *Ruleset) newQuerySpecification(
 }
 
 func (r *Ruleset) newWeightSelections(selections Selections) (weights.Selections, error) {
-	querySelections := make(weights.Selections, len(selections))
+	weightSelections := make(weights.Selections, len(selections))
 	for i, selection := range selections {
-		querySelection, err := r.newWeighSelection(selection)
+		weightSelection, err := r.newWeighSelection(selection)
 		if err != nil {
 			return nil, err
 		}
 
-		querySelections[i] = querySelection
+		weightSelections[i] = weightSelection
 	}
 
-	return querySelections, nil
+	return weightSelections, nil
 }
 
 func (r *Ruleset) newWeighSelection(selection Selection) (weights.Selection, error) {
@@ -219,14 +218,12 @@ func (r *Ruleset) constraintExists(constraint pldag.Constraint) bool {
 	return utils.Contains(r.dependantVariables, constraint.ID())
 }
 
+// nolint:lll
 func (r *Ruleset) setConstraint(constraint pldag.Constraint) error {
 	r.polyhedron.AddEmptyColumn()
-	fmt.Println("in setContraint", r.dependantVariables)
 	r.dependantVariables = append(r.dependantVariables, constraint.ID())
-	fmt.Println("in setContraint after", r.dependantVariables)
 
-	supportImpliesConstraint, constraintImpliesSupport :=
-		constraint.ToAuxiliaryConstraintsWithSupport()
+	supportImpliesConstraint, constraintImpliesSupport := constraint.ToAuxiliaryConstraintsWithSupport()
 
 	err := r.setAuxiliaryConstraint(supportImpliesConstraint)
 	if err != nil {

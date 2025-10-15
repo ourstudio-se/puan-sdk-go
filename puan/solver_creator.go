@@ -25,7 +25,11 @@ func NewSolutionCreator(
 	}
 }
 
-func (c *SolutionCreator) Create(selections Selections, ruleset *Ruleset, from *time.Time) (Solution, error) {
+func (c *SolutionCreator) Create(
+	selections Selections,
+	ruleset *Ruleset,
+	from *time.Time,
+) (Solution, error) {
 	err := validateSelections(selections, ruleset)
 	if err != nil {
 		return nil, err
@@ -39,7 +43,11 @@ func (c *SolutionCreator) Create(selections Selections, ruleset *Ruleset, from *
 	return c.solve(query, selections, ruleset)
 }
 
-func (c *SolutionCreator) solve(query *Query, selections Selections, ruleset *Ruleset) (Solution, error) {
+func (c *SolutionCreator) solve(
+	query *Query,
+	selections Selections,
+	ruleset *Ruleset,
+) (Solution, error) {
 	solution, err := c.Solve(query)
 	if err != nil {
 		return Solution{}, err

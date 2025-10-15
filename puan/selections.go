@@ -4,8 +4,10 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
 
-const ADD Action = "ADD"
-const REMOVE Action = "REMOVE"
+const (
+	ADD    Action = "ADD"
+	REMOVE Action = "REMOVE"
+)
 
 type Action string
 
@@ -13,22 +15,6 @@ type Selection struct {
 	id              string
 	subSelectionIDs []string
 	action          Action
-}
-
-type QuerySelection struct {
-	id     string
-	action Action
-}
-
-type QuerySelections []QuerySelection
-
-func (s QuerySelections) ids() []string {
-	ids := make([]string, len(s))
-	for i, selection := range s {
-		ids[i] = selection.id
-	}
-
-	return ids
 }
 
 type Selections []Selection
