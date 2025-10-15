@@ -58,7 +58,7 @@ func (c *SolutionCreator) solve(
 		return Solution{}, err
 	}
 
-	independentSelections := extractIndependentSelections(
+	independentSelections := createIndependentSelections(
 		selections,
 		ruleset.independentVariables,
 	)
@@ -140,7 +140,7 @@ func extractDependantSelection(selection Selection, independentVariables []strin
 	return &selection
 }
 
-func extractIndependentSelections(
+func createIndependentSelections(
 	selections Selections,
 	independentVariableIDs []string,
 ) IndependentSelections {
@@ -148,7 +148,10 @@ func extractIndependentSelections(
 	for _, id := range independentVariableIDs {
 		selection := extractIndependentSelection(selections, id)
 		if selection != nil {
-			independentSelections = append(independentSelections, *selection)
+			independentSelections = append(
+				independentSelections,
+				selection.toIndependentSelection(),
+			)
 		}
 	}
 
@@ -158,14 +161,12 @@ func extractIndependentSelections(
 func extractIndependentSelection(
 	selections Selections,
 	independentVariableID string,
-) *IndependentSelection {
+) *Selection {
 	// reverse loop for prioritizing the latest selection action
 	for i := len(selections) - 1; i >= 0; i-- {
 		selection := selections[i]
 		if selection.id == independentVariableID {
-			independentSelection := selection.toIndependentSelection()
-
-			return &independentSelection
+			return &selection
 		}
 	}
 

@@ -9,7 +9,7 @@ import (
 )
 
 // nolint:lll
-func Test_validateSelectionIDs_givenIndependentVariableInSubSelection_shouldReturnError(t *testing.T) {
+func Test_validateSelections_givenIndependentVariableInSubSelection_shouldReturnError(t *testing.T) {
 	primaryID := fake.New[string]()
 	subID := fake.New[string]()
 
@@ -27,11 +27,11 @@ func Test_validateSelectionIDs_givenIndependentVariableInSubSelection_shouldRetu
 	assert.Error(t, err)
 }
 
-func Test_validateSelectionIDs_givenInvalidSelection(t *testing.T) {
+func Test_validateSelections_givenNotExistingID_shouldReturnError(t *testing.T) {
 	primaryID := fake.New[string]()
 	subID := fake.New[string]()
 
-	invalidID := "invalid-id"
+	invalidID := fake.New[string]()
 	creator := NewRuleSetCreator()
 	_ = creator.AddPrimitives(primaryID, subID)
 	ruleSet, _ := creator.Create()
@@ -45,7 +45,7 @@ func Test_validateSelectionIDs_givenInvalidSelection(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func Test_validateSelectionIDs_givenEmptySelection(t *testing.T) {
+func Test_validateSelectionIDs_givenEmptySelection_shouldReturnNoError(t *testing.T) {
 	primaryID := fake.New[string]()
 	subID := fake.New[string]()
 
@@ -58,4 +58,44 @@ func Test_validateSelectionIDs_givenEmptySelection(t *testing.T) {
 	err := validateSelections(selections, ruleSet)
 
 	assert.NoError(t, err)
+}
+
+func Test_extractIndependentSelection_noIndependentSelection_shouldReturnNil(t *testing.T) {
+	independentVariableIDs := fake.New[[]string]()
+	selections := Selections{
+		NewSelectionBuilder(fake.New[string]()).Build(),
+	}
+
+	selection := extractIndependentSelection(selections, independentVariableIDs[0])
+	assert.Nil(t, selection)
+}
+
+func Test_extractIndependentSelection_independentSelection_shouldReturnSelection(t *testing.T) {
+	id := fake.New[string]()
+	independentVariableIDs := []string{id}
+	selections := Selections{
+		{id: id, action: ADD},
+	}
+
+	actual := extractIndependentSelection(selections, independentVariableIDs[0])
+	expected := Selection{id: id, action: ADD}
+
+	assert.Equal(t, expected, *actual)
+}
+
+func Test_extractIndependentSelection_independentSelection_shouldReturnLastActionSelection(t *testing.T) {
+	id := fake.New[string]()
+	independentVariableIDs := []string{id}
+	selections := Selections{
+		{id: id, action: ADD},
+		{id: id, action: REMOVE},
+	}
+
+	actual := extractIndependentSelection(selections, independentVariableIDs[0])
+	expected := Selection{
+		id:     id,
+		action: REMOVE,
+	}
+
+	assert.Equal(t, expected, *actual)
 }
