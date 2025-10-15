@@ -1,3 +1,4 @@
+// nolint:lll
 package puan
 
 import (
@@ -8,7 +9,6 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
 )
 
-// nolint:lll
 func Test_validateSelections_givenIndependentVariableInSubSelection_shouldReturnError(t *testing.T) {
 	primaryID := fake.New[string]()
 	subID := fake.New[string]()
