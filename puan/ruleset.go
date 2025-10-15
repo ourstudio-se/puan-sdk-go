@@ -24,16 +24,18 @@ type Ruleset struct {
 func HydrateRuleSet(
 	aMatrix [][]int,
 	bVector []int,
-	variables []string,
+	dependentVariables []string,
+	independentVariables []string,
 	selectableVariables []string,
 	preferredVariables []string,
 ) *Ruleset {
 	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
 	return &Ruleset{
-		polyhedron:          polyhedron,
-		selectableVariables: selectableVariables,
-		dependantVariables:  variables,
-		preferredVariables:  preferredVariables,
+		polyhedron:           polyhedron,
+		selectableVariables:  selectableVariables,
+		dependantVariables:   dependentVariables,
+		independentVariables: independentVariables,
+		preferredVariables:   preferredVariables,
 	}
 }
 
@@ -45,11 +47,11 @@ func (r *Ruleset) SelectableVariables() []string {
 	return r.selectableVariables
 }
 
-func (r *Ruleset) Variables() []string {
+func (r *Ruleset) DependantVariables() []string {
 	return r.dependantVariables
 }
 
-func (r *Ruleset) FreeVariables() []string {
+func (r *Ruleset) IndependentVariables() []string {
 	return r.independentVariables
 }
 
