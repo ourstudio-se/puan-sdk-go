@@ -13,9 +13,7 @@ func main() {
 	creator := puan.NewRuleSetCreator()
 
 	// Adds x, y, z as boolean primitive variables
-	// and free-variable as a variable which will be freely selected
-	// since it is not part of any logic.
-	_ = creator.AddPrimitives([]string{"x", "y", "z", "free-variable"}...)
+	_ = creator.AddPrimitives([]string{"x", "y", "z"}...)
 
 	// Create a simple and between x and y
 	xyID, err := creator.SetAnd("x", "y")
@@ -56,10 +54,9 @@ func main() {
 	// Custom selections, which in this specific case will override the preferred variable z
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("y").Build(),
-		puan.NewSelectionBuilder("free-variable").Build(),
 	}
 
-	// Create a solution creator with a GLPK client
+	// Create a solution creator with a solver client
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient("http://127.0.0.1:9000"))
 
 	// Create the solution
@@ -68,8 +65,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("x: ", solution["x"])                         // = 1
-	fmt.Println("y: ", solution["y"])                         // = 1
-	fmt.Println("z: ", solution["z"])                         // = 0
-	fmt.Println("free-variable: ", solution["free-variable"]) // = 1
+	fmt.Println("x: ", solution["x"]) // = 1
+	fmt.Println("y: ", solution["y"]) // = 1
+	fmt.Println("z: ", solution["z"]) // = 0
 }
