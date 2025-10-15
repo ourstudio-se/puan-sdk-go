@@ -174,10 +174,11 @@ func (c *RuleSetCreator) Create() (*RuleSet, error) {
 		return nil, err
 	}
 
-	dependentVariables := utils.Without(c.model.Variables(), c.model.IndependentVariables())
+	independentVariables := c.model.IndependentVariables()
+	dependentVariables := utils.Without(c.model.Variables(), independentVariables)
 	selectableVariables := utils.Without(c.model.PrimitiveVariables(), periodVariables.ids())
 
-	// Sort variables and constraints to ensure
+	// Sort dependantVariables and constraints to ensure
 	// consistent order in the polyhedron,
 	// this to facilitate testing
 	sortedDependentVariables := utils.Sorted(dependentVariables)
@@ -199,8 +200,8 @@ func (c *RuleSetCreator) Create() (*RuleSet, error) {
 	return &RuleSet{
 		polyhedron:           polyhedron,
 		selectableVariables:  selectableVariables,
-		variables:            sortedDependentVariables,
-		independentVariables: c.model.IndependentVariables(),
+		dependantVariables:   sortedDependentVariables,
+		independentVariables: independentVariables,
 		preferredVariables:   c.preferredVariables,
 		periodVariables:      periodVariables,
 	}, nil

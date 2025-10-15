@@ -172,6 +172,14 @@ type IndependentSelection struct {
 	action Action
 }
 
+func (i IndependentSelection) toSolutionValue() int {
+	if i.action == ADD {
+		return 1
+	}
+
+	return 0
+}
+
 func newIndependentSelection(id string, action Action) IndependentSelection {
 	return IndependentSelection{id: id, action: action}
 }

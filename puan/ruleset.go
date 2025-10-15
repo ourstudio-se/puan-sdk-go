@@ -12,7 +12,7 @@ import (
 type RuleSet struct {
 	polyhedron           *pldag.Polyhedron
 	selectableVariables  []string
-	variables            []string
+	dependantVariables   []string
 	independentVariables []string
 	preferredVariables   []string
 	periodVariables      timeBoundVariables
@@ -31,7 +31,7 @@ func HydrateRuleSet(
 	return &RuleSet{
 		polyhedron:          polyhedron,
 		selectableVariables: selectableVariables,
-		variables:           variables,
+		dependantVariables:  variables,
 		preferredVariables:  preferredVariables,
 	}
 }
@@ -45,7 +45,7 @@ func (r *RuleSet) SelectableVariables() []string {
 }
 
 func (r *RuleSet) Variables() []string {
-	return r.variables
+	return r.dependantVariables
 }
 
 func (r *RuleSet) FreeVariables() []string {
@@ -97,22 +97,10 @@ type QueryInput struct {
 	From       *time.Time
 }
 
-func (r *RuleSet) NewQuery(input QueryInput) (*Query, IndependentSelections, error) {
-	selections := input.Selections
-
-	err := r.validateSelectionIDs(selections.ids())
+func (r *RuleSet) NewQuery(input QueryInput) (*Query, error) {
+	specification, err := r.newQuerySpecification(input.Selections, input.From)
 	if err != nil {
-		return nil, nil, err
-	}
-
-	dependantSelections, independentSelections := r.categorizeSelections(selections)
-
-	extendedSelections := dependantSelections.modifySelections()
-	impactingSelections := getImpactingSelections(extendedSelections)
-
-	specification, err := r.newQuerySpecification(impactingSelections, input.From)
-	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	weights := calculateWeights(
@@ -124,86 +112,11 @@ func (r *RuleSet) NewQuery(input QueryInput) (*Query, IndependentSelections, err
 
 	query := NewQuery(
 		specification.ruleSet.polyhedron,
-		specification.ruleSet.variables,
+		specification.ruleSet.dependantVariables,
 		weights,
 	)
 
-	return query, independentSelections, nil
-}
-
-func (r *RuleSet) categorizeSelections(selections Selections) (Selections, IndependentSelections, error) {
-	err := r.validateSelectionIDs(selections.ids())
-	if err != nil {
-		return nil, nil, err
-	}
-	dependantSelections := extractDependantSelections(selections, r.independentVariables)
-	independentSelections := extractIndependentSelections(selections, r.independentVariables)
-
-	return dependantSelections, independentSelections, nil
-}
-
-func extractDependantSelections(selections Selections, freeVariables []string) Selections {
-	var newSelections Selections
-	for _, selection := range selections {
-		s := extractDependantSelection(selection, freeVariables)
-		if s != nil {
-			newSelections = append(newSelections, *s)
-		}
-	}
-
-	return newSelections
-}
-
-func extractDependantSelection(selection Selection, freeVariables []string) (*Selection, error) {
-	if utils.ContainsAny(selection.subSelectionIDs, freeVariables) {
-		return nil, errors.Errorf(
-			"cannot have independent variables in composite selection: %v",
-			selection,
-		)
-	}
-
-	if utils.Contains(freeVariables, selection.id) {
-		return nil, nil
-	}
-
-	return &selection, nil
-}
-
-func extractIndependentSelections(selections Selections, independentVariables []string) IndependentSelections {
-	var independentSelections IndependentSelections
-	for _, variable := range independentVariables {
-		selection := extractIndependentSelection(selections, variable)
-		if selection != nil {
-			independentSelections = append(independentSelections, *selection)
-		}
-	}
-
-	return independentSelections
-}
-
-func extractIndependentSelection(selections Selections, freeVariable string) *IndependentSelection {
-	// reverse loop for prioritizing the latest selection action
-	for i := len(selections) - 1; i >= 0; i-- {
-		selection := selections[i]
-		if utils.Contains(selection.ids(), freeVariable) {
-			independentSelection := selection.toIndependentSelection()
-			return &independentSelection
-		}
-	}
-
-	return nil
-}
-
-func (r *RuleSet) validateSelectionIDs(ids []string) error {
-	for _, id := range ids {
-		if utils.Contains(r.variables, id) {
-			continue
-		}
-
-		return errors.Errorf("invalid selection id: %s", id)
-	}
-
-	return nil
+	return query, nil
 }
 
 func (r *RuleSet) copy() *RuleSet {
@@ -215,8 +128,8 @@ func (r *RuleSet) copy() *RuleSet {
 
 	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
 
-	variableIDs := make([]string, len(r.variables))
-	copy(variableIDs, r.variables)
+	variableIDs := make([]string, len(r.dependantVariables))
+	copy(variableIDs, r.dependantVariables)
 
 	freeVariablesIDs := make([]string, len(r.independentVariables))
 	copy(freeVariablesIDs, r.independentVariables)
@@ -233,7 +146,7 @@ func (r *RuleSet) copy() *RuleSet {
 	return &RuleSet{
 		polyhedron:           polyhedron,
 		selectableVariables:  selectableVariables,
-		variables:            variableIDs,
+		dependantVariables:   variableIDs,
 		independentVariables: freeVariablesIDs,
 		preferredVariables:   preferredIDs,
 		periodVariables:      periodVariables,
@@ -332,13 +245,13 @@ func (r *RuleSet) setConstraintIfNotExist(constraint pldag.Constraint) error {
 }
 
 func (r *RuleSet) constraintExists(constraint pldag.Constraint) bool {
-	return utils.Contains(r.variables, constraint.ID())
+	return utils.Contains(r.dependantVariables, constraint.ID())
 }
 
 func (r *RuleSet) setConstraint(constraint pldag.Constraint) error {
 	r.polyhedron.AddEmptyColumn()
 
-	r.variables = append(r.variables, constraint.ID())
+	r.dependantVariables = append(r.dependantVariables, constraint.ID())
 
 	supportImpliesConstraint, constraintImpliesSupport :=
 		constraint.ToAuxiliaryConstraintsWithSupport()
@@ -368,10 +281,10 @@ func (r *RuleSet) setAuxiliaryConstraint(constraint pldag.AuxiliaryConstraint) e
 }
 
 func (r *RuleSet) newRow(coefficients pldag.Coefficients) ([]int, error) {
-	row := make([]int, len(r.variables))
+	row := make([]int, len(r.dependantVariables))
 
 	for id, value := range coefficients {
-		idIndex, err := utils.IndexOf(r.variables, id)
+		idIndex, err := utils.IndexOf(r.dependantVariables, id)
 		if err != nil {
 			return nil, err
 		}

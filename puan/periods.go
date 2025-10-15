@@ -133,7 +133,7 @@ func toPeriods(edges []time.Time) []Period {
 }
 
 // '|' separated list of variable ids
-// Need to have the variables serialized since it is used as a key in a map
+// Need to have the dependantVariables serialized since it is used as a key in a map
 type idsString string
 
 func newIdsString(variables []string) (idsString, error) {
