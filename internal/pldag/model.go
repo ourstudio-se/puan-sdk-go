@@ -232,7 +232,7 @@ func (m *Model) setAtLeast(variables []string, amount int) (string, error) {
 		return "", err
 	}
 
-	m.unsetIndependentVariables(variables)
+	m.setDependentVariables(variables)
 	m.setConstraint(constraint)
 
 	return constraint.id, nil
@@ -244,7 +244,7 @@ func (m *Model) setAtMost(variables []string, amount int) (string, error) {
 		return "", err
 	}
 
-	m.unsetIndependentVariables(variables)
+	m.setDependentVariables(variables)
 	m.setConstraint(constraint)
 
 	return constraint.id, nil
@@ -259,7 +259,7 @@ func (m *Model) setConstraint(c Constraint) {
 	m.constraints = append(m.constraints, c)
 }
 
-func (m *Model) unsetIndependentVariables(variables []string) {
+func (m *Model) setDependentVariables(variables []string) {
 	for _, variable := range variables {
 		m.independentVariables[variable] = false
 	}
