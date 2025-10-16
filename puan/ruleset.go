@@ -57,6 +57,8 @@ func newRuleset(
 		selectableVariables,
 		dependentVariables,
 		independentVariables,
+		preferredVariables,
+		periodVariables.ids(),
 	)
 	if err != nil {
 		return Ruleset{}, err
@@ -72,7 +74,7 @@ func newRuleset(
 	}, nil
 }
 
-func validateVariables(selectable, dependent, independent []string) error {
+func validateVariables(selectable, dependent, independent, preferreds, periods []string) error {
 	if utils.ContainsAny(dependent, independent) {
 		return errors.New("dependent and independent variables cannot overlap")
 	}
@@ -87,6 +89,14 @@ func validateVariables(selectable, dependent, independent []string) error {
 
 	if !utils.ContainsAll(combined, selectable) {
 		return errors.New("selectable variables must be part of dependent or independent variables")
+	}
+
+	if !utils.ContainsAll(dependent, preferreds) {
+		return errors.New("preferred variables must be part of dependent variables")
+	}
+
+	if !utils.ContainsAll(dependent, periods) {
+		return errors.New("period variables must be part of dependent variables")
 	}
 
 	return nil

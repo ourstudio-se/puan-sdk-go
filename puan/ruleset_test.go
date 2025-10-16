@@ -329,12 +329,12 @@ func Test_RuleSet_FindPeriodInSolution_givenMultipleMatchingPeriods_shouldReturn
 }
 
 func Test_validateVariables_givenNilVariables_shouldReturnError(t *testing.T) {
-	err := validateVariables(nil, nil, nil)
+	err := validateVariables(nil, nil, nil, nil, nil)
 	assert.Error(t, err)
 }
 
 func Test_validateVariables_givenEmptyVariables_shouldReturnError(t *testing.T) {
-	err := validateVariables([]string{}, []string{}, []string{})
+	err := validateVariables([]string{}, []string{}, []string{}, []string{}, []string{})
 	assert.Error(t, err)
 }
 
@@ -342,7 +342,7 @@ func Test_validateVariables_givenDependentAndIndependentOverlap_shouldReturnErro
 	independent := fake.New[[]string]()
 	dependent := append([]string{}, independent[0])
 
-	err := validateVariables(nil, dependent, independent)
+	err := validateVariables(nil, dependent, independent, nil, nil)
 	assert.Error(t, err)
 }
 
@@ -351,6 +351,24 @@ func Test_validateVariables_givenUniqueSelectable_shouldReturnError(t *testing.T
 	dependent := fake.New[[]string]()
 	selectable := append([]string{}, uuid.New().String())
 
-	err := validateVariables(selectable, dependent, independent)
+	err := validateVariables(selectable, dependent, independent, nil, nil)
+	assert.Error(t, err)
+}
+
+func Test_validateVariables_givenUniquePreferred_shouldReturnError(t *testing.T) {
+	independent := fake.New[[]string]()
+	dependent := fake.New[[]string]()
+	preferred := append([]string{}, uuid.New().String())
+
+	err := validateVariables(nil, dependent, independent, preferred, nil)
+	assert.Error(t, err)
+}
+
+func Test_validateVariables_givenUniquePeriod_shouldReturnError(t *testing.T) {
+	independent := fake.New[[]string]()
+	dependent := fake.New[[]string]()
+	period := append([]string{}, uuid.New().String())
+
+	err := validateVariables(nil, dependent, independent, nil, period)
 	assert.Error(t, err)
 }
