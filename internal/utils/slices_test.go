@@ -194,7 +194,7 @@ func Test_SortedBy(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-func Test_Union_givenSharedValues(t *testing.T) {
+func Test_Union_givenSharedValues_shouldNotReturnDuplicates(t *testing.T) {
 	sliceA := []int{1, 2, 3}
 	sliceB := []int{2, 4}
 
@@ -205,7 +205,7 @@ func Test_Union_givenSharedValues(t *testing.T) {
 	assert.ElementsMatch(t, got, want)
 }
 
-func Test_Union_givenDisjunctValues(t *testing.T) {
+func Test_Union_givenDisjunctValues_shouldReturnAllValues(t *testing.T) {
 	sliceA := []int{1, 2}
 	sliceB := []int{5, 6}
 
