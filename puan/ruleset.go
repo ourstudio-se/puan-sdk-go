@@ -47,6 +47,10 @@ func (r *Ruleset) SelectableVariables() []string {
 	return r.selectableVariables
 }
 
+func (r *Ruleset) Selec() []string {
+	return r.selectableVariables
+}
+
 func (r *Ruleset) DependantVariables() []string {
 	return r.dependantVariables
 }
@@ -62,7 +66,10 @@ func (r *Ruleset) PreferredVariables() []string {
 func (r *Ruleset) RemoveSupportVariables(solution Solution) (Solution, error) {
 	nonSupportVariables := []string{}
 	nonSupportVariables = append(nonSupportVariables, r.periodVariables.ids()...)
-	nonSupportVariables = append(nonSupportVariables, r.selectableVariables...)
+	nonSupportVariables = append(
+		nonSupportVariables,
+		utils.Without(r.selectableVariables, r.independentVariables)...,
+	)
 
 	return solution.Extract(nonSupportVariables...)
 }

@@ -35,37 +35,34 @@ func (c *SolutionCreator) Create(
 		return nil, err
 	}
 
-	query, err := newQuery(selections, ruleset, from)
+	// nolint:lll
+	dependantSelections, independentSelections := categorizeSelections(selections, ruleset.independentVariables)
+
+	query, err := newQuery(dependantSelections, ruleset, from)
 	if err != nil {
 		return nil, err
 	}
 
-	return c.solve(query, selections, ruleset)
+	return c.solve(query, independentSelections, ruleset)
 }
 
 func (c *SolutionCreator) solve(
 	query *Query,
-	selections Selections,
+	independentSelections Selections,
 	ruleset Ruleset,
 ) (Solution, error) {
-	solution, err := c.Solve(query)
+	rawSolution, err := c.Solve(query)
 	if err != nil {
 		return Solution{}, err
 	}
 
-	primitiveSolution, err := ruleset.RemoveSupportVariables(solution)
+	solution, err := ruleset.RemoveSupportVariables(rawSolution)
 	if err != nil {
 		return Solution{}, err
 	}
 
-	independentSelections := createIndependentSelections(
-		selections,
-		ruleset.independentVariables,
-	)
-
-	for _, independentSelection := range independentSelections {
-		primitiveSolution[independentSelection.id] = independentSelection.toSolutionValue()
-	}
+	// nolint:lll
+	primitiveSolution := solution.applyIndependentVariables(ruleset.independentVariables, independentSelections)
 
 	return primitiveSolution, nil
 }
@@ -93,8 +90,28 @@ func validateSelections(selections Selections, ruleset Ruleset) error {
 	return nil
 }
 
+func categorizeSelections(
+	selections Selections,
+	independentVariables []string,
+) (Selections, Selections) {
+	var dependantSelections Selections
+	var independentSelections Selections
+
+	for _, selection := range selections {
+		isIndependent := utils.Contains(independentVariables, selection.id)
+		if isIndependent {
+			independentSelections = append(independentSelections, selection)
+		} else {
+			dependantSelections = append(dependantSelections, selection)
+		}
+	}
+
+	return dependantSelections, independentSelections
+}
+
 func newQuery(selections Selections, ruleset Ruleset, from *time.Time) (*Query, error) {
-	impactingSelections := calculateImpactingSelections(selections, ruleset.independentVariables)
+	extendedSelections := selections.modifySelections()
+	impactingSelections := getImpactingSelections(extendedSelections)
 
 	specification, err := ruleset.newQuerySpecification(impactingSelections, from)
 	if err != nil {
@@ -115,63 +132,4 @@ func newQuery(selections Selections, ruleset Ruleset, from *time.Time) (*Query, 
 	)
 
 	return query, nil
-}
-
-func calculateImpactingSelections(
-	selections Selections,
-	independentVariables []string,
-) Selections {
-	var dependantSelections Selections
-	for _, selection := range selections {
-		s := extractDependantSelection(selection, independentVariables)
-		if s != nil {
-			dependantSelections = append(dependantSelections, *s)
-		}
-	}
-
-	extendedSelections := dependantSelections.modifySelections()
-	impactingSelections := getImpactingSelections(extendedSelections)
-
-	return impactingSelections
-}
-
-func extractDependantSelection(selection Selection, independentVariables []string) *Selection {
-	if utils.Contains(independentVariables, selection.id) {
-		return nil
-	}
-
-	return &selection
-}
-
-func createIndependentSelections(
-	selections Selections,
-	independentVariableIDs []string,
-) IndependentSelections {
-	var independentSelections IndependentSelections
-	for _, id := range independentVariableIDs {
-		selection := extractIndependentSelection(selections, id)
-		if selection != nil {
-			independentSelections = append(
-				independentSelections,
-				selection.toIndependentSelection(),
-			)
-		}
-	}
-
-	return independentSelections
-}
-
-func extractIndependentSelection(
-	selections Selections,
-	independentVariableID string,
-) *Selection {
-	// reverse loop for prioritizing the latest selection action
-	for i := len(selections) - 1; i >= 0; i-- {
-		selection := selections[i]
-		if selection.id == independentVariableID {
-			return &selection
-		}
-	}
-
-	return nil
 }
