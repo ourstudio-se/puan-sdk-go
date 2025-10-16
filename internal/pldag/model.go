@@ -24,7 +24,7 @@ func New() *Model {
 	}
 }
 
-func (m *Model) SetPrimitives(primitives ...string) error {
+func (m *Model) AddPrimitives(primitives ...string) error {
 	if utils.ContainsDuplicates(primitives) {
 		return errors.New("primitives contain duplicates")
 	}

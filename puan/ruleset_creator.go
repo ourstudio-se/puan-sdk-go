@@ -26,7 +26,7 @@ func NewRuleSetCreator() *RuleSetCreator {
 }
 
 func (c *RuleSetCreator) AddPrimitives(primitives ...string) error {
-	return c.model.SetPrimitives(primitives...)
+	return c.model.AddPrimitives(primitives...)
 }
 
 func (c *RuleSetCreator) SetAnd(variables ...string) (string, error) {
@@ -224,7 +224,7 @@ func (c *RuleSetCreator) newPeriodVariables() (timeBoundVariables, error) {
 			period:   period,
 		}
 		periodVariables[i] = period
-		if err := c.model.SetPrimitives(period.variable); err != nil {
+		if err := c.model.AddPrimitives(period.variable); err != nil {
 			return nil, err
 		}
 	}
