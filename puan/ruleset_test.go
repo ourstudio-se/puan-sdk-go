@@ -82,7 +82,7 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintDoesNotExist_sh
 	creator := NewRuleSetCreator()
 	_ = creator.AddPrimitives(primaryID, subID)
 
-	// need to create the AND constraint to have both primaryID and subID
+	// need to create a constraint to have both primaryID and subID
 	// as dependent variables in the Ruleset otherwise the new constraint
 	// cannot be created
 	_, _ = creator.SetImply(primaryID, subID)
