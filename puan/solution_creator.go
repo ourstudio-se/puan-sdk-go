@@ -103,7 +103,7 @@ func newQuery(selections Selections, ruleset Ruleset, from *time.Time) (*Query, 
 
 	weights := weights.Calculate(
 		specification.ruleset.selectableVariables,
-		specification.weightSelections,
+		specification.selections,
 		specification.ruleset.preferredVariables,
 		specification.ruleset.periodVariables.ids(),
 	)

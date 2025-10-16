@@ -125,8 +125,8 @@ func (r *Ruleset) copy() *Ruleset {
 }
 
 type querySpecification struct {
-	ruleset          *Ruleset
-	weightSelections weights.Selections
+	ruleset    *Ruleset
+	selections weights.Selections
 }
 
 func (r *Ruleset) newQuerySpecification(
@@ -148,8 +148,8 @@ func (r *Ruleset) newQuerySpecification(
 	}
 
 	return &querySpecification{
-		ruleset:          ruleset,
-		weightSelections: weightSelections,
+		ruleset:    ruleset,
+		selections: weightSelections,
 	}, nil
 }
 
