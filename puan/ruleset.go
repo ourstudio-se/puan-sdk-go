@@ -49,7 +49,6 @@ func newRuleset(
 	preferredVariables []string,
 	periodVariables timeBoundVariables,
 ) (Ruleset, error) {
-	// TODO: validate
 	return Ruleset{
 		polyhedron:           polyhedron,
 		selectableVariables:  selectableVariables,
@@ -68,20 +67,16 @@ func (r *Ruleset) SelectableVariables() []string {
 	return r.selectableVariables
 }
 
-func (r *Ruleset) Selec() []string {
-	return r.selectableVariables
+func (r *Ruleset) PreferredVariables() []string {
+	return r.preferredVariables
 }
 
-func (r *Ruleset) DependantVariables() []string {
+func (r *Ruleset) DependentVariables() []string {
 	return r.dependentVariables
 }
 
 func (r *Ruleset) IndependentVariables() []string {
 	return r.independentVariables
-}
-
-func (r *Ruleset) PreferredVariables() []string {
-	return r.preferredVariables
 }
 
 func (r *Ruleset) RemoveSupportVariables(solution Solution) Solution {
@@ -245,12 +240,12 @@ func (r *Ruleset) constraintExists(constraint pldag.Constraint) bool {
 	return utils.Contains(r.dependentVariables, constraint.ID())
 }
 
-// nolint:lll
 func (r *Ruleset) setConstraint(constraint pldag.Constraint) error {
 	r.polyhedron.AddEmptyColumn()
 	r.dependentVariables = append(r.dependentVariables, constraint.ID())
 
-	supportImpliesConstraint, constraintImpliesSupport := constraint.ToAuxiliaryConstraintsWithSupport()
+	supportImpliesConstraint, constraintImpliesSupport :=
+		constraint.ToAuxiliaryConstraintsWithSupport()
 
 	err := r.setAuxiliaryConstraint(supportImpliesConstraint)
 	if err != nil {

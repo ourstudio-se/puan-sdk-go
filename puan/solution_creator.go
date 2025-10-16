@@ -25,7 +25,6 @@ func NewSolutionCreator(
 	}
 }
 
-// nolint:lll
 func (c *SolutionCreator) Create(
 	selections Selections,
 	ruleset Ruleset,
@@ -36,7 +35,8 @@ func (c *SolutionCreator) Create(
 		return nil, err
 	}
 
-	dependantSelections, independentSelections := categorizeSelections(selections, ruleset.independentVariables)
+	dependantSelections, independentSelections :=
+		categorizeSelections(selections, ruleset.independentVariables)
 
 	dependentSolution, err := c.findDependentSolution(dependantSelections, ruleset, from)
 	if err != nil {

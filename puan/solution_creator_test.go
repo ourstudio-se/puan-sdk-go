@@ -77,3 +77,24 @@ func Test_validateSelections_givenEmptySelection_shouldReturnNoError(t *testing.
 
 	assert.NoError(t, err)
 }
+
+func Test_categorizeSelections(t *testing.T) {
+	independentID := fake.New[string]()
+	dependentID := fake.New[string]()
+
+	selections := Selections{
+		NewSelectionBuilder(independentID).Build(),
+		NewSelectionBuilder(dependentID).Build(),
+	}
+
+	independentVariables := []string{independentID}
+
+	dependentSelections, independentSelections :=
+		categorizeSelections(selections, independentVariables)
+
+	assert.Len(t, dependentSelections, 1)
+	assert.Equal(t, dependentID, dependentSelections[0].id)
+
+	assert.Len(t, independentSelections, 1)
+	assert.Equal(t, independentID, independentSelections[0].id)
+}

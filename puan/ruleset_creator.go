@@ -174,8 +174,6 @@ func (c *RuleSetCreator) Create() (Ruleset, error) {
 		return Ruleset{}, err
 	}
 
-	a := c.model.Variables()
-	_ = a
 	dependentVariables := c.findDependantVariables()
 	independentVariables := utils.Without(c.model.PrimitiveVariables(), dependentVariables)
 	selectableVariables := utils.Without(c.model.PrimitiveVariables(), periodVariables.ids())
