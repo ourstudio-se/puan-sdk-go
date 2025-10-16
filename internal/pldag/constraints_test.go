@@ -260,3 +260,53 @@ func Test_NewAssumedConstraint(t *testing.T) {
 		})
 	}
 }
+
+func Test_Constraints_Variables(t *testing.T) {
+	constraints := Constraints{
+		{
+			id: "constraint1",
+			coefficients: Coefficients{
+				"a": 1,
+				"b": 2,
+				"c": 3,
+			},
+		},
+		{
+			id: "constraint2",
+			coefficients: Coefficients{
+				"c": 4,
+				"d": 5,
+			},
+		},
+	}
+
+	want := []string{"a", "b", "c", "d", "constraint1", "constraint2"}
+	got := constraints.Variables()
+
+	assert.Len(t, want, len(got))
+	assert.ElementsMatch(t, want, got)
+}
+
+func Test_AuxiliaryConstraints_Variables(t *testing.T) {
+	constraints := AuxiliaryConstraints{
+		{
+			coefficients: Coefficients{
+				"a": 1,
+				"b": 2,
+				"c": 3,
+			},
+		},
+		{
+			coefficients: Coefficients{
+				"c": 4,
+				"d": 5,
+			},
+		},
+	}
+
+	want := []string{"a", "b", "c", "d"}
+	got := constraints.Variables()
+
+	assert.Len(t, want, len(got))
+	assert.ElementsMatch(t, want, got)
+}

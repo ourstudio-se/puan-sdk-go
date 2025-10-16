@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
 	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
@@ -22,17 +21,14 @@ import (
 // packageC -> xor(itemX)
 // We expect the variant of 'package A' to disappear from selected actions when selecting 'package C'
 func Test_optionalPackagesWithForbids_changeToSmallerPackage(t *testing.T) {
-	ruleSet := optionalPackagesWithForbids()
+	ruleset := optionalPackagesWithForbids()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemN").Build(),
 		puan.NewSelectionBuilder("packageC").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -45,7 +41,7 @@ func Test_optionalPackagesWithForbids_changeToSmallerPackage(t *testing.T) {
 			"itemY":    0,
 			"itemZ":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -60,17 +56,14 @@ func Test_optionalPackagesWithForbids_changeToSmallerPackage(t *testing.T) {
 // packageB -> xor(itemX, itemY)
 // packageC -> xor(itemX)
 func Test_optionalPackagesWithForbids_changeToLargerPackage(t *testing.T) {
-	ruleSet := optionalPackagesWithForbids()
+	ruleset := optionalPackagesWithForbids()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageC").Build(),
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemN").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -83,19 +76,16 @@ func Test_optionalPackagesWithForbids_changeToLargerPackage(t *testing.T) {
 			"itemY":    1,
 			"itemZ":    1,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
 func Test_optionalPackagesWithForbids_noSelection(t *testing.T) {
-	ruleSet := optionalPackagesWithForbids()
+	ruleset := optionalPackagesWithForbids()
 
 	selections := puan.Selections{}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -108,11 +98,11 @@ func Test_optionalPackagesWithForbids_noSelection(t *testing.T) {
 			"itemY":    0,
 			"itemZ":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
-func optionalPackagesWithForbids() *puan.RuleSet {
+func optionalPackagesWithForbids() puan.Ruleset {
 	creator := puan.NewRuleSetCreator()
 	_ = creator.AddPrimitives("packageA", "packageB", "packageC", "itemN", "itemM", "itemX", "itemY", "itemZ")
 
@@ -145,7 +135,7 @@ func optionalPackagesWithForbids() *puan.RuleSet {
 		packageCRequiresItemsX,
 	)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
-	return ruleSet
+	return ruleset
 }

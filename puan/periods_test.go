@@ -35,6 +35,7 @@ func Test_NewPeriod_givenFromEqualToTo_shouldReturnError(t *testing.T) {
 
 	assert.Error(t, err)
 }
+
 func Test_Period_overlaps(t *testing.T) {
 	tests := []struct {
 		name     string

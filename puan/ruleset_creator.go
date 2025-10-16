@@ -26,7 +26,7 @@ func NewRuleSetCreator() *RuleSetCreator {
 }
 
 func (c *RuleSetCreator) AddPrimitives(primitives ...string) error {
-	return c.model.SetPrimitives(primitives...)
+	return c.model.AddPrimitives(primitives...)
 }
 
 func (c *RuleSetCreator) SetAnd(variables ...string) (string, error) {
@@ -158,26 +158,30 @@ func (c *RuleSetCreator) EnableTime(
 	return nil
 }
 
-func (c *RuleSetCreator) Create() (*RuleSet, error) {
+func (c *RuleSetCreator) Create() (Ruleset, error) {
 	periodVariables, err := c.newPeriodVariables()
 	if err != nil {
-		return nil, err
+		return Ruleset{}, err
 	}
 
 	err = c.createPeriodConstraints(periodVariables)
 	if err != nil {
-		return nil, err
+		return Ruleset{}, err
 	}
 
 	err = c.createAssumeConstraints()
 	if err != nil {
-		return nil, err
+		return Ruleset{}, err
 	}
 
-	// Sort variables and constraints to ensure
+	dependentVariables := c.findDependantVariables()
+	independentVariables := utils.Without(c.model.PrimitiveVariables(), dependentVariables)
+	selectableVariables := utils.Without(c.model.PrimitiveVariables(), periodVariables.ids())
+
+	// Sort dependentVariables and constraints to ensure
 	// consistent order in the polyhedron,
 	// this to facilitate testing
-	sortedVariables := utils.Sorted(c.model.Variables())
+	sortedDependentVariables := utils.Sorted(dependentVariables)
 	sortedConstraints := utils.SortedBy(
 		c.model.Constraints(),
 		func(c pldag.Constraint) string {
@@ -185,23 +189,27 @@ func (c *RuleSetCreator) Create() (*RuleSet, error) {
 		},
 	)
 
-	assumedConstraints := c.model.AssumedConstraints()
-
 	polyhedron := pldag.CreatePolyhedron(
-		sortedVariables,
+		sortedDependentVariables,
 		sortedConstraints,
-		assumedConstraints,
+		c.model.AssumedConstraints(),
 	)
 
-	selectableVariables := utils.Without(c.model.PrimitiveVariables(), periodVariables.ids())
+	return newRuleset(
+		polyhedron,
+		selectableVariables,
+		sortedDependentVariables,
+		independentVariables,
+		c.preferredVariables,
+		periodVariables,
+	)
+}
 
-	return &RuleSet{
-		polyhedron:          polyhedron,
-		selectableVariables: selectableVariables,
-		variables:           sortedVariables,
-		preferredVariables:  c.preferredVariables,
-		periodVariables:     periodVariables,
-	}, nil
+func (c *RuleSetCreator) findDependantVariables() []string {
+	constraintVariables := c.model.Constraints().Variables()
+	assumedVariables := c.model.AssumedConstraints().Variables()
+
+	return utils.Union(constraintVariables, assumedVariables)
 }
 
 func (c *RuleSetCreator) newPeriodVariables() (timeBoundVariables, error) {
@@ -221,7 +229,7 @@ func (c *RuleSetCreator) newPeriodVariables() (timeBoundVariables, error) {
 			period:   period,
 		}
 		periodVariables[i] = period
-		if err := c.model.SetPrimitives(period.variable); err != nil {
+		if err := c.model.AddPrimitives(period.variable); err != nil {
 			return nil, err
 		}
 	}

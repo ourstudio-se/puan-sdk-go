@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
 	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
@@ -16,17 +15,13 @@ import (
 // C is larger than B, and B is larger than A.
 // Selected package is only A.
 func Test_exactlyOnePackage_selectSmallestPackage(t *testing.T) {
-	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
+	ruleset := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -38,7 +33,7 @@ func Test_exactlyOnePackage_selectSmallestPackage(t *testing.T) {
 			"itemZ":    0,
 			"itemK":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -48,18 +43,14 @@ func Test_exactlyOnePackage_selectSmallestPackage(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is A, then B.
 func Test_exactlyOnePackage_upgradeToLargerPackage_case2(t *testing.T) {
-	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
+	ruleset := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").Build(),
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -71,7 +62,7 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case2(t *testing.T) {
 			"itemZ":    1,
 			"itemK":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -81,18 +72,14 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case2(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is A, then C.
 func Test_exactlyOnePackage_upgradeToLargerPackage_case3(t *testing.T) {
-	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
+	ruleset := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").Build(),
 		puan.NewSelectionBuilder("packageC").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -104,7 +91,7 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case3(t *testing.T) {
 			"itemZ":    1,
 			"itemK":    1,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -114,18 +101,14 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case3(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is B, then C.
 func Test_exactlyOnePackage_upgradeToLargerPackage_case4(t *testing.T) {
-	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
+	ruleset := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageB").Build(),
 		puan.NewSelectionBuilder("packageC").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -137,7 +120,7 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case4(t *testing.T) {
 			"itemZ":    1,
 			"itemK":    1,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -147,18 +130,14 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case4(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is C, then A.
 func Test_exactlyOnePackage_downgradeToSmallerPackage_case1(t *testing.T) {
-	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
+	ruleset := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageC").Build(),
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -170,7 +149,7 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case1(t *testing.T) {
 			"itemZ":    0,
 			"itemK":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -180,18 +159,14 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case1(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is B, then A.
 func Test_exactlyOnePackage_downgradeToSmallerPackage_case2(t *testing.T) {
-	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
+	ruleset := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageB").Build(),
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -203,7 +178,7 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case2(t *testing.T) {
 			"itemZ":    0,
 			"itemK":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -213,18 +188,14 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case2(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Selected package is C, then B.
 func Test_exactlyOnePackage_downgradeToSmallerPackage_case3(t *testing.T) {
-	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
+	ruleset := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageC").Build(),
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -236,7 +207,7 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case3(t *testing.T) {
 			"itemZ":    1,
 			"itemK":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -246,15 +217,11 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case3(t *testing.T) {
 // C is larger than B, and B is larger than A.
 // Nothing is selected, expect the preferred package.
 func Test_exactlyOnePackage_noSelection_shouldGivePreferred(t *testing.T) {
-	ruleSet := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
+	ruleset := upgradeDowngradePackageWithSharedItemsSmallestPreferred()
 
 	selections := puan.Selections{}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -266,11 +233,11 @@ func Test_exactlyOnePackage_noSelection_shouldGivePreferred(t *testing.T) {
 			"itemZ":    0,
 			"itemK":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
-func upgradeDowngradePackageWithSharedItemsSmallestPreferred() *puan.RuleSet {
+func upgradeDowngradePackageWithSharedItemsSmallestPreferred() puan.Ruleset {
 	creator := puan.NewRuleSetCreator()
 	_ = creator.AddPrimitives("packageA", "packageB", "packageC", "itemX", "itemY", "itemZ", "itemK")
 
@@ -302,7 +269,7 @@ func upgradeDowngradePackageWithSharedItemsSmallestPreferred() *puan.RuleSet {
 
 	_ = creator.Prefer("packageA")
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
-	return ruleSet
+	return ruleset
 }

@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
 	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
@@ -17,17 +16,14 @@ import (
 // B has been preselected and we select A. We know expect
 // A to be selected without nothing left from B.
 func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldGivePreferred(t *testing.T) {
-	ruleSet := packagesWithSharedItemsSmallerPackagePreferred()
+	ruleset := packagesWithSharedItemsSmallerPackagePreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageB").Build(),
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -37,7 +33,7 @@ func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldGivePreferred(
 			"itemY":    1,
 			"itemZ":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -48,16 +44,13 @@ func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldGivePreferred(
 // of A and B must be selected, but with A as preferred.
 // With nothing being preselected, we select B and expect to get B.
 func Test_exactlyOnePackage_selectNotPreferred(t *testing.T) {
-	ruleSet := packagesWithSharedItemsSmallerPackagePreferred()
+	ruleset := packagesWithSharedItemsSmallerPackagePreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -67,11 +60,11 @@ func Test_exactlyOnePackage_selectNotPreferred(t *testing.T) {
 			"itemY":    1,
 			"itemZ":    1,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
-func packagesWithSharedItemsSmallerPackagePreferred() *puan.RuleSet {
+func packagesWithSharedItemsSmallerPackagePreferred() puan.Ruleset {
 	creator := puan.NewRuleSetCreator()
 	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 
@@ -97,7 +90,7 @@ func packagesWithSharedItemsSmallerPackagePreferred() *puan.RuleSet {
 
 	_ = creator.Prefer("packageA")
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
-	return ruleSet
+	return ruleset
 }

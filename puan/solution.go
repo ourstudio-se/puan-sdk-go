@@ -1,18 +1,22 @@
 package puan
 
-import "github.com/go-errors/errors"
-
 type Solution map[string]int
 
-func (s Solution) Extract(variables ...string) (Solution, error) {
+func (s Solution) Extract(variables ...string) Solution {
 	extracted := make(Solution)
 	for _, variable := range variables {
-		if _, ok := s[variable]; !ok {
-			return Solution{}, errors.Errorf("variable %s not found in solution", variable)
+		if _, ok := s[variable]; ok {
+			extracted[variable] = s[variable]
 		}
-
-		extracted[variable] = s[variable]
 	}
 
-	return extracted, nil
+	return extracted
+}
+
+func (s Solution) merge(other Solution) Solution {
+	for variable, value := range other {
+		s[variable] = value
+	}
+
+	return s
 }

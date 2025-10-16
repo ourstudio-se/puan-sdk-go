@@ -3,8 +3,6 @@ package puan
 import (
 	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_Solution_Extract_validCases(t *testing.T) {
@@ -63,49 +61,11 @@ func Test_Solution_Extract_validCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			extracted, err := tt.solution.Extract(tt.variables...)
+			extracted := tt.solution.Extract(tt.variables...)
 
-			assert.NoError(t, err)
 			if !reflect.DeepEqual(extracted, tt.expected) {
 				t.Errorf("Expected %v, but got %v", tt.expected, extracted)
 			}
-		})
-	}
-}
-
-func Test_Solution_Extract_invalidCases(t *testing.T) {
-	tests := []struct {
-		name      string
-		solution  Solution
-		variables []string
-	}{
-		{
-			name: "givenNonExistentVariable_shouldReturnZeroValue",
-			solution: Solution{
-				"x": 10,
-				"y": 20,
-			},
-			variables: []string{"non_existent"},
-		},
-		{
-			name: "givenMixedExistingAndNonExistingVariables_shouldReturnMixedValues",
-			solution: Solution{
-				"x": 10,
-				"y": 20,
-			},
-			variables: []string{"x", "non_existent", "y"},
-		},
-		{
-			name:      "givenEmptySolution_shouldReturnEmptySolution",
-			solution:  Solution{},
-			variables: []string{"x", "y"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := tt.solution.Extract(tt.variables...)
-			assert.Error(t, err)
 		})
 	}
 }

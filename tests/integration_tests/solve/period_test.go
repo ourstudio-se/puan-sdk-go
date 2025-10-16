@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
-	"github.com/ourstudio-se/puan-sdk-go/puan"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
 // An item is included, but later is not. The solver should choose the earlier period
@@ -25,13 +25,9 @@ func Test_itemIncludedInPeriod(t *testing.T) {
 		startTime,
 		startTime.Add(30*time.Minute))
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(nil, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -39,7 +35,7 @@ func Test_itemIncludedInPeriod(t *testing.T) {
 			"period_0": 1,
 			"period_1": 0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -69,13 +65,9 @@ func Test_manyItemsIncludedInPeriod_shouldChooseLaterPeriod(t *testing.T) {
 		startTime,
 		startTime.Add(30*time.Minute))
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	cleanedSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(nil, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -88,7 +80,7 @@ func Test_manyItemsIncludedInPeriod_shouldChooseLaterPeriod(t *testing.T) {
 			"period_0": 0,
 			"period_1": 1,
 		},
-		cleanedSolution,
+		solution,
 	)
 }
 
@@ -108,13 +100,9 @@ func Test_itemIncludedInLaterPeriod_shouldChooseEarlierPeriod(t *testing.T) {
 		startTime.Add(30*time.Minute),
 		endTime)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(nil, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -122,7 +110,7 @@ func Test_itemIncludedInLaterPeriod_shouldChooseEarlierPeriod(t *testing.T) {
 			"period_0": 1,
 			"period_1": 0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -142,14 +130,11 @@ func Test_itemIncludedInLaterPeriod_andFromInLaterPeriod_shouldChooseLaterPeriod
 		startTime.Add(30*time.Minute),
 		endTime)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
 	from := startTime.Add(45 * time.Minute)
-	query, _ := ruleSet.NewQuery(puan.QueryInput{From: &from})
 
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	cleanedSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(nil, ruleset, &from)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -157,7 +142,7 @@ func Test_itemIncludedInLaterPeriod_andFromInLaterPeriod_shouldChooseLaterPeriod
 			"period_0": 0,
 			"period_1": 1,
 		},
-		cleanedSolution,
+		solution,
 	)
 }
 
@@ -180,14 +165,11 @@ func Test_itemIncludedInLaterPeriod_andFromInEarlierPeriod_shouldChooseEarlierPe
 		startTime.Add(30*time.Minute),
 		endTime)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
 	from := startTime.Add(15 * time.Minute)
-	query, _ := ruleSet.NewQuery(puan.QueryInput{From: &from})
 
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	cleanedSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(nil, ruleset, &from)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -195,7 +177,7 @@ func Test_itemIncludedInLaterPeriod_andFromInEarlierPeriod_shouldChooseEarlierPe
 			"period_0": 1,
 			"period_1": 0,
 		},
-		cleanedSolution,
+		solution,
 	)
 }
 
@@ -221,17 +203,12 @@ func Test_itemSelectableInPeriod_givenItemSelected_shouldChoosePeriod(t *testing
 		endTime.Add(-15*time.Minute),
 		endTime)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
+	selections := puan.Selections{
+		puan.NewSelectionBuilder("itemX").Build(),
+	}
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{
-		Selections: puan.Selections{
-			puan.NewSelectionBuilder("itemX").Build(),
-		},
-	})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -240,7 +217,7 @@ func Test_itemSelectableInPeriod_givenItemSelected_shouldChoosePeriod(t *testing
 			"period_1": 1,
 			"period_2": 0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -300,17 +277,13 @@ func Test_itemSelectableInPeriod_andManyItemsIncludedInThatPeriod_givenItemSelec
 		periodWithRules.To(),
 	)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{
-		Selections: puan.Selections{
-			puan.NewSelectionBuilder("itemX").Build(),
-		},
-	})
+	selections := puan.Selections{
+		puan.NewSelectionBuilder("itemX").Build(),
+	}
 
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -331,7 +304,7 @@ func Test_itemSelectableInPeriod_andManyItemsIncludedInThatPeriod_givenItemSelec
 			"period_1": 1,
 			"period_2": 0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -367,13 +340,10 @@ func Test_includedPackageInEarlierPeriod_withPreferred_shouldChooseEarlierPeriod
 		startTime,
 		startTime.Add(30*time.Minute))
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
-	query, _ := ruleSet.NewQuery(puan.QueryInput{})
+	solution, _ := solutionCreator.Create(nil, ruleset, nil)
 
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleSet.RemoveSupportVariables(solution)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -386,6 +356,6 @@ func Test_includedPackageInEarlierPeriod_withPreferred_shouldChooseEarlierPeriod
 			"period_0": 1,
 			"period_1": 0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }

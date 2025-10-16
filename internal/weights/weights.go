@@ -1,4 +1,4 @@
-package puan
+package weights
 
 import (
 	"maps"
@@ -34,9 +34,9 @@ func (w Weights) sum() int {
 	return sum
 }
 
-func calculateWeights(
+func Calculate(
 	selectableIDs []string,
-	selections QuerySelections,
+	selections Selections,
 	preferredIDs []string,
 	periodIDs []string,
 ) Weights {
@@ -114,7 +114,7 @@ func calculateMinPeriodWeight(
 }
 
 func calculateSelectedWeights(
-	selections QuerySelections,
+	selections Selections,
 	notSelectedSum,
 	preferredWeightsSum int,
 	minPeriodWeight int,

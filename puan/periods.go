@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
+
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
 

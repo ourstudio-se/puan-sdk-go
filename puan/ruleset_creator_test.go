@@ -129,7 +129,12 @@ func Test_Create_givenDifferentModelingOrder_shouldReturnSamePolyhedron(
 	_ = creatorTwo.Assume(rootTwo)
 	rulesetTwo, _ := creatorTwo.Create()
 
-	assert.Equalf(t, rulesetOne.variables, rulesetTwo.variables, "variables are not equal")
+	assert.Equalf(
+		t,
+		rulesetOne.dependentVariables,
+		rulesetTwo.dependentVariables,
+		"dependentVariables are not equal",
+	)
 	assert.Equalf(t, rulesetOne.polyhedron.A(), rulesetTwo.polyhedron.A(), "A matrices are not equal")
 	assert.Equalf(t, rulesetOne.polyhedron.B(), rulesetTwo.polyhedron.B(), "B vectors are not equal")
 }

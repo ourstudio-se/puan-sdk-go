@@ -22,7 +22,7 @@ func New() *Model {
 	}
 }
 
-func (m *Model) SetPrimitives(primitives ...string) error {
+func (m *Model) AddPrimitives(primitives ...string) error {
 	if utils.ContainsDuplicates(primitives) {
 		return errors.New("primitives contain duplicates")
 	}
@@ -226,6 +226,7 @@ func (m *Model) setAtMost(variables []string, amount int) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	m.setConstraint(constraint)
 
 	return constraint.id, nil

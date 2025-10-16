@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
 	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
@@ -18,11 +17,7 @@ func Test_heavyNonPreferredWithOr_emptySelection(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	query, _ := ruleset.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleset.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -31,7 +26,7 @@ func Test_heavyNonPreferredWithOr_emptySelection(t *testing.T) {
 			"itemX":    0,
 			"itemY":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -45,11 +40,7 @@ func Test_heavyNonPreferredWithOr_preferSelection(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	query, _ := ruleset.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleset.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -58,7 +49,7 @@ func Test_heavyNonPreferredWithOr_preferSelection(t *testing.T) {
 			"itemX":    0,
 			"itemY":    0,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -72,11 +63,7 @@ func Test_heavyNonPreferredWithOr_notPreferSelection(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	query, _ := ruleset.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleset.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -85,7 +72,7 @@ func Test_heavyNonPreferredWithOr_notPreferSelection(t *testing.T) {
 			"itemX":    1,
 			"itemY":    1,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
@@ -100,11 +87,7 @@ func Test_heavyNonPreferredWithOr_bothPackagesSelection(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	query, _ := ruleset.NewQuery(puan.QueryInput{Selections: selections})
-
-	client := glpk.NewClient(url)
-	solution, _ := client.Solve(query)
-	primitiveSolution, _ := ruleset.RemoveSupportVariables(solution)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -113,11 +96,11 @@ func Test_heavyNonPreferredWithOr_bothPackagesSelection(t *testing.T) {
 			"itemX":    1,
 			"itemY":    1,
 		},
-		primitiveSolution,
+		solution,
 	)
 }
 
-func heavyNonPreferredWithOr() *puan.RuleSet {
+func heavyNonPreferredWithOr() puan.Ruleset {
 	creator := puan.NewRuleSetCreator()
 
 	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "itemY")
@@ -134,7 +117,7 @@ func heavyNonPreferredWithOr() *puan.RuleSet {
 	packageAAndNotB, _ := creator.SetAnd("packageA", notPackageB)
 	_ = creator.Prefer(packageAAndNotB)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
-	return ruleSet
+	return ruleset
 }

@@ -1,4 +1,4 @@
-package puan
+package weights
 
 import (
 	"testing"
@@ -100,7 +100,7 @@ func Test_calculatePreferredWeights_givenNoPreferredIDs_shouldReturnEmptyWeights
 }
 
 func Test_calculateSelectedWeights_oneSelected_shouldReturnWeights(t *testing.T) {
-	selections := QuerySelections{
+	selections := Selections{
 		{
 			id:     "a",
 			action: ADD,
@@ -118,7 +118,7 @@ func Test_calculateSelectedWeights_oneSelected_shouldReturnWeights(t *testing.T)
 }
 
 func Test_calculateSelectedWeights_twoSelected_shouldReturnWeights(t *testing.T) {
-	selections := QuerySelections{
+	selections := Selections{
 		{
 			id:     "a",
 			action: ADD,
@@ -141,7 +141,7 @@ func Test_calculateSelectedWeights_twoSelected_shouldReturnWeights(t *testing.T)
 }
 
 func Test_calculateSelectedWeights_twoSelected_withRemoveAction(t *testing.T) {
-	selections := QuerySelections{
+	selections := Selections{
 		{
 			id:     "a",
 			action: ADD,
@@ -176,7 +176,7 @@ func Test_calculateSelectedWeights_noSelection_shouldReturnEmptyWeights(t *testi
 func Test_calculateSelectedWeights_givenSelectionsPreferredWeightsAndPeriodWeight(
 	t *testing.T,
 ) {
-	selections := QuerySelections{
+	selections := Selections{
 		{
 			id:     "a",
 			action: ADD,
@@ -207,14 +207,14 @@ func Test_calculateSelectedWeights_givenSelectionsPreferredWeightsAndPeriodWeigh
 func Test_calculateWeights(t *testing.T) {
 	primitives := []string{"a", "b", "c"}
 	preferredIDs := []string{"e"}
-	selections := QuerySelections{
+	selections := Selections{
 		{
 			id:     "a",
 			action: ADD,
 		},
 	}
 
-	actual := calculateWeights(primitives, selections, preferredIDs, nil)
+	actual := Calculate(primitives, selections, preferredIDs, nil)
 	expected := Weights{
 		"a": 8,
 		"b": -2,

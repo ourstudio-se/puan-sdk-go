@@ -29,6 +29,7 @@ func (p *Polyhedron) AddEmptyColumn() {
 		p.aMatrix[i] = append(p.aMatrix[i], 0)
 	}
 }
+
 func (p *Polyhedron) Extend(row []int, bias Bias) {
 	p.aMatrix = append(p.aMatrix, row)
 	p.bVector = append(p.bVector, int(bias))

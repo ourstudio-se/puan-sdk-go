@@ -46,7 +46,7 @@ func main() {
 	}
 
 	// Create the ruleset
-	ruleSet, err := creator.Create()
+	ruleset, err := creator.Create()
 	if err != nil {
 		panic(err)
 	}
@@ -56,25 +56,16 @@ func main() {
 		puan.NewSelectionBuilder("y").Build(),
 	}
 
-	// Create the query for solver
-	query, err := ruleSet.NewQuery(puan.QueryInput{Selections: selections})
+	// Create a solution creator with a solver client
+	solutionCreator := puan.NewSolutionCreator(glpk.NewClient("http://127.0.0.1:9000"))
+
+	// Create the solution
+	solution, err := solutionCreator.Create(selections, ruleset, nil)
 	if err != nil {
 		panic(err)
 	}
 
-	// Solve
-	client := glpk.NewClient("http://127.0.0.1:9000")
-	solution, err := client.Solve(query)
-	if err != nil {
-		panic(err)
-	}
-
-	// Extract the solution for the primitive variables
-	primitiveSolution, err := solution.Extract(ruleSet.SelectableVariables()...)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("x: ", primitiveSolution["x"]) // = 1
-	fmt.Println("y: ", primitiveSolution["y"]) // = 1
-	fmt.Println("z: ", primitiveSolution["z"]) // = 0
+	fmt.Println("x: ", solution["x"]) // = 1
+	fmt.Println("y: ", solution["y"]) // = 1
+	fmt.Println("z: ", solution["z"]) // = 0
 }
