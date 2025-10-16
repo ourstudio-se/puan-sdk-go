@@ -25,7 +25,7 @@ func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldGivePreferred(
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -53,7 +53,7 @@ func Test_exactlyOnePackage_selectNotPreferred(t *testing.T) {
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{

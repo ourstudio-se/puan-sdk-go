@@ -19,7 +19,7 @@ func Test_multiplePackagesWithOr_noSelectionExpectPreferred(t *testing.T) {
 	selections := puan.Selections{}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -45,7 +45,7 @@ func Test_multiplePackagesWithOr_selectPackageB(t *testing.T) {
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -71,7 +71,7 @@ func Test_multiplePackagesWithOr_selectPackageC(t *testing.T) {
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -99,7 +99,7 @@ func Test_multiplePackagesWithOr_allSelectedExceptA(t *testing.T) {
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{

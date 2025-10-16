@@ -18,7 +18,7 @@ import (
 // We give pre selected action [itemX] and selects [packageA, itemY] and
 // expects solution [packageA, itemY, ...]
 func Test_optionalLargeVariantWithXOR_removePreselectedItem(t *testing.T) {
-	ruleSet := optionalLargeVariantWithXOR()
+	ruleset := optionalLargeVariantWithXOR()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("itemX").Build(),
@@ -26,7 +26,7 @@ func Test_optionalLargeVariantWithXOR_removePreselectedItem(t *testing.T) {
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -48,7 +48,7 @@ func Test_optionalLargeVariantWithXOR_removePreselectedItem(t *testing.T) {
 // Test_optionalLargeVariantWithXOR_shouldChangeVariant
 // Ref: test_will_change_heavy_package_variant_is_pre_selected_and_other_package_variant_option_is_selected
 func Test_optionalLargeVariantWithXOR_shouldChangeVariant(t *testing.T) {
-	ruleSet := optionalLargeVariantWithXOR()
+	ruleset := optionalLargeVariantWithXOR()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
@@ -56,7 +56,7 @@ func Test_optionalLargeVariantWithXOR_shouldChangeVariant(t *testing.T) {
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -76,12 +76,12 @@ func Test_optionalLargeVariantWithXOR_shouldChangeVariant(t *testing.T) {
 }
 
 func Test_optionalLargeVariantWithXOR_noSelection(t *testing.T) {
-	ruleSet := optionalLargeVariantWithXOR()
+	ruleset := optionalLargeVariantWithXOR()
 
 	selections := puan.Selections{}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -101,14 +101,14 @@ func Test_optionalLargeVariantWithXOR_noSelection(t *testing.T) {
 }
 
 func Test_optionalLargeVariantWithXOR_singleItemSelection(t *testing.T) {
-	ruleSet := optionalLargeVariantWithXOR()
+	ruleset := optionalLargeVariantWithXOR()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("itemM").Build(),
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -139,7 +139,7 @@ func optionalLargeVariantWithXOR() *puan.Ruleset {
 
 	_ = creator.Assume(packageARequiresExactlyOneOfXAndY, packageARequiresItems)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
-	return ruleSet
+	return ruleset
 }

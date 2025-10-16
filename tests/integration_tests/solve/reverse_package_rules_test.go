@@ -49,7 +49,7 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -101,7 +101,7 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -158,7 +158,7 @@ func Test_twoPackagesWithSharedItems_selectLargestPackage(t *testing.T) {
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{

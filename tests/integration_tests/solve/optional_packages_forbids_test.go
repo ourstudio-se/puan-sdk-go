@@ -22,7 +22,7 @@ import (
 // packageC -> xor(itemX)
 // We expect the variant of 'package A' to disappear from selected actions when selecting 'package C'
 func Test_optionalPackagesWithForbids_changeToSmallerPackage(t *testing.T) {
-	ruleSet := optionalPackagesWithForbids()
+	ruleset := optionalPackagesWithForbids()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemN").Build(),
@@ -30,7 +30,7 @@ func Test_optionalPackagesWithForbids_changeToSmallerPackage(t *testing.T) {
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -58,7 +58,7 @@ func Test_optionalPackagesWithForbids_changeToSmallerPackage(t *testing.T) {
 // packageB -> xor(itemX, itemY)
 // packageC -> xor(itemX)
 func Test_optionalPackagesWithForbids_changeToLargerPackage(t *testing.T) {
-	ruleSet := optionalPackagesWithForbids()
+	ruleset := optionalPackagesWithForbids()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageC").Build(),
@@ -66,7 +66,7 @@ func Test_optionalPackagesWithForbids_changeToLargerPackage(t *testing.T) {
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -84,12 +84,12 @@ func Test_optionalPackagesWithForbids_changeToLargerPackage(t *testing.T) {
 }
 
 func Test_optionalPackagesWithForbids_noSelection(t *testing.T) {
-	ruleSet := optionalPackagesWithForbids()
+	ruleset := optionalPackagesWithForbids()
 
 	selections := puan.Selections{}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -139,7 +139,7 @@ func optionalPackagesWithForbids() *puan.Ruleset {
 		packageCRequiresItemsX,
 	)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
-	return ruleSet
+	return ruleset
 }

@@ -27,7 +27,7 @@ func NewSolutionCreator(
 
 func (c *SolutionCreator) Create(
 	selections Selections,
-	ruleset *Ruleset,
+	ruleset Ruleset,
 	from *time.Time,
 ) (Solution, error) {
 	err := validateSelections(selections, ruleset)
@@ -46,7 +46,7 @@ func (c *SolutionCreator) Create(
 func (c *SolutionCreator) solve(
 	query *Query,
 	selections Selections,
-	ruleset *Ruleset,
+	ruleset Ruleset,
 ) (Solution, error) {
 	solution, err := c.Solve(query)
 	if err != nil {
@@ -70,7 +70,7 @@ func (c *SolutionCreator) solve(
 	return primitiveSolution, nil
 }
 
-func validateSelections(selections Selections, ruleset *Ruleset) error {
+func validateSelections(selections Selections, ruleset Ruleset) error {
 	for _, selection := range selections {
 		if !utils.ContainsAll(ruleset.selectableVariables, selection.ids()) {
 			return errors.Errorf(
@@ -93,7 +93,7 @@ func validateSelections(selections Selections, ruleset *Ruleset) error {
 	return nil
 }
 
-func newQuery(selections Selections, ruleset *Ruleset, from *time.Time) (*Query, error) {
+func newQuery(selections Selections, ruleset Ruleset, from *time.Time) (*Query, error) {
 	impactingSelections := calculateImpactingSelections(selections, ruleset.independentVariables)
 
 	specification, err := ruleset.newQuerySpecification(impactingSelections, from)

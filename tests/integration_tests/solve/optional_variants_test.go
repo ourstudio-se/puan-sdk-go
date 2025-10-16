@@ -22,7 +22,7 @@ func Test_optionalVariant_selectNotPreferred(t *testing.T) {
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -41,14 +41,14 @@ func Test_optionalVariant_selectNotPreferred(t *testing.T) {
 // being preferred. We select (A, itemY, itemZ) and expect the result configuration
 // (A, itemY, itemZ).
 func Test_optionalVariant_selectPreferred(t *testing.T) {
-	ruleSet := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
+	ruleset := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -68,14 +68,14 @@ func Test_optionalVariant_selectPreferred(t *testing.T) {
 // If (A, itemY, itemZ) is already selected, check that we will remove package A when deselecting A.
 // Comment: this test fails. We get another variant of packageA instead of nothing.
 func Test_optionalVariant_deselectingVariant_shouldGiveEmptySolution(t *testing.T) {
-	ruleSet := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
+	ruleset := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").WithAction(puan.REMOVE).Build(),
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -93,7 +93,7 @@ func Test_optionalVariant_deselectingVariant_shouldGiveEmptySolution(t *testing.
 // Description: Given rules package A -> xor(itemX, itemY), package A -> xor(itemX, itemZ). (itemY, itemZ) is preferred oved itemX.
 // If (A, itemY, itemZ) is already selected, check that we will select (A, itemX) variant when selecting (A, itemX)
 func Test_optionalVariant_changeVariant(t *testing.T) {
-	ruleSet := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
+	ruleset := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
@@ -101,7 +101,7 @@ func Test_optionalVariant_changeVariant(t *testing.T) {
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -119,7 +119,7 @@ func Test_optionalVariant_changeVariant(t *testing.T) {
 // Description: Given rules package A -> xor(itemX, itemY), package A -> xor(itemX, itemZ). (itemY, itemZ) is preferred oved itemX.
 // If package A and itemX are selected, check that we will get (A, itemY, itemZ) config when selecting itemY (or itemZ) independently.
 func Test_optionalVariant_selectItemInAnotherVariant_shouldChangeVariant(t *testing.T) {
-	ruleSet := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
+	ruleset := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
@@ -127,7 +127,7 @@ func Test_optionalVariant_selectItemInAnotherVariant_shouldChangeVariant(t *test
 	}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -142,12 +142,12 @@ func Test_optionalVariant_selectItemInAnotherVariant_shouldChangeVariant(t *test
 
 // Test_optionalVariant_noSelection_shouldGiveEmptySolution
 func Test_optionalVariant_noSelection_shouldGiveEmptySolution(t *testing.T) {
-	ruleSet := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
+	ruleset := optionalVariantsWithXORBetweenItemsLargeVariantPreferred()
 
 	selections := puan.Selections{}
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -180,7 +180,7 @@ func optionalVariantsWithXORBetweenItemsLargeVariantPreferred() *puan.Ruleset {
 
 	_ = creator.Prefer(packagePreferredVariant)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
-	return ruleSet
+	return ruleset
 }

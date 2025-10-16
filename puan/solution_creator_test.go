@@ -22,7 +22,7 @@ func Test_validateSelections_givenIndependentVariableInSubSelection_shouldReturn
 		NewSelectionBuilder(primaryID).WithSubSelectionID(subID).Build(),
 	}
 
-	err := validateSelections(selections, ruleSet)
+	err := validateSelections(selections, *ruleSet)
 
 	assert.Error(t, err)
 }
@@ -40,7 +40,7 @@ func Test_validateSelections_givenIndependentVariableSelectionWithSubSelection_s
 		NewSelectionBuilder(primaryID).WithSubSelectionID(subID).Build(),
 	}
 
-	err := validateSelections(selections, ruleSet)
+	err := validateSelections(selections, *ruleSet)
 
 	assert.Error(t, err)
 }
@@ -58,7 +58,7 @@ func Test_validateSelections_givenNotExistingID_shouldReturnError(t *testing.T) 
 		NewSelectionBuilder(invalidID).Build(),
 	}
 
-	err := validateSelections(selections, ruleSet)
+	err := validateSelections(selections, *ruleSet)
 
 	assert.Error(t, err)
 }
@@ -73,7 +73,7 @@ func Test_validateSelections_givenEmptySelection_shouldReturnNoError(t *testing.
 
 	selections := Selections{}
 
-	err := validateSelections(selections, ruleSet)
+	err := validateSelections(selections, *ruleSet)
 
 	assert.NoError(t, err)
 }

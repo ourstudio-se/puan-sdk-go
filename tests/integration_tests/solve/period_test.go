@@ -26,10 +26,10 @@ func Test_itemIncludedInPeriod(t *testing.T) {
 		startTime,
 		startTime.Add(30*time.Minute))
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(nil, ruleSet, nil)
+	solution, _ := solutionCreator.Create(nil, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -67,10 +67,10 @@ func Test_manyItemsIncludedInPeriod_shouldChooseLaterPeriod(t *testing.T) {
 		startTime,
 		startTime.Add(30*time.Minute))
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(nil, ruleSet, nil)
+	solution, _ := solutionCreator.Create(nil, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -103,10 +103,10 @@ func Test_itemIncludedInLaterPeriod_shouldChooseEarlierPeriod(t *testing.T) {
 		startTime.Add(30*time.Minute),
 		endTime)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(nil, ruleSet, nil)
+	solution, _ := solutionCreator.Create(nil, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -134,11 +134,11 @@ func Test_itemIncludedInLaterPeriod_andFromInLaterPeriod_shouldChooseLaterPeriod
 		startTime.Add(30*time.Minute),
 		endTime)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
 	from := startTime.Add(45 * time.Minute)
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(nil, ruleSet, &from)
+	solution, _ := solutionCreator.Create(nil, *ruleset, &from)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -169,11 +169,11 @@ func Test_itemIncludedInLaterPeriod_andFromInEarlierPeriod_shouldChooseEarlierPe
 		startTime.Add(30*time.Minute),
 		endTime)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
 	from := startTime.Add(15 * time.Minute)
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(nil, ruleSet, &from)
+	solution, _ := solutionCreator.Create(nil, *ruleset, &from)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -207,12 +207,12 @@ func Test_itemSelectableInPeriod_givenItemSelected_shouldChoosePeriod(t *testing
 		endTime.Add(-15*time.Minute),
 		endTime)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("itemX").Build(),
 	}
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -281,13 +281,13 @@ func Test_itemSelectableInPeriod_andManyItemsIncludedInThatPeriod_givenItemSelec
 		periodWithRules.To(),
 	)
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("itemX").Build(),
 	}
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(selections, ruleSet, nil)
+	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -344,10 +344,10 @@ func Test_includedPackageInEarlierPeriod_withPreferred_shouldChooseEarlierPeriod
 		startTime,
 		startTime.Add(30*time.Minute))
 
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
-	solution, _ := solutionCreator.Create(nil, ruleSet, nil)
+	solution, _ := solutionCreator.Create(nil, *ruleset, nil)
 
 	assert.Equal(
 		t,
