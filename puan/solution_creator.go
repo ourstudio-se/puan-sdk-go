@@ -25,6 +25,7 @@ func NewSolutionCreator(
 	}
 }
 
+// nolint:lll
 func (c *SolutionCreator) Create(
 	selections Selections,
 	ruleset Ruleset,
@@ -35,36 +36,67 @@ func (c *SolutionCreator) Create(
 		return nil, err
 	}
 
-	// nolint:lll
-	dependantSelections, independentSelections := categorizeSelections(selections, ruleset.independentVariables)
+	independentVariables := ruleset.independentVariables
+	dependantSelections, independentSelections := categorizeSelections(selections, independentVariables)
 
-	query, err := newQuery(dependantSelections, ruleset, from)
+	dependantSolution, err := c.findDependantSolution(dependantSelections, ruleset, from)
 	if err != nil {
 		return nil, err
 	}
 
-	return c.solve(query, independentSelections, ruleset)
+	independentSolution := findIndependentSolution(independentVariables, independentSelections)
+
+	solution := dependantSolution.merge(independentSolution)
+
+	return solution, nil
 }
 
-func (c *SolutionCreator) solve(
-	query *Query,
-	independentSelections Selections,
+func (c *SolutionCreator) findDependantSolution(
+	selections Selections,
 	ruleset Ruleset,
+	from *time.Time,
 ) (Solution, error) {
-	rawSolution, err := c.Solve(query)
+	query, err := newQuery(selections, ruleset, from)
 	if err != nil {
-		return Solution{}, err
+		return nil, err
 	}
 
-	solution, err := ruleset.RemoveSupportVariables(rawSolution)
+	solution, err := c.Solve(query)
 	if err != nil {
-		return Solution{}, err
+		return nil, err
 	}
 
-	// nolint:lll
-	primitiveSolution := solution.applyIndependentVariables(ruleset.independentVariables, independentSelections)
+	primitiveSolution, err := ruleset.RemoveSupportVariables(solution)
+	if err != nil {
+		return nil, err
+	}
 
 	return primitiveSolution, nil
+}
+
+func findIndependentSolution(independentVariables []string, selections Selections) Solution {
+	solution := make(Solution, len(independentVariables))
+	for _, variable := range independentVariables {
+		solution[variable] = independentSolutionValue(variable, selections)
+	}
+
+	return solution
+}
+
+func independentSolutionValue(variableID string, selections Selections) int {
+	// reverse loop for prioritizing the latest selection action
+	for i := len(selections) - 1; i >= 0; i-- {
+		selection := selections[i]
+		if selection.id == variableID {
+			if selection.action == ADD {
+				return 1
+			}
+
+			return 0
+		}
+	}
+
+	return 0
 }
 
 func validateSelections(selections Selections, ruleset Ruleset) error {

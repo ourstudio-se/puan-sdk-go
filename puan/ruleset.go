@@ -64,12 +64,10 @@ func (r *Ruleset) PreferredVariables() []string {
 }
 
 func (r *Ruleset) RemoveSupportVariables(solution Solution) (Solution, error) {
+	dependantSelectableVariables := utils.Without(r.selectableVariables, r.independentVariables)
 	nonSupportVariables := []string{}
+	nonSupportVariables = append(nonSupportVariables, dependantSelectableVariables...)
 	nonSupportVariables = append(nonSupportVariables, r.periodVariables.ids()...)
-	nonSupportVariables = append(
-		nonSupportVariables,
-		utils.Without(r.selectableVariables, r.independentVariables)...,
-	)
 
 	return solution.Extract(nonSupportVariables...)
 }
