@@ -146,11 +146,13 @@ func newQuery(selections Selections, ruleset Ruleset, from *time.Time) (*Query, 
 		return nil, err
 	}
 
+	dependentSelectableVariables := utils.Without(
+		specification.ruleset.selectableVariables,
+		specification.ruleset.independentVariables,
+	)
+
 	weights := weights.Calculate(
-		utils.Without(
-			specification.ruleset.selectableVariables,
-			specification.ruleset.independentVariables,
-		),
+		dependentSelectableVariables,
 		specification.selections,
 		specification.ruleset.preferredVariables,
 		specification.ruleset.periodVariables.ids(),

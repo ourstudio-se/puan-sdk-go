@@ -49,6 +49,19 @@ func newRuleset(
 	preferredVariables []string,
 	periodVariables timeBoundVariables,
 ) (Ruleset, error) {
+	if polyhedron == nil {
+		return Ruleset{}, errors.New("polyhedron cannot be nil")
+	}
+
+	err := validateVariables(
+		selectableVariables,
+		dependentVariables,
+		independentVariables,
+	)
+	if err != nil {
+		return Ruleset{}, err
+	}
+
 	return Ruleset{
 		polyhedron:           polyhedron,
 		selectableVariables:  selectableVariables,
@@ -57,6 +70,26 @@ func newRuleset(
 		preferredVariables:   preferredVariables,
 		periodVariables:      periodVariables,
 	}, nil
+}
+
+func validateVariables(selectable, dependent, independent []string) error {
+	if utils.ContainsAny(dependent, independent) {
+		return errors.New("dependent and independent variables cannot overlap")
+	}
+
+	var combined []string
+	combined = append(combined, dependent...)
+	combined = append(combined, independent...)
+
+	if len(combined) == 0 {
+		return errors.New("dependent and independent variables cannot both be empty")
+	}
+
+	if !utils.ContainsAll(combined, selectable) {
+		return errors.New("selectable variables must be part of dependent or independent variables")
+	}
+
+	return nil
 }
 
 func (r *Ruleset) Polyhedron() *pldag.Polyhedron {

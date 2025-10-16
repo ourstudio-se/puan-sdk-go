@@ -327,3 +327,30 @@ func Test_RuleSet_FindPeriodInSolution_givenMultipleMatchingPeriods_shouldReturn
 
 	assert.Error(t, err)
 }
+
+func Test_validateVariables_givenNilVariables_shouldReturnError(t *testing.T) {
+	err := validateVariables(nil, nil, nil)
+	assert.Error(t, err)
+}
+
+func Test_validateVariables_givenEmptyVariables_shouldReturnError(t *testing.T) {
+	err := validateVariables([]string{}, []string{}, []string{})
+	assert.Error(t, err)
+}
+
+func Test_validateVariables_givenDependentAndIndependentOverlap_shouldReturnError(t *testing.T) {
+	independent := fake.New[[]string]()
+	dependent := append([]string{}, independent[0])
+
+	err := validateVariables(nil, dependent, independent)
+	assert.Error(t, err)
+}
+
+func Test_validateVariables_givenUniqueSelectable_shouldReturnError(t *testing.T) {
+	independent := fake.New[[]string]()
+	dependent := fake.New[[]string]()
+	selectable := append([]string{}, uuid.New().String())
+
+	err := validateVariables(selectable, dependent, independent)
+	assert.Error(t, err)
+}
