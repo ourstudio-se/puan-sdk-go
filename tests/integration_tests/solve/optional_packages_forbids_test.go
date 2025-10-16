@@ -28,7 +28,7 @@ func Test_optionalPackagesWithForbids_changeToSmallerPackage(t *testing.T) {
 		puan.NewSelectionBuilder("packageC").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -63,7 +63,7 @@ func Test_optionalPackagesWithForbids_changeToLargerPackage(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemN").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -85,7 +85,7 @@ func Test_optionalPackagesWithForbids_noSelection(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -102,7 +102,7 @@ func Test_optionalPackagesWithForbids_noSelection(t *testing.T) {
 	)
 }
 
-func optionalPackagesWithForbids() *puan.Ruleset {
+func optionalPackagesWithForbids() puan.Ruleset {
 	creator := puan.NewRuleSetCreator()
 	_ = creator.AddPrimitives("packageA", "packageB", "packageC", "itemN", "itemM", "itemX", "itemY", "itemZ")
 

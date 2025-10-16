@@ -20,7 +20,7 @@ func Test_optionalVariant_selectNotPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -45,7 +45,7 @@ func Test_optionalVariant_selectPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -71,7 +71,7 @@ func Test_optionalVariant_deselectingVariant_shouldGiveEmptySolution(t *testing.
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").WithAction(puan.REMOVE).Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -96,7 +96,7 @@ func Test_optionalVariant_changeVariant(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -121,7 +121,7 @@ func Test_optionalVariant_selectItemInAnotherVariant_shouldChangeVariant(t *test
 		puan.NewSelectionBuilder("itemY").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -140,7 +140,7 @@ func Test_optionalVariant_noSelection_shouldGiveEmptySolution(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -153,7 +153,7 @@ func Test_optionalVariant_noSelection_shouldGiveEmptySolution(t *testing.T) {
 	)
 }
 
-func optionalVariantsWithXORBetweenItemsLargeVariantPreferred() *puan.Ruleset {
+func optionalVariantsWithXORBetweenItemsLargeVariantPreferred() puan.Ruleset {
 	creator := puan.NewRuleSetCreator()
 	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemZ")
 

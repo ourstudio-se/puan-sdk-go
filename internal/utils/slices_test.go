@@ -193,3 +193,25 @@ func Test_SortedBy(t *testing.T) {
 	got := SortedBy(in, func(o obj) string { return o.id })
 	assert.Equal(t, want, got)
 }
+
+func Test_Union_givenSharedValues(t *testing.T) {
+	sliceA := []int{1, 2, 3}
+	sliceB := []int{2, 4}
+
+	got := Union(sliceA, sliceB)
+	want := []int{1, 2, 3, 4}
+
+	assert.Len(t, got, 4)
+	assert.ElementsMatch(t, got, want)
+}
+
+func Test_Union_givenDisjunctValues(t *testing.T) {
+	sliceA := []int{1, 2}
+	sliceB := []int{5, 6}
+
+	got := Union(sliceA, sliceB)
+	want := []int{1, 2, 5, 6}
+
+	assert.Len(t, got, 4)
+	assert.ElementsMatch(t, got, want)
+}

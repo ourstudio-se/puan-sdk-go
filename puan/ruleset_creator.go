@@ -158,27 +158,29 @@ func (c *RuleSetCreator) EnableTime(
 	return nil
 }
 
-func (c *RuleSetCreator) Create() (*Ruleset, error) {
+func (c *RuleSetCreator) Create() (Ruleset, error) {
 	periodVariables, err := c.newPeriodVariables()
 	if err != nil {
-		return nil, err
+		return Ruleset{}, err
 	}
 
 	err = c.createPeriodConstraints(periodVariables)
 	if err != nil {
-		return nil, err
+		return Ruleset{}, err
 	}
 
 	err = c.createAssumeConstraints()
 	if err != nil {
-		return nil, err
+		return Ruleset{}, err
 	}
 
-	independentVariables := c.model.IndependentVariables()
-	dependentVariables := utils.Without(c.model.Variables(), independentVariables)
+	a := c.model.Variables()
+	_ = a
+	dependentVariables := c.findDependantVariables()
+	independentVariables := utils.Without(c.model.PrimitiveVariables(), dependentVariables)
 	selectableVariables := utils.Without(c.model.PrimitiveVariables(), periodVariables.ids())
 
-	// Sort dependantVariables and constraints to ensure
+	// Sort dependentVariables and constraints to ensure
 	// consistent order in the polyhedron,
 	// this to facilitate testing
 	sortedDependentVariables := utils.Sorted(dependentVariables)
@@ -189,22 +191,27 @@ func (c *RuleSetCreator) Create() (*Ruleset, error) {
 		},
 	)
 
-	assumedConstraints := c.model.AssumedConstraints()
-
 	polyhedron := pldag.CreatePolyhedron(
 		sortedDependentVariables,
 		sortedConstraints,
-		assumedConstraints,
+		c.model.AssumedConstraints(),
 	)
 
-	return &Ruleset{
-		polyhedron:           polyhedron,
-		selectableVariables:  selectableVariables,
-		dependantVariables:   sortedDependentVariables,
-		independentVariables: independentVariables,
-		preferredVariables:   c.preferredVariables,
-		periodVariables:      periodVariables,
-	}, nil
+	return newRuleset(
+		polyhedron,
+		selectableVariables,
+		sortedDependentVariables,
+		independentVariables,
+		c.preferredVariables,
+		periodVariables,
+	)
+}
+
+func (c *RuleSetCreator) findDependantVariables() []string {
+	constraintVariables := c.model.Constraints().Variables()
+	assumedVariables := c.model.AssumedConstraints().Variables()
+
+	return utils.Union(constraintVariables, assumedVariables)
 }
 
 func (c *RuleSetCreator) newPeriodVariables() (timeBoundVariables, error) {

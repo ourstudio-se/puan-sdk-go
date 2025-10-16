@@ -18,6 +18,23 @@ type Constraint struct {
 
 type Constraints []Constraint
 
+func (c Constraints) Variables() []string {
+	variablesMap := make(map[string]any)
+	for _, constraint := range c {
+		variablesMap[constraint.id] = nil
+		for variable := range constraint.coefficients {
+			variablesMap[variable] = nil
+		}
+	}
+
+	variables := make([]string, 0, len(variablesMap))
+	for variable := range variablesMap {
+		variables = append(variables, variable)
+	}
+
+	return variables
+}
+
 func NewAtLeastConstraint(variables []string, amount int) (Constraint, error) {
 	if err := validateConstraintInput(variables, amount); err != nil {
 		return Constraint{}, err
@@ -136,6 +153,22 @@ type AuxiliaryConstraint struct {
 	bias         Bias
 }
 type AuxiliaryConstraints []AuxiliaryConstraint
+
+func (c AuxiliaryConstraints) Variables() []string {
+	variablesMap := make(map[string]any)
+	for _, constraint := range c {
+		for variable := range constraint.coefficients {
+			variablesMap[variable] = nil
+		}
+	}
+
+	variables := make([]string, 0, len(variablesMap))
+	for variable := range variablesMap {
+		variables = append(variables, variable)
+	}
+
+	return variables
+}
 
 func newAuxiliaryConstraint(coefficients Coefficients, bias Bias) AuxiliaryConstraint {
 	constraint := AuxiliaryConstraint{

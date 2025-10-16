@@ -46,7 +46,7 @@ func main() {
 	}
 
 	// Create the ruleset
-	ruleSet, err := creator.Create()
+	ruleset, err := creator.Create()
 	if err != nil {
 		panic(err)
 	}
@@ -60,7 +60,7 @@ func main() {
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient("http://127.0.0.1:9000"))
 
 	// Create the solution
-	solution, err := solutionCreator.Create(selections, *ruleSet, nil)
+	solution, err := solutionCreator.Create(selections, ruleset, nil)
 	if err != nil {
 		panic(err)
 	}

@@ -127,3 +127,22 @@ func SortedBy[T any, K cmp.Ordered](in []T, predicate func(T) K) []T {
 
 	return out
 }
+
+func Union[T comparable](a []T, b []T) []T {
+	elementMap := make(map[T]struct{}, len(a)+len(b))
+
+	for _, e := range a {
+		elementMap[e] = struct{}{}
+	}
+
+	for _, e := range b {
+		elementMap[e] = struct{}{}
+	}
+
+	union := make([]T, 0, len(elementMap))
+	for e := range elementMap {
+		union = append(union, e)
+	}
+
+	return union
+}

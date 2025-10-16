@@ -23,7 +23,7 @@ func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldGivePreferred(
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -50,7 +50,7 @@ func Test_exactlyOnePackage_selectNotPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -64,7 +64,7 @@ func Test_exactlyOnePackage_selectNotPreferred(t *testing.T) {
 	)
 }
 
-func packagesWithSharedItemsSmallerPackagePreferred() *puan.Ruleset {
+func packagesWithSharedItemsSmallerPackagePreferred() puan.Ruleset {
 	creator := puan.NewRuleSetCreator()
 	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 

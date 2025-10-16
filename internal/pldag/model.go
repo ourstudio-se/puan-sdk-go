@@ -9,18 +9,16 @@ import (
 )
 
 type Model struct {
-	variables            []string
-	constraints          Constraints
-	assumeConstraints    AuxiliaryConstraints
-	independentVariables map[string]bool
+	variables         []string
+	constraints       Constraints
+	assumeConstraints AuxiliaryConstraints
 }
 
 func New() *Model {
 	return &Model{
-		variables:            []string{},
-		constraints:          Constraints{},
-		assumeConstraints:    AuxiliaryConstraints{},
-		independentVariables: map[string]bool{},
+		variables:         []string{},
+		constraints:       Constraints{},
+		assumeConstraints: AuxiliaryConstraints{},
 	}
 }
 
@@ -37,9 +35,6 @@ func (m *Model) AddPrimitives(primitives ...string) error {
 			return errors.Errorf("primitive %s already exists in model", p)
 		}
 
-		// By default, primitives are independent variables
-		// until they are used in a constraint
-		m.independentVariables[p] = true
 		m.variables = append(m.variables, p)
 	}
 
@@ -204,17 +199,6 @@ func (m *Model) ValidateVariables(variables ...string) error {
 	return nil
 }
 
-func (m *Model) IndependentVariables() []string {
-	var independentVariables []string
-	for _, variable := range m.variables {
-		if m.independentVariables[variable] {
-			independentVariables = append(independentVariables, variable)
-		}
-	}
-
-	return independentVariables
-}
-
 func toAuxiliaryConstraintsWithSupport(constraints Constraints) AuxiliaryConstraints {
 	var auxiliaryConstraints AuxiliaryConstraints
 	for _, c := range constraints {
@@ -232,7 +216,6 @@ func (m *Model) setAtLeast(variables []string, amount int) (string, error) {
 		return "", err
 	}
 
-	m.setDependentVariables(variables)
 	m.setConstraint(constraint)
 
 	return constraint.id, nil
@@ -244,7 +227,6 @@ func (m *Model) setAtMost(variables []string, amount int) (string, error) {
 		return "", err
 	}
 
-	m.setDependentVariables(variables)
 	m.setConstraint(constraint)
 
 	return constraint.id, nil
@@ -257,12 +239,6 @@ func (m *Model) setConstraint(c Constraint) {
 
 	m.variables = append(m.variables, c.id)
 	m.constraints = append(m.constraints, c)
-}
-
-func (m *Model) setDependentVariables(variables []string) {
-	for _, variable := range variables {
-		m.independentVariables[variable] = false
-	}
 }
 
 func (m *Model) Constraints() Constraints {

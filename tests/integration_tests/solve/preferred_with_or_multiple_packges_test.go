@@ -17,7 +17,7 @@ func Test_multiplePackagesWithOr_noSelectionExpectPreferred(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -42,7 +42,7 @@ func Test_multiplePackagesWithOr_selectPackageB(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -67,7 +67,7 @@ func Test_multiplePackagesWithOr_selectPackageC(t *testing.T) {
 		puan.NewSelectionBuilder("packageC").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -94,7 +94,7 @@ func Test_multiplePackagesWithOr_allSelectedExceptA(t *testing.T) {
 		puan.NewSelectionBuilder("packageD").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -108,7 +108,7 @@ func Test_multiplePackagesWithOr_allSelectedExceptA(t *testing.T) {
 	)
 }
 
-func multiplePackagesWithOr() *puan.Ruleset {
+func multiplePackagesWithOr() puan.Ruleset {
 	creator := puan.NewRuleSetCreator()
 	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "packageC", "packageD")
 

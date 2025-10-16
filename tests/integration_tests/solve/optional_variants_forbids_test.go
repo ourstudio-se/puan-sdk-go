@@ -31,7 +31,7 @@ func Test_optionalVariantsWithForbids_shouldReturnPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemC").WithSubSelectionID("itemD").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -66,7 +66,7 @@ func Test_optionalVariantsWithForbids_shouldReturnNOTPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemA").WithSubSelectionID("itemB").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -80,7 +80,7 @@ func Test_optionalVariantsWithForbids_shouldReturnNOTPreferred(t *testing.T) {
 	)
 }
 
-func optionalVariantsWithForbids() *puan.Ruleset {
+func optionalVariantsWithForbids() puan.Ruleset {
 	creator := puan.NewRuleSetCreator()
 
 	_ = creator.AddPrimitives("itemA", "itemB", "itemC", "itemD", "packageX")

@@ -21,9 +21,9 @@ func Test_RuleSet_copy_shouldBeEqual(t *testing.T) {
 	preferredVariables := fake.New[[]string]()
 	periodVariables := fake.New[[]timeBoundVariable]()
 
-	original := &Ruleset{}
+	original := Ruleset{}
 	original.polyhedron = polyhedron
-	original.dependantVariables = dependentVariables
+	original.dependentVariables = dependentVariables
 	original.selectableVariables = selectableVariables
 	original.independentVariables = independentVariables
 	original.preferredVariables = preferredVariables
@@ -38,7 +38,7 @@ func Test_RuleSet_copy_givenChangeToCopy_shouldNotChangeOriginal(t *testing.T) {
 	bVector := fake.New[[]int]()
 	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
 
-	original := &Ruleset{}
+	original := Ruleset{}
 	original.polyhedron = polyhedron
 
 	ccopy := original.copy()
@@ -52,21 +52,21 @@ func Test_RuleSet_copy_givenChangeToOriginal_shouldNotChangeCopy(t *testing.T) {
 	bVector := fake.New[[]int]()
 	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
 
-	original := &Ruleset{}
+	original := Ruleset{}
 	original.polyhedron = polyhedron
 
-	copy := original.copy()
+	ccopy := original.copy()
 	original.polyhedron.AddEmptyColumn()
 
-	assert.NotEqual(t, original.polyhedron, copy.polyhedron)
+	assert.NotEqual(t, original.polyhedron, ccopy.polyhedron)
 }
 
 func Test_RuleSet_obtainSelectionID_givenStandaloneSelection_shouldReturnSelectionID(t *testing.T) {
 	want := uuid.New().String()
 	selection := NewSelectionBuilder(want).Build()
 
-	ruleSet := &Ruleset{}
-	got, err := ruleSet.obtainQuerySelectionID(selection)
+	ruleset := Ruleset{}
+	got, err := ruleset.obtainQuerySelectionID(selection)
 
 	assert.NoError(t, err)
 	assert.Equal(t, want, got)
@@ -86,18 +86,18 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintDoesNotExist_sh
 	// as dependent variables in the Ruleset otherwise the new constraint
 	// cannot be created
 	_, _ = creator.SetImply(primaryID, subID)
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
 	selection := NewSelectionBuilder(primaryID).WithSubSelectionID(subID).Build()
 
-	id, err := ruleSet.setCompositeSelectionConstraint(selection.ids())
+	id, err := ruleset.setCompositeSelectionConstraint(selection.ids())
 
 	assert.NoError(t, err)
-	assert.Equal(t, id, ruleSet.dependantVariables[4])
-	assert.Len(t, ruleSet.dependantVariables, 5)
-	assert.Len(t, ruleSet.polyhedron.B(), 6)
-	assert.Len(t, ruleSet.polyhedron.A(), 6)
-	assert.Len(t, ruleSet.polyhedron.A()[0], 5)
+	assert.Equal(t, id, ruleset.dependentVariables[4])
+	assert.Len(t, ruleset.dependentVariables, 5)
+	assert.Len(t, ruleset.polyhedron.B(), 6)
+	assert.Len(t, ruleset.polyhedron.A(), 6)
+	assert.Len(t, ruleset.polyhedron.A()[0], 5)
 }
 
 func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintExists_shouldNotSetNewConstraint(
@@ -109,18 +109,18 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintExists_shouldNo
 	creator := NewRuleSetCreator()
 	_ = creator.AddPrimitives(primaryID, subID)
 	_, _ = creator.SetAnd(primaryID, subID)
-	ruleSet, _ := creator.Create()
+	ruleset, _ := creator.Create()
 
-	wantVariables := ruleSet.dependantVariables
-	wantPolyhedron := ruleSet.polyhedron
+	wantVariables := ruleset.dependentVariables
+	wantPolyhedron := ruleset.polyhedron
 
 	selection := NewSelectionBuilder(primaryID).WithSubSelectionID(subID).Build()
 
-	_, err := ruleSet.setCompositeSelectionConstraint(selection.ids())
+	_, err := ruleset.setCompositeSelectionConstraint(selection.ids())
 
 	assert.NoError(t, err)
-	assert.Equal(t, wantVariables, ruleSet.dependantVariables)
-	assert.Equal(t, wantPolyhedron, ruleSet.polyhedron)
+	assert.Equal(t, wantVariables, ruleset.dependentVariables)
+	assert.Equal(t, wantPolyhedron, ruleset.polyhedron)
 }
 
 func Test_RuleSet_constraintExists_givenVariablesExists_shouldReturnTrue(
@@ -128,11 +128,11 @@ func Test_RuleSet_constraintExists_givenVariablesExists_shouldReturnTrue(
 ) {
 	constraint, _ := pldag.NewAtLeastConstraint([]string{uuid.New().String()}, 1)
 
-	ruleSet := &Ruleset{}
-	ruleSet.polyhedron = pldag.NewPolyhedron(nil, nil)
-	ruleSet.dependantVariables = []string{constraint.ID()}
+	ruleset := Ruleset{}
+	ruleset.polyhedron = pldag.NewPolyhedron(nil, nil)
+	ruleset.dependentVariables = []string{constraint.ID()}
 
-	got := ruleSet.constraintExists(constraint)
+	got := ruleset.constraintExists(constraint)
 
 	assert.True(t, got)
 }
@@ -176,15 +176,15 @@ func Test_RuleSet_newRow(
 		id2: value2,
 	}
 
-	ruleSet := &Ruleset{}
-	ruleSet.dependantVariables = []string{
+	ruleset := Ruleset{}
+	ruleset.dependentVariables = []string{
 		uuid.New().String(),
 		id1,
 		id2,
 		uuid.New().String(),
 	}
 
-	got, err := ruleSet.newRow(coefficients)
+	got, err := ruleset.newRow(coefficients)
 
 	assert.NoError(t, err)
 	assert.Equal(t, []int{0, value1, value2, 0}, got)
@@ -194,56 +194,56 @@ func Test_RuleSet_setConstraint_shouldAddColumnOnExistingRows(t *testing.T) {
 	primitiveID := uuid.New().String()
 	constraint, _ := pldag.NewAtLeastConstraint([]string{primitiveID}, 1)
 
-	ruleSet := &Ruleset{}
-	ruleSet.polyhedron = pldag.NewPolyhedron(nil, nil)
-	ruleSet.dependantVariables = []string{primitiveID}
+	ruleset := Ruleset{}
+	ruleset.polyhedron = pldag.NewPolyhedron(nil, nil)
+	ruleset.dependentVariables = []string{primitiveID}
 
-	err := ruleSet.setConstraint(constraint)
+	err := ruleset.setConstraint(constraint)
 
 	assert.NoError(t, err)
-	assert.Len(t, ruleSet.polyhedron.A()[0], 2)
+	assert.Len(t, ruleset.polyhedron.A()[0], 2)
 }
 
 func Test_RuleSet_setConstraint_shouldAddConstraintIDToVariables(t *testing.T) {
 	primitiveID := uuid.New().String()
 	constraint, _ := pldag.NewAtLeastConstraint([]string{primitiveID}, 1)
 
-	ruleSet := &Ruleset{}
-	ruleSet.polyhedron = pldag.NewPolyhedron(nil, nil)
-	ruleSet.dependantVariables = []string{primitiveID}
+	ruleset := Ruleset{}
+	ruleset.polyhedron = pldag.NewPolyhedron(nil, nil)
+	ruleset.dependentVariables = []string{primitiveID}
 
-	err := ruleSet.setConstraint(constraint)
+	err := ruleset.setConstraint(constraint)
 
 	assert.NoError(t, err)
-	assert.Equal(t, constraint.ID(), ruleSet.dependantVariables[1])
+	assert.Equal(t, constraint.ID(), ruleset.dependentVariables[1])
 }
 
 func Test_RuleSet_setConstraint_shouldAddTwoRowsToPolyhedron(t *testing.T) {
 	primitiveID := uuid.New().String()
 	constraint, _ := pldag.NewAtLeastConstraint([]string{primitiveID}, 1)
 
-	ruleSet := &Ruleset{}
-	ruleSet.polyhedron = pldag.NewPolyhedron(nil, nil)
-	ruleSet.dependantVariables = []string{primitiveID}
+	ruleset := Ruleset{}
+	ruleset.polyhedron = pldag.NewPolyhedron(nil, nil)
+	ruleset.dependentVariables = []string{primitiveID}
 
-	err := ruleSet.setConstraint(constraint)
+	err := ruleset.setConstraint(constraint)
 
 	assert.NoError(t, err)
-	assert.Len(t, ruleSet.polyhedron.A(), 2)
+	assert.Len(t, ruleset.polyhedron.A(), 2)
 }
 
 func Test_RuleSet_setConstraint_shouldAddTwoBiases(t *testing.T) {
 	primitiveID := uuid.New().String()
 	constraint, _ := pldag.NewAtLeastConstraint([]string{primitiveID}, 1)
 
-	ruleSet := &Ruleset{}
-	ruleSet.polyhedron = pldag.NewPolyhedron(nil, nil)
-	ruleSet.dependantVariables = []string{primitiveID}
+	ruleset := Ruleset{}
+	ruleset.polyhedron = pldag.NewPolyhedron(nil, nil)
+	ruleset.dependentVariables = []string{primitiveID}
 
-	err := ruleSet.setConstraint(constraint)
+	err := ruleset.setConstraint(constraint)
 
 	assert.NoError(t, err)
-	assert.Len(t, ruleSet.polyhedron.B(), 2)
+	assert.Len(t, ruleset.polyhedron.B(), 2)
 }
 
 func Test_RuleSet_FindPeriodInSolution_givenSingleMatchingPeriod_shouldReturnPeriod(
@@ -258,7 +258,7 @@ func Test_RuleSet_FindPeriodInSolution_givenSingleMatchingPeriod_shouldReturnPer
 		to:   newTestTime("2024-02-28T00:00:00Z"),
 	}
 
-	ruleSet := &Ruleset{
+	ruleset := &Ruleset{
 		periodVariables: timeBoundVariables{
 			{variable: "period1", period: period1},
 			{variable: "period2", period: period2},
@@ -270,7 +270,7 @@ func Test_RuleSet_FindPeriodInSolution_givenSingleMatchingPeriod_shouldReturnPer
 		"period2": 0,
 	}
 
-	result, err := ruleSet.FindPeriodInSolution(solution)
+	result, err := ruleset.FindPeriodInSolution(solution)
 
 	assert.NoError(t, err)
 	assert.Equal(t, period1, result)
@@ -284,7 +284,7 @@ func Test_RuleSet_FindPeriodInSolution_givenNoMatchingPeriod_shouldReturnError(
 		to:   newTestTime("2024-01-31T00:00:00Z"),
 	}
 
-	ruleSet := &Ruleset{
+	ruleset := &Ruleset{
 		periodVariables: timeBoundVariables{
 			{variable: "period1", period: period},
 		},
@@ -294,7 +294,7 @@ func Test_RuleSet_FindPeriodInSolution_givenNoMatchingPeriod_shouldReturnError(
 		"period1": 0,
 	}
 
-	_, err := ruleSet.FindPeriodInSolution(solution)
+	_, err := ruleset.FindPeriodInSolution(solution)
 
 	assert.Error(t, err)
 }
@@ -311,7 +311,7 @@ func Test_RuleSet_FindPeriodInSolution_givenMultipleMatchingPeriods_shouldReturn
 		to:   newTestTime("2024-02-28T00:00:00Z"),
 	}
 
-	ruleSet := &Ruleset{
+	ruleset := &Ruleset{
 		periodVariables: timeBoundVariables{
 			{variable: "period1", period: period1},
 			{variable: "period2", period: period2},
@@ -323,7 +323,7 @@ func Test_RuleSet_FindPeriodInSolution_givenMultipleMatchingPeriods_shouldReturn
 		"period2": 1,
 	}
 
-	_, err := ruleSet.FindPeriodInSolution(solution)
+	_, err := ruleset.FindPeriodInSolution(solution)
 
 	assert.Error(t, err)
 }

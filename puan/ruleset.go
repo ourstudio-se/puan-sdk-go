@@ -13,7 +13,7 @@ import (
 type Ruleset struct {
 	polyhedron           *pldag.Polyhedron
 	selectableVariables  []string
-	dependantVariables   []string
+	dependentVariables   []string
 	independentVariables []string
 	preferredVariables   []string
 	periodVariables      timeBoundVariables
@@ -28,15 +28,36 @@ func HydrateRuleSet(
 	independentVariables []string,
 	selectableVariables []string,
 	preferredVariables []string,
-) *Ruleset {
+	periodVariables timeBoundVariables,
+) (Ruleset, error) {
 	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
-	return &Ruleset{
+	return newRuleset(
+		polyhedron,
+		selectableVariables,
+		dependentVariables,
+		independentVariables,
+		preferredVariables,
+		periodVariables,
+	)
+}
+
+func newRuleset(
+	polyhedron *pldag.Polyhedron,
+	selectableVariables []string,
+	dependentVariables []string,
+	independentVariables []string,
+	preferredVariables []string,
+	periodVariables timeBoundVariables,
+) (Ruleset, error) {
+	// TODO: validate
+	return Ruleset{
 		polyhedron:           polyhedron,
 		selectableVariables:  selectableVariables,
-		dependantVariables:   dependentVariables,
+		dependentVariables:   dependentVariables,
 		independentVariables: independentVariables,
 		preferredVariables:   preferredVariables,
-	}
+		periodVariables:      periodVariables,
+	}, nil
 }
 
 func (r *Ruleset) Polyhedron() *pldag.Polyhedron {
@@ -52,7 +73,7 @@ func (r *Ruleset) Selec() []string {
 }
 
 func (r *Ruleset) DependantVariables() []string {
-	return r.dependantVariables
+	return r.dependentVariables
 }
 
 func (r *Ruleset) IndependentVariables() []string {
@@ -63,10 +84,9 @@ func (r *Ruleset) PreferredVariables() []string {
 	return r.preferredVariables
 }
 
-func (r *Ruleset) RemoveSupportVariables(solution Solution) (Solution, error) {
-	dependantSelectableVariables := utils.Without(r.selectableVariables, r.independentVariables)
+func (r *Ruleset) RemoveSupportVariables(solution Solution) Solution {
 	nonSupportVariables := []string{}
-	nonSupportVariables = append(nonSupportVariables, dependantSelectableVariables...)
+	nonSupportVariables = append(nonSupportVariables, r.selectableVariables...)
 	nonSupportVariables = append(nonSupportVariables, r.periodVariables.ids()...)
 
 	return solution.Extract(nonSupportVariables...)
@@ -95,7 +115,7 @@ func (r *Ruleset) FindPeriodInSolution(solution Solution) (Period, error) {
 	return *period, nil
 }
 
-func (r *Ruleset) copy() *Ruleset {
+func (r *Ruleset) copy() Ruleset {
 	aMatrix := make([][]int, len(r.polyhedron.A()))
 	copy(aMatrix, r.polyhedron.A())
 
@@ -104,8 +124,8 @@ func (r *Ruleset) copy() *Ruleset {
 
 	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
 
-	dependantVariableIDs := make([]string, len(r.dependantVariables))
-	copy(dependantVariableIDs, r.dependantVariables)
+	dependantVariableIDs := make([]string, len(r.dependentVariables))
+	copy(dependantVariableIDs, r.dependentVariables)
 
 	independentVariablesIDs := make([]string, len(r.independentVariables))
 	copy(independentVariablesIDs, r.independentVariables)
@@ -119,10 +139,10 @@ func (r *Ruleset) copy() *Ruleset {
 	periodVariables := make([]timeBoundVariable, len(r.periodVariables))
 	copy(periodVariables, r.periodVariables)
 
-	return &Ruleset{
+	return Ruleset{
 		polyhedron:           polyhedron,
 		selectableVariables:  selectableVariables,
-		dependantVariables:   dependantVariableIDs,
+		dependentVariables:   dependantVariableIDs,
 		independentVariables: independentVariablesIDs,
 		preferredVariables:   preferredIDs,
 		periodVariables:      periodVariables,
@@ -130,7 +150,7 @@ func (r *Ruleset) copy() *Ruleset {
 }
 
 type querySpecification struct {
-	ruleset    *Ruleset
+	ruleset    Ruleset
 	selections weights.Selections
 }
 
@@ -222,13 +242,13 @@ func (r *Ruleset) setConstraintIfNotExist(constraint pldag.Constraint) error {
 }
 
 func (r *Ruleset) constraintExists(constraint pldag.Constraint) bool {
-	return utils.Contains(r.dependantVariables, constraint.ID())
+	return utils.Contains(r.dependentVariables, constraint.ID())
 }
 
 // nolint:lll
 func (r *Ruleset) setConstraint(constraint pldag.Constraint) error {
 	r.polyhedron.AddEmptyColumn()
-	r.dependantVariables = append(r.dependantVariables, constraint.ID())
+	r.dependentVariables = append(r.dependentVariables, constraint.ID())
 
 	supportImpliesConstraint, constraintImpliesSupport := constraint.ToAuxiliaryConstraintsWithSupport()
 
@@ -257,10 +277,10 @@ func (r *Ruleset) setAuxiliaryConstraint(constraint pldag.AuxiliaryConstraint) e
 }
 
 func (r *Ruleset) newRow(coefficients pldag.Coefficients) ([]int, error) {
-	row := make([]int, len(r.dependantVariables))
+	row := make([]int, len(r.dependentVariables))
 
 	for id, value := range coefficients {
-		idIndex, err := utils.IndexOf(r.dependantVariables, id)
+		idIndex, err := utils.IndexOf(r.dependentVariables, id)
 		if err != nil {
 			return nil, err
 		}

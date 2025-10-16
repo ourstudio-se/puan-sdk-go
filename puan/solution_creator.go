@@ -36,22 +36,21 @@ func (c *SolutionCreator) Create(
 		return nil, err
 	}
 
-	independentVariables := ruleset.independentVariables
-	dependantSelections, independentSelections := categorizeSelections(selections, independentVariables)
+	dependantSelections, independentSelections := categorizeSelections(selections, ruleset.independentVariables)
 
-	dependantSolution, err := c.findDependantSolution(dependantSelections, ruleset, from)
+	dependentSolution, err := c.findDependentSolution(dependantSelections, ruleset, from)
 	if err != nil {
 		return nil, err
 	}
 
-	independentSolution := findIndependentSolution(independentVariables, independentSelections)
+	independentSolution := findIndependentSolution(ruleset.independentVariables, independentSelections)
 
-	solution := dependantSolution.merge(independentSolution)
+	solution := dependentSolution.merge(independentSolution)
 
 	return solution, nil
 }
 
-func (c *SolutionCreator) findDependantSolution(
+func (c *SolutionCreator) findDependentSolution(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
@@ -66,10 +65,7 @@ func (c *SolutionCreator) findDependantSolution(
 		return nil, err
 	}
 
-	primitiveSolution, err := ruleset.RemoveSupportVariables(solution)
-	if err != nil {
-		return nil, err
-	}
+	primitiveSolution := ruleset.RemoveSupportVariables(solution)
 
 	return primitiveSolution, nil
 }
@@ -151,7 +147,10 @@ func newQuery(selections Selections, ruleset Ruleset, from *time.Time) (*Query, 
 	}
 
 	weights := weights.Calculate(
-		specification.ruleset.selectableVariables,
+		utils.Without(
+			specification.ruleset.selectableVariables,
+			specification.ruleset.independentVariables,
+		),
 		specification.selections,
 		specification.ruleset.preferredVariables,
 		specification.ruleset.periodVariables.ids(),
@@ -159,7 +158,7 @@ func newQuery(selections Selections, ruleset Ruleset, from *time.Time) (*Query, 
 
 	query := NewQuery(
 		specification.ruleset.polyhedron,
-		specification.ruleset.dependantVariables,
+		specification.ruleset.dependentVariables,
 		weights,
 	)
 

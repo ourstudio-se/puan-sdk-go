@@ -27,7 +27,7 @@ func Test_itemIncludedInPeriod(t *testing.T) {
 
 	ruleset, _ := creator.Create()
 
-	solution, _ := solutionCreator.Create(nil, *ruleset, nil)
+	solution, _ := solutionCreator.Create(nil, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -67,7 +67,7 @@ func Test_manyItemsIncludedInPeriod_shouldChooseLaterPeriod(t *testing.T) {
 
 	ruleset, _ := creator.Create()
 
-	solution, _ := solutionCreator.Create(nil, *ruleset, nil)
+	solution, _ := solutionCreator.Create(nil, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -102,7 +102,7 @@ func Test_itemIncludedInLaterPeriod_shouldChooseEarlierPeriod(t *testing.T) {
 
 	ruleset, _ := creator.Create()
 
-	solution, _ := solutionCreator.Create(nil, *ruleset, nil)
+	solution, _ := solutionCreator.Create(nil, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -134,7 +134,7 @@ func Test_itemIncludedInLaterPeriod_andFromInLaterPeriod_shouldChooseLaterPeriod
 
 	from := startTime.Add(45 * time.Minute)
 
-	solution, _ := solutionCreator.Create(nil, *ruleset, &from)
+	solution, _ := solutionCreator.Create(nil, ruleset, &from)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -169,7 +169,7 @@ func Test_itemIncludedInLaterPeriod_andFromInEarlierPeriod_shouldChooseEarlierPe
 
 	from := startTime.Add(15 * time.Minute)
 
-	solution, _ := solutionCreator.Create(nil, *ruleset, &from)
+	solution, _ := solutionCreator.Create(nil, ruleset, &from)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -208,7 +208,7 @@ func Test_itemSelectableInPeriod_givenItemSelected_shouldChoosePeriod(t *testing
 		puan.NewSelectionBuilder("itemX").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -283,7 +283,7 @@ func Test_itemSelectableInPeriod_andManyItemsIncludedInThatPeriod_givenItemSelec
 		puan.NewSelectionBuilder("itemX").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -342,7 +342,7 @@ func Test_includedPackageInEarlierPeriod_withPreferred_shouldChooseEarlierPeriod
 
 	ruleset, _ := creator.Create()
 
-	solution, _ := solutionCreator.Create(nil, *ruleset, nil)
+	solution, _ := solutionCreator.Create(nil, ruleset, nil)
 
 	assert.Equal(
 		t,

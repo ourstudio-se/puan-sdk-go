@@ -17,7 +17,7 @@ func Test_heavyNonPreferredWithOr_emptySelection(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -40,7 +40,7 @@ func Test_heavyNonPreferredWithOr_preferSelection(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -63,7 +63,7 @@ func Test_heavyNonPreferredWithOr_notPreferSelection(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -87,7 +87,7 @@ func Test_heavyNonPreferredWithOr_bothPackagesSelection(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
+	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -100,7 +100,7 @@ func Test_heavyNonPreferredWithOr_bothPackagesSelection(t *testing.T) {
 	)
 }
 
-func heavyNonPreferredWithOr() *puan.Ruleset {
+func heavyNonPreferredWithOr() puan.Ruleset {
 	creator := puan.NewRuleSetCreator()
 
 	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "itemY")
