@@ -79,11 +79,14 @@ func validateSelections(selections Selections, ruleset *Ruleset) error {
 			)
 		}
 
-		if utils.ContainsAny(selection.subSelectionIDs, ruleset.independentVariables) {
-			return errors.Errorf(
-				"independent variables cannot be part of a composite selection: %v",
-				selection,
-			)
+		hasSubSelection := len(selection.subSelectionIDs) > 0
+		if hasSubSelection {
+			if utils.ContainsAny(selection.ids(), ruleset.independentVariables) {
+				return errors.Errorf(
+					"independent variables cannot be part of a composite selections: %v",
+					selection,
+				)
+			}
 		}
 	}
 
