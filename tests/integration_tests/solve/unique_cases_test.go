@@ -10,7 +10,7 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
-const url = "http://127.0.0.1:9000"
+var solutionCreator = puan.NewSolutionCreator(glpk.NewClient("http://127.0.0.1:9000"))
 
 // Test_exactlyOnePackage_selectPreferredThenNotPreferred
 // Ref: test_select_exactly_one_constrainted_component_with_additional_requirements
@@ -34,7 +34,6 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -64,7 +63,6 @@ func Test_packageImpliesAnotherPackage_addAndRemove_shouldGiveEmptySolution(t *t
 		puan.NewSelectionBuilder("packageB").WithAction(puan.REMOVE).Build(),
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -97,7 +95,6 @@ func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldGivePreferred(t 
 		puan.NewSelectionBuilder("packageB").WithAction(puan.REMOVE).Build(),
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -141,7 +138,6 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldGivePreferred(t *testing.T) 
 
 	selections := puan.Selections{}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -184,7 +180,6 @@ func Test_implicationChain_shouldGiveAll(t *testing.T) {
 		puan.NewSelectionBuilder("packageE").Build(),
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -221,7 +216,6 @@ func Test_multiplePackagesWithXOR_shouldGiveLastSelected(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -258,7 +252,6 @@ func Test_notExistingVariable_shouldGiveError(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	_, err := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Error(t, err)
 }
@@ -303,7 +296,6 @@ func Test_packageInDefaultConfig(t *testing.T) {
 		puan.NewSelectionBuilder("itemX").Build(),
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -350,7 +342,6 @@ func Test_selectPackageWithItemAfterSingleConflictingItemSelection_shouldGivePac
 		puan.NewSelectionBuilder("packageP").WithSubSelectionID("itemY").Build(),
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -394,7 +385,6 @@ func Test_changeVariant_shouldGiveLastSelected(t *testing.T) {
 		puan.NewSelectionBuilder("packageP").WithSubSelectionID("itemX").Build(),
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -456,7 +446,6 @@ func Test_subComponentsAndPackageInDefaultConfig(t *testing.T) {
 		puan.NewSelectionBuilder("itemX").WithAction(puan.REMOVE).Build(),
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -507,7 +496,6 @@ func Test_duplicatedPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("itemA").Build(),
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -565,7 +553,6 @@ func Test_xorBetweenPackagesAndItems_shouldGiveLastSelection(t *testing.T) {
 		puan.NewSelectionBuilder("itemY").Build(),
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -627,7 +614,6 @@ func Test_xorBetweenPackagesAndItemsWithPreferred_shouldGiveLastSelection(t *tes
 		puan.NewSelectionBuilder("itemY").Build(),
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -696,7 +682,6 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 		puan.NewSelectionBuilder("itemN").Build(),
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -729,7 +714,6 @@ func Test_removingItemInAddedPackage_shouldRemovePackageAsWell(t *testing.T) {
 		puan.NewSelectionBuilder("itemX").WithAction(puan.REMOVE).Build(),
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -767,7 +751,6 @@ func Test_removePackageWithSubselection_shouldGiveEmptySolution(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemZ").WithAction(puan.REMOVE).Build(),
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,

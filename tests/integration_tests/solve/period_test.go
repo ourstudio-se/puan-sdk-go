@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
 	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
@@ -28,7 +27,6 @@ func Test_itemIncludedInPeriod(t *testing.T) {
 
 	ruleset, _ := creator.Create()
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(nil, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -69,7 +67,6 @@ func Test_manyItemsIncludedInPeriod_shouldChooseLaterPeriod(t *testing.T) {
 
 	ruleset, _ := creator.Create()
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(nil, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -105,7 +102,6 @@ func Test_itemIncludedInLaterPeriod_shouldChooseEarlierPeriod(t *testing.T) {
 
 	ruleset, _ := creator.Create()
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(nil, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -137,7 +133,7 @@ func Test_itemIncludedInLaterPeriod_andFromInLaterPeriod_shouldChooseLaterPeriod
 	ruleset, _ := creator.Create()
 
 	from := startTime.Add(45 * time.Minute)
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+
 	solution, _ := solutionCreator.Create(nil, *ruleset, &from)
 	assert.Equal(
 		t,
@@ -172,7 +168,7 @@ func Test_itemIncludedInLaterPeriod_andFromInEarlierPeriod_shouldChooseEarlierPe
 	ruleset, _ := creator.Create()
 
 	from := startTime.Add(15 * time.Minute)
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+
 	solution, _ := solutionCreator.Create(nil, *ruleset, &from)
 	assert.Equal(
 		t,
@@ -211,7 +207,7 @@ func Test_itemSelectableInPeriod_givenItemSelected_shouldChoosePeriod(t *testing
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("itemX").Build(),
 	}
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -286,7 +282,7 @@ func Test_itemSelectableInPeriod_andManyItemsIncludedInThatPeriod_givenItemSelec
 	selections := puan.Selections{
 		puan.NewSelectionBuilder("itemX").Build(),
 	}
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
+
 	solution, _ := solutionCreator.Create(selections, *ruleset, nil)
 	assert.Equal(
 		t,
@@ -346,7 +342,6 @@ func Test_includedPackageInEarlierPeriod_withPreferred_shouldChooseEarlierPeriod
 
 	ruleset, _ := creator.Create()
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient(url))
 	solution, _ := solutionCreator.Create(nil, *ruleset, nil)
 
 	assert.Equal(
