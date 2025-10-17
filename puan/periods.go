@@ -49,14 +49,21 @@ func (p Period) contains(other Period) bool {
 	return !other.from.Before(p.from) && !other.to.After(p.to)
 }
 
-type timeBoundVariables []timeBoundVariable
+type TimeBoundVariables []TimeBoundVariable
 
-type timeBoundVariable struct {
+type TimeBoundVariable struct {
 	variable string
 	period   Period
 }
 
-func (p timeBoundVariables) periods() []Period {
+func NewTimeBoundVariable(variable string, period Period) TimeBoundVariable {
+	return TimeBoundVariable{
+		variable: variable,
+		period:   period,
+	}
+}
+
+func (p TimeBoundVariables) periods() []Period {
 	periods := make([]Period, len(p))
 	for i, periodVariable := range p {
 		periods[i] = periodVariable.period
@@ -64,7 +71,7 @@ func (p timeBoundVariables) periods() []Period {
 	return periods
 }
 
-func (p timeBoundVariables) ids() []string {
+func (p TimeBoundVariables) ids() []string {
 	ids := make([]string, len(p))
 	for i, periodVariable := range p {
 		ids[i] = periodVariable.variable
@@ -72,8 +79,8 @@ func (p timeBoundVariables) ids() []string {
 	return ids
 }
 
-func (p timeBoundVariables) passed(timestamp time.Time) timeBoundVariables {
-	return utils.Filter(p, func(periodVariable timeBoundVariable) bool {
+func (p TimeBoundVariables) passed(timestamp time.Time) TimeBoundVariables {
+	return utils.Filter(p, func(periodVariable TimeBoundVariable) bool {
 		return periodVariable.period.to.Before(timestamp)
 	})
 }
@@ -152,8 +159,8 @@ func (p idsString) ids() []string {
 }
 
 func groupByPeriods(
-	periodVariables timeBoundVariables,
-	assumedVariables timeBoundVariables,
+	periodVariables TimeBoundVariables,
+	assumedVariables TimeBoundVariables,
 ) (map[idsString][]string, error) {
 	grouped := make(map[idsString][]string)
 
@@ -170,7 +177,7 @@ func groupByPeriods(
 }
 
 func findContainingPeriodIDs(
-	periodVariables timeBoundVariables,
+	periodVariables TimeBoundVariables,
 	period Period,
 ) (idsString, error) {
 	var overlappingPeriodIDs []string

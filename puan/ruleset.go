@@ -16,7 +16,7 @@ type Ruleset struct {
 	dependentVariables   []string
 	independentVariables []string
 	preferredVariables   []string
-	periodVariables      timeBoundVariables
+	periodVariables      TimeBoundVariables
 }
 
 // For when creating a rule set from a serialized representation
@@ -28,7 +28,7 @@ func HydrateRuleSet(
 	independentVariables []string,
 	selectableVariables []string,
 	preferredVariables []string,
-	periodVariables timeBoundVariables,
+	periodVariables TimeBoundVariables,
 ) (Ruleset, error) {
 	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
 	return newRuleset(
@@ -47,7 +47,7 @@ func newRuleset(
 	dependentVariables []string,
 	independentVariables []string,
 	preferredVariables []string,
-	periodVariables timeBoundVariables,
+	periodVariables TimeBoundVariables,
 ) (Ruleset, error) {
 	if polyhedron == nil {
 		return Ruleset{}, errors.New("polyhedron cannot be nil")
@@ -174,7 +174,7 @@ func (r *Ruleset) copy() Ruleset {
 	preferredIDs := make([]string, len(r.preferredVariables))
 	copy(preferredIDs, r.preferredVariables)
 
-	periodVariables := make([]timeBoundVariable, len(r.periodVariables))
+	periodVariables := make([]TimeBoundVariable, len(r.periodVariables))
 	copy(periodVariables, r.periodVariables)
 
 	return Ruleset{

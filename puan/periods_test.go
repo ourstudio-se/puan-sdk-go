@@ -546,7 +546,7 @@ func Test_toPeriods(t *testing.T) {
 }
 
 func Test_groupByPeriods(t *testing.T) {
-	periodVariables := timeBoundVariables{
+	periodVariables := TimeBoundVariables{
 		{
 			variable: "p1",
 			period: Period{
@@ -569,7 +569,7 @@ func Test_groupByPeriods(t *testing.T) {
 			},
 		},
 	}
-	assumedVariables := timeBoundVariables{
+	assumedVariables := TimeBoundVariables{
 		{
 			variable: "x",
 			period: Period{
@@ -615,13 +615,13 @@ func Test_groupByPeriods(t *testing.T) {
 func Test_findContainingPeriodIDs(t *testing.T) {
 	tests := []struct {
 		name             string
-		periodVariables  timeBoundVariables
+		periodVariables  TimeBoundVariables
 		comparisonPeriod Period
 		expected         idsString
 	}{
 		{
 			name: "assumed variable overlaps with multiple period variables",
-			periodVariables: timeBoundVariables{
+			periodVariables: TimeBoundVariables{
 				{
 					variable: "p1",
 					period: Period{
@@ -645,7 +645,7 @@ func Test_findContainingPeriodIDs(t *testing.T) {
 		},
 		{
 			name: "variable ends at the start of a period",
-			periodVariables: timeBoundVariables{
+			periodVariables: TimeBoundVariables{
 				{
 					variable: "p1",
 					period: Period{
@@ -669,7 +669,7 @@ func Test_findContainingPeriodIDs(t *testing.T) {
 		},
 		{
 			name: "variable starts at the end of a period",
-			periodVariables: timeBoundVariables{
+			periodVariables: TimeBoundVariables{
 				{
 					variable: "p1",
 					period: Period{
@@ -705,7 +705,7 @@ func Test_findContainingPeriodIDs(t *testing.T) {
 func Test_findContainingPeriodIDs_givenComparisonPeriodOutsideOfPeriods_shouldReturnError(
 	t *testing.T,
 ) {
-	periodVariables := timeBoundVariables{
+	periodVariables := TimeBoundVariables{
 		{
 			variable: "p1",
 			period: Period{
