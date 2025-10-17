@@ -122,6 +122,10 @@ func (r *Ruleset) IndependentVariables() []string {
 	return r.independentVariables
 }
 
+func (r *Ruleset) PeriodVariables() TimeBoundVariables {
+	return r.periodVariables
+}
+
 func (r *Ruleset) RemoveSupportVariables(solution Solution) Solution {
 	nonSupportVariables := []string{}
 	nonSupportVariables = append(nonSupportVariables, r.selectableVariables...)
