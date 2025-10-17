@@ -63,6 +63,14 @@ func NewTimeBoundVariable(variable string, period Period) TimeBoundVariable {
 	}
 }
 
+func (t TimeBoundVariable) Period() Period {
+	return t.period
+}
+
+func (t TimeBoundVariable) Variable() string {
+	return t.variable
+}
+
 func (p TimeBoundVariables) periods() []Period {
 	periods := make([]Period, len(p))
 	for i, periodVariable := range p {
