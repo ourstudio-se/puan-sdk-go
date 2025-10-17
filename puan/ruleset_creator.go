@@ -16,7 +16,7 @@ type RuleSetCreator struct {
 	assumedVariables   []string
 
 	period                    *Period
-	timeBoundAssumedVariables timeBoundVariables
+	timeBoundAssumedVariables TimeBoundVariables
 }
 
 func NewRuleSetCreator() *RuleSetCreator {
@@ -120,18 +120,18 @@ func (c *RuleSetCreator) AssumeInPeriod(
 func (c *RuleSetCreator) newTimeBoundVariable(
 	id string,
 	from, to time.Time,
-) (timeBoundVariable, error) {
+) (TimeBoundVariable, error) {
 	if c.period == nil {
-		return timeBoundVariable{}, errors.New("time support not enabled. Call EnableTime() first")
+		return TimeBoundVariable{}, errors.New("time support not enabled. Call EnableTime() first")
 	}
 
 	period, err := NewPeriod(from, to)
 	if err != nil {
-		return timeBoundVariable{}, err
+		return TimeBoundVariable{}, err
 	}
 
 	if !c.period.contains(period) {
-		return timeBoundVariable{},
+		return TimeBoundVariable{},
 			errors.Errorf(
 				"period %v is outside of enabled period %v",
 				period,
@@ -139,7 +139,7 @@ func (c *RuleSetCreator) newTimeBoundVariable(
 			)
 	}
 
-	return timeBoundVariable{
+	return TimeBoundVariable{
 		variable: id,
 		period:   period,
 	}, nil
@@ -212,7 +212,7 @@ func (c *RuleSetCreator) findDependantVariables() []string {
 	return utils.Union(constraintVariables, assumedVariables)
 }
 
-func (c *RuleSetCreator) newPeriodVariables() (timeBoundVariables, error) {
+func (c *RuleSetCreator) newPeriodVariables() (TimeBoundVariables, error) {
 	if len(c.timeBoundAssumedVariables) == 0 {
 		return nil, nil
 	}
@@ -222,9 +222,9 @@ func (c *RuleSetCreator) newPeriodVariables() (timeBoundVariables, error) {
 	)
 
 	// Create variable for each period
-	periodVariables := make(timeBoundVariables, len(nonOverlappingPeriods))
+	periodVariables := make(TimeBoundVariables, len(nonOverlappingPeriods))
 	for i, period := range nonOverlappingPeriods {
-		period := timeBoundVariable{
+		period := TimeBoundVariable{
 			variable: fmt.Sprintf("period_%d", i),
 			period:   period,
 		}
@@ -244,7 +244,7 @@ func (c *RuleSetCreator) periods() []Period {
 	return periods
 }
 
-func (c *RuleSetCreator) createPeriodConstraints(periodVariables timeBoundVariables) error {
+func (c *RuleSetCreator) createPeriodConstraints(periodVariables TimeBoundVariables) error {
 	if len(c.timeBoundAssumedVariables) == 0 {
 		return nil
 	}

@@ -19,7 +19,7 @@ func Test_RuleSet_copy_shouldBeEqual(t *testing.T) {
 	independentVariables := fake.New[[]string]()
 	selectableVariables := fake.New[[]string]()
 	preferredVariables := fake.New[[]string]()
-	periodVariables := fake.New[[]timeBoundVariable]()
+	periodVariables := fake.New[[]TimeBoundVariable]()
 
 	original := Ruleset{}
 	original.polyhedron = polyhedron
@@ -259,7 +259,7 @@ func Test_RuleSet_FindPeriodInSolution_givenSingleMatchingPeriod_shouldReturnPer
 	}
 
 	ruleset := &Ruleset{
-		periodVariables: timeBoundVariables{
+		periodVariables: TimeBoundVariables{
 			{variable: "period1", period: period1},
 			{variable: "period2", period: period2},
 		},
@@ -285,7 +285,7 @@ func Test_RuleSet_FindPeriodInSolution_givenNoMatchingPeriod_shouldReturnError(
 	}
 
 	ruleset := &Ruleset{
-		periodVariables: timeBoundVariables{
+		periodVariables: TimeBoundVariables{
 			{variable: "period1", period: period},
 		},
 	}
@@ -312,7 +312,7 @@ func Test_RuleSet_FindPeriodInSolution_givenMultipleMatchingPeriods_shouldReturn
 	}
 
 	ruleset := &Ruleset{
-		periodVariables: timeBoundVariables{
+		periodVariables: TimeBoundVariables{
 			{variable: "period1", period: period1},
 			{variable: "period2", period: period2},
 		},
