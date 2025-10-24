@@ -113,7 +113,15 @@ func (c *RuleSetCreator) AssumeInPeriod(
 		return err
 	}
 
+	// If the variable period is equal to the ruleset period,
+	// i.e., is available during the entire ruleset period,
+	// it can be assumed directly without time bounding.
+	if c.period.isEqual(variable.period) {
+		return c.Assume(variable.variable)
+	}
+
 	c.timeBoundAssumedVariables = append(c.timeBoundAssumedVariables, variable)
+
 	return nil
 }
 

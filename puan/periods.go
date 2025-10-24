@@ -49,6 +49,10 @@ func (p Period) contains(other Period) bool {
 	return !other.from.Before(p.from) && !other.to.After(p.to)
 }
 
+func (p Period) isEqual(other Period) bool {
+	return p == other
+}
+
 type TimeBoundVariables []TimeBoundVariable
 
 type TimeBoundVariable struct {

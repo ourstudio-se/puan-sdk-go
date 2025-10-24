@@ -138,3 +138,39 @@ func Test_Create_givenDifferentModelingOrder_shouldReturnSamePolyhedron(
 	assert.Equalf(t, rulesetOne.polyhedron.A(), rulesetTwo.polyhedron.A(), "A matrices are not equal")
 	assert.Equalf(t, rulesetOne.polyhedron.B(), rulesetTwo.polyhedron.B(), "B vectors are not equal")
 }
+
+func Test_RulSetCreator_AssumeInPeriod_givenSamePeriod_shouldUseAssume(t *testing.T) {
+	creator := NewRuleSetCreator()
+	from, to := newTestTime("2024-01-01T00:00:00Z"), newTestTime("2024-01-31T23:59:59Z")
+	err := creator.EnableTime(
+		from,
+		to,
+	)
+	assert.NoError(t, err)
+
+	_ = creator.AddPrimitives("itemX")
+	err = creator.AssumeInPeriod("itemX", from, to)
+	assert.NoError(t, err)
+
+	assert.Contains(t, creator.assumedVariables, "itemX")
+	assert.NotContains(t, creator.timeBoundAssumedVariables.ids(), "itemX")
+}
+
+// nolint:lll
+func Test_RulSetCreator_AssumeInPeriod_givenDifferentPeriod_shouldAddTimeBoundVariable(t *testing.T) {
+	creator := NewRuleSetCreator()
+	from, to := newTestTime("2024-01-01T00:00:00Z"), newTestTime("2024-01-31T23:59:59Z")
+	err := creator.EnableTime(
+		from,
+		to,
+	)
+	assert.NoError(t, err)
+
+	newFrom := from.Add(time.Hour)
+	_ = creator.AddPrimitives("itemX")
+	err = creator.AssumeInPeriod("itemX", newFrom, to)
+	assert.NoError(t, err)
+
+	assert.NotContains(t, creator.assumedVariables, "itemX")
+	assert.Contains(t, creator.timeBoundAssumedVariables.ids(), "itemX")
+}

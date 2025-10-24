@@ -724,6 +724,42 @@ func Test_findContainingPeriodIDs_givenComparisonPeriodOutsideOfPeriods_shouldRe
 	assert.Error(t, err)
 }
 
+func Test_isEqual_givenEqual_shouldReturnTrue(t *testing.T) {
+	from := newTestTime("2024-01-01T00:00:00Z")
+	to := newTestTime("2024-01-31T00:00:00Z")
+
+	period := Period{
+		from: from,
+		to:   to,
+	}
+
+	other := Period{
+		from: from,
+		to:   to,
+	}
+
+	assert.True(t, period.isEqual(other))
+}
+
+func Test_isEqual_givenNotEqual_shouldReturnFalse(t *testing.T) {
+	from := newTestTime("2024-01-01T00:00:00Z")
+	to := newTestTime("2024-01-31T00:00:00Z")
+
+	period := Period{
+		from: from,
+		to:   to,
+	}
+
+	otherFrom := from.Add(time.Second)
+
+	other := Period{
+		from: otherFrom,
+		to:   to,
+	}
+
+	assert.False(t, period.isEqual(other))
+}
+
 func newTestTime(value string) time.Time {
 	t, err := time.Parse(time.RFC3339, value)
 	if err != nil {
