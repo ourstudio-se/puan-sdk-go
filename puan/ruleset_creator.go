@@ -113,7 +113,12 @@ func (c *RuleSetCreator) AssumeInPeriod(
 		return err
 	}
 
+	if c.period.isEqual(variable.period) {
+		return c.Assume(variable.variable)
+	}
+
 	c.timeBoundAssumedVariables = append(c.timeBoundAssumedVariables, variable)
+
 	return nil
 }
 
