@@ -741,7 +741,7 @@ func Test_isEqual_givenEqual_shouldReturnTrue(t *testing.T) {
 	assert.True(t, period.isEqual(other))
 }
 
-func Test_isEqual_givenEqual_shouldReturnFalse(t *testing.T) {
+func Test_isEqual_givenNotEqual_shouldReturnFalse(t *testing.T) {
 	from := newTestTime("2024-01-01T00:00:00Z")
 	to := newTestTime("2024-01-31T00:00:00Z")
 
