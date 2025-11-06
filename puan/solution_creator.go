@@ -62,7 +62,10 @@ func (c *SolutionCreator) findDependentSolution(
 
 	solution, err := c.Solve(query)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf(
+			"failed to solve query with error: %w",
+			err,
+		)
 	}
 
 	primitiveSolution := ruleset.RemoveSupportVariables(solution)
@@ -99,7 +102,8 @@ func validateSelections(selections Selections, ruleset Ruleset) error {
 	for _, selection := range selections {
 		if !utils.ContainsAll(ruleset.selectableVariables, selection.ids()) {
 			return errors.Errorf(
-				"invalid selection: %v",
+				"%w: invalid selection: %v",
+				ErrInvalidArgument,
 				selection,
 			)
 		}
@@ -108,7 +112,8 @@ func validateSelections(selections Selections, ruleset Ruleset) error {
 		if hasSubSelection {
 			if utils.ContainsAny(selection.ids(), ruleset.independentVariables) {
 				return errors.Errorf(
-					"independent variables cannot be part of a composite selections: %v",
+					"%w: independent variables cannot be part of a composite selections: %v",
+					ErrInvalidArgument,
 					selection,
 				)
 			}

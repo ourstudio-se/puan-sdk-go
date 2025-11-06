@@ -19,7 +19,8 @@ func NewPeriod(from, to time.Time) (Period, error) {
 	if !to.After(from) {
 		return Period{},
 			errors.Errorf(
-				"from time %v must be before to time %v",
+				"%w: from time %v must be before to time %v",
+				ErrInvalidArgument,
 				from,
 				to,
 			)
@@ -158,7 +159,10 @@ type idsString string
 
 func newIdsString(variables []string) (idsString, error) {
 	if len(variables) == 0 {
-		return "", errors.New("at least one variable is required")
+		return "", errors.Errorf(
+			"%w: at least one variable is required",
+			ErrInvalidArgument,
+		)
 	}
 
 	sort.Strings(variables)

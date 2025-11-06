@@ -26,35 +26,106 @@ func NewRuleSetCreator() *RuleSetCreator {
 }
 
 func (c *RuleSetCreator) AddPrimitives(primitives ...string) error {
-	return c.model.AddPrimitives(primitives...)
+	if err := c.model.AddPrimitives(primitives...); err != nil {
+		return errors.Errorf(
+			"%w: failed to add primitives: %w",
+			ErrInvalidArgument,
+			err,
+		)
+	}
+
+	return nil
 }
 
 func (c *RuleSetCreator) SetAnd(variables ...string) (string, error) {
-	return c.model.SetAnd(variables...)
+	id, err := c.model.SetAnd(variables...)
+	if err != nil {
+		return "", errors.Errorf(
+			"%w: failed to set AND: %w",
+			ErrInvalidArgument,
+			err,
+		)
+	}
+
+	return id, nil
 }
 
 func (c *RuleSetCreator) SetOr(variables ...string) (string, error) {
-	return c.model.SetOr(variables...)
+	id, err := c.model.SetOr(variables...)
+	if err != nil {
+		return "", errors.Errorf(
+			"%w: failed to set OR: %w",
+			ErrInvalidArgument,
+			err,
+		)
+	}
+
+	return id, nil
 }
 
 func (c *RuleSetCreator) SetNot(variable ...string) (string, error) {
-	return c.model.SetNot(variable...)
+	id, err := c.model.SetNot(variable...)
+	if err != nil {
+		return "", errors.Errorf(
+			"%w: failed to set NOT: %w",
+			ErrInvalidArgument,
+			err,
+		)
+	}
+
+	return id, nil
 }
 
 func (c *RuleSetCreator) SetImply(condition, consequence string) (string, error) {
-	return c.model.SetImply(condition, consequence)
+	id, err := c.model.SetImply(condition, consequence)
+	if err != nil {
+		return "", errors.Errorf(
+			"%w: failed to set IMPLY: %w",
+			ErrInvalidArgument,
+			err,
+		)
+	}
+
+	return id, nil
 }
 
 func (c *RuleSetCreator) SetXor(variables ...string) (string, error) {
-	return c.model.SetXor(variables...)
+	id, err := c.model.SetXor(variables...)
+	if err != nil {
+		return "", errors.Errorf(
+			"%w: failed to set XOR: %w",
+			ErrInvalidArgument,
+			err,
+		)
+	}
+
+	return id, nil
 }
 
 func (c *RuleSetCreator) SetOneOrNone(variables ...string) (string, error) {
-	return c.model.SetOneOrNone(variables...)
+	id, err := c.model.SetOneOrNone(variables...)
+	if err != nil {
+		return "", errors.Errorf(
+			"%w: failed to set ONE OR NONE: %w",
+			ErrInvalidArgument,
+			err,
+		)
+	}
+
+	return id, nil
 }
 
 func (c *RuleSetCreator) SetEquivalent(variableOne, variableTwo string) (string, error) {
-	return c.model.SetEquivalent(variableOne, variableTwo)
+	id, err := c.model.SetEquivalent(variableOne, variableTwo)
+	if err != nil {
+		return "", errors.Errorf(
+			"%w: failed to set EQUIVALENT: %w",
+			ErrInvalidArgument,
+			err,
+		)
+	}
+
+	return id, nil
 }
 
 func (c *RuleSetCreator) Prefer(ids ...string) error {
@@ -63,7 +134,11 @@ func (c *RuleSetCreator) Prefer(ids ...string) error {
 
 	err := c.model.ValidateVariables(unpreferredIDs...)
 	if err != nil {
-		return err
+		return errors.Errorf(
+			"%w: validation failed prefer variables: %w",
+			ErrInvalidArgument,
+			err,
+		)
 	}
 
 	negatedIDs, err := c.negatePreferreds(unpreferredIDs)
@@ -81,7 +156,11 @@ func (c *RuleSetCreator) negatePreferreds(ids []string) ([]string, error) {
 	for i, id := range ids {
 		negatedID, err := c.model.SetNot(id)
 		if err != nil {
-			return nil, err
+			return nil, errors.Errorf(
+				"%w: failed to negate preferred variable: %w",
+				ErrInvalidArgument,
+				err,
+			)
 		}
 
 		negatedIDs[i] = negatedID
@@ -96,7 +175,11 @@ func (c *RuleSetCreator) Assume(ids ...string) error {
 
 	err := c.model.ValidateVariables(unassumedIDs...)
 	if err != nil {
-		return err
+		return errors.Errorf(
+			"%w: validation failed assume variables: %w",
+			ErrInvalidArgument,
+			err,
+		)
 	}
 
 	c.assumedVariables = append(c.assumedVariables, unassumedIDs...)
@@ -130,7 +213,10 @@ func (c *RuleSetCreator) newTimeBoundVariable(
 	from, to time.Time,
 ) (TimeBoundVariable, error) {
 	if c.period == nil {
-		return TimeBoundVariable{}, errors.New("time support not enabled. Call EnableTime() first")
+		return TimeBoundVariable{}, errors.Errorf(
+			"%w: time support not enabled. Call EnableTime() first",
+			ErrInvalidOperation,
+		)
 	}
 
 	period, err := NewPeriod(from, to)
@@ -141,7 +227,8 @@ func (c *RuleSetCreator) newTimeBoundVariable(
 	if !c.period.contains(period) {
 		return TimeBoundVariable{},
 			errors.Errorf(
-				"period %v is outside of enabled period %v",
+				"%w: period %v is outside of enabled period %v",
+				ErrInvalidArgument,
 				period,
 				*c.period,
 			)
@@ -238,7 +325,11 @@ func (c *RuleSetCreator) newPeriodVariables() (TimeBoundVariables, error) {
 		}
 		periodVariables[i] = period
 		if err := c.model.AddPrimitives(period.variable); err != nil {
-			return nil, err
+			return nil, errors.Errorf(
+				"%w: failed to add period variable: %w",
+				ErrInvalidArgument,
+				err,
+			)
 		}
 	}
 
@@ -275,7 +366,11 @@ func (c *RuleSetCreator) createPeriodConstraints(periodVariables TimeBoundVariab
 	// Choose exactly one period
 	exactlyOnePeriod, err := c.model.SetXor(periodVariables.ids()...)
 	if err != nil {
-		return err
+		return errors.Errorf(
+			"%w: failed to set exactly one period constraint: %w",
+			ErrInvalidArgument,
+			err,
+		)
 	}
 	constraintIDs = append(constraintIDs, exactlyOnePeriod)
 
@@ -296,31 +391,37 @@ func (c *RuleSetCreator) setTimeBoundConstraint(
 		return "", err
 	}
 
-	return c.model.SetImply(combinedPeriodsID, combinedAssumedID)
+	return c.SetImply(combinedPeriodsID, combinedAssumedID)
 }
 
 func (c *RuleSetCreator) setSingleOrOR(ids ...string) (string, error) {
 	if len(ids) == 0 {
-		return "", errors.New("at least one id is required")
+		return "", errors.Errorf(
+			"%w: at least one id is required",
+			ErrInvalidArgument,
+		)
 	}
 
 	if len(ids) == 1 {
 		return ids[0], nil
 	}
 
-	return c.model.SetOr(ids...)
+	return c.SetOr(ids...)
 }
 
 func (c *RuleSetCreator) setSingleOrAnd(ids ...string) (string, error) {
 	if len(ids) == 0 {
-		return "", errors.New("at least one id is required")
+		return "", errors.Errorf(
+			"%w: at least one id is required",
+			ErrInvalidArgument,
+		)
 	}
 
 	if len(ids) == 1 {
 		return ids[0], nil
 	}
 
-	return c.model.SetAnd(ids...)
+	return c.SetAnd(ids...)
 }
 
 func (c *RuleSetCreator) createAssumeConstraints() error {

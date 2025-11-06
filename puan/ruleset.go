@@ -50,7 +50,10 @@ func newRuleset(
 	periodVariables TimeBoundVariables,
 ) (Ruleset, error) {
 	if polyhedron == nil {
-		return Ruleset{}, errors.New("polyhedron cannot be nil")
+		return Ruleset{}, errors.Errorf(
+			"%w: polyhedron cannot be nil",
+			ErrInvalidArgument,
+		)
 	}
 
 	err := validateVariables(
@@ -76,7 +79,10 @@ func newRuleset(
 
 func validateVariables(selectable, dependent, independent, preferreds, periods []string) error {
 	if utils.ContainsAny(dependent, independent) {
-		return errors.New("dependent and independent variables cannot overlap")
+		return errors.Errorf(
+			"%w: dependent and independent variables cannot overlap",
+			ErrInvalidArgument,
+		)
 	}
 
 	var combined []string
@@ -84,19 +90,31 @@ func validateVariables(selectable, dependent, independent, preferreds, periods [
 	combined = append(combined, independent...)
 
 	if len(combined) == 0 {
-		return errors.New("dependent and independent variables cannot both be empty")
+		return errors.Errorf(
+			"%w: dependent and independent variables cannot both be empty",
+			ErrInvalidArgument,
+		)
 	}
 
 	if !utils.ContainsAll(combined, selectable) {
-		return errors.New("selectable variables must be part of dependent or independent variables")
+		return errors.Errorf(
+			"%w: selectable variables must be part of dependent or independent variables",
+			ErrInvalidArgument,
+		)
 	}
 
 	if !utils.ContainsAll(dependent, preferreds) {
-		return errors.New("preferred variables must be part of dependent variables")
+		return errors.Errorf(
+			"%w: preferred variables must be part of dependent variables",
+			ErrInvalidArgument,
+		)
 	}
 
 	if !utils.ContainsAll(dependent, periods) {
-		return errors.New("period variables must be part of dependent variables")
+		return errors.Errorf(
+			"%w: period variables must be part of dependent variables",
+			ErrInvalidArgument,
+		)
 	}
 
 	return nil
@@ -141,7 +159,8 @@ func (r *Ruleset) FindPeriodInSolution(solution Solution) (Period, error) {
 			if period != nil {
 				return Period{},
 					errors.Errorf(
-						"multiple periods found: %v and %v",
+						"%w: multiple periods found: %v and %v",
+						ErrAmbiguous,
 						period,
 						periodVariable.period,
 					)
@@ -151,7 +170,10 @@ func (r *Ruleset) FindPeriodInSolution(solution Solution) (Period, error) {
 	}
 
 	if period == nil {
-		return Period{}, errors.New("period not found for solution")
+		return Period{}, errors.Errorf(
+			"%w: period not found for solution",
+			ErrNotFound,
+		)
 	}
 
 	return *period, nil
@@ -242,7 +264,11 @@ func (r *Ruleset) newWeighSelection(selection Selection) (weights.Selection, err
 
 	weightSelection, err := weights.NewSelection(id, weights.Action(selection.action))
 	if err != nil {
-		return weights.Selection{}, err
+		return weights.Selection{}, errors.Errorf(
+			"%w: failed to create weights selections: %w",
+			ErrInvalidArgument,
+			err,
+		)
 	}
 
 	return weightSelection, nil
@@ -272,7 +298,16 @@ func (r *Ruleset) setCompositeSelectionConstraint(ids []string) (string, error) 
 
 func newCompositeSelectionConstraint(ids []string) (pldag.Constraint, error) {
 	dedupedIDs := utils.Dedupe(ids)
-	return pldag.NewAtLeastConstraint(dedupedIDs, len(dedupedIDs))
+	constraint, err := pldag.NewAtLeastConstraint(dedupedIDs, len(dedupedIDs))
+	if err != nil {
+		return pldag.Constraint{}, errors.Errorf(
+			"%w: %s",
+			ErrInvalidArgument,
+			err.Error(),
+		)
+	}
+
+	return constraint, nil
 }
 
 func (r *Ruleset) setConstraintIfNotExist(constraint pldag.Constraint) error {
@@ -324,7 +359,11 @@ func (r *Ruleset) newRow(coefficients pldag.Coefficients) ([]int, error) {
 	for id, value := range coefficients {
 		idIndex, err := utils.IndexOf(r.dependentVariables, id)
 		if err != nil {
-			return nil, err
+			return nil, errors.Errorf(
+				"%w: variable %s not found",
+				ErrInvalidOperation,
+				id,
+			)
 		}
 
 		row[idIndex] = value
@@ -343,10 +382,14 @@ func (r *Ruleset) forbidPassedPeriods(from time.Time) error {
 
 	constraint, err := pldag.NewAtMostConstraint(passedPeriodIDs, 0)
 	if err != nil {
-		return err
+		return errors.Errorf(
+			"%w: failed to create at most constraint: %w",
+			ErrInvalidArgument,
+			err,
+		)
 	}
 
-	if err := r.setConstraint(constraint); err != nil {
+	if err = r.setConstraint(constraint); err != nil {
 		return err
 	}
 
