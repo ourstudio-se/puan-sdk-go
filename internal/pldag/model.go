@@ -178,7 +178,7 @@ func (m *Model) SetOneOrNone(variables ...string) (string, error) {
 		)
 	}
 
-	id, err := m.setAtLeast(deduped, 1)
+	id, err := m.setAtMost(deduped, 1)
 	if err != nil {
 		return "", errors.Errorf(
 			"ONE OR NONE: %w",
