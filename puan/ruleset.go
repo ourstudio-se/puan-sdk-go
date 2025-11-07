@@ -105,7 +105,7 @@ func validateVariables(selectable, dependent, independent, preferreds, periods [
 
 	if !utils.ContainsAll(dependent, preferreds) {
 		return errors.Errorf(
-			"%w: preferred variables must be exist in dependent variables",
+			"%w: preferred variables must exist in dependent variables",
 			ErrInvalidArgument,
 		)
 	}
