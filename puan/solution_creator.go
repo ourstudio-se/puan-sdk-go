@@ -63,7 +63,7 @@ func (c *SolutionCreator) findDependentSolution(
 	solution, err := c.Solve(query)
 	if err != nil {
 		return nil, errors.Errorf(
-			"failed to solve query with error: %w",
+			"failed to solve query: %w",
 			err,
 		)
 	}
@@ -102,7 +102,7 @@ func validateSelections(selections Selections, ruleset Ruleset) error {
 	for _, selection := range selections {
 		if !utils.ContainsAll(ruleset.selectableVariables, selection.ids()) {
 			return errors.Errorf(
-				"%w: invalid selection: %v",
+				"%w: selection contains non-selectable variables: %v",
 				ErrInvalidArgument,
 				selection,
 			)

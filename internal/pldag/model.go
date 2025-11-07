@@ -30,23 +30,23 @@ func (m *Model) AddPrimitives(primitives ...string) error {
 		)
 	}
 
-	for _, p := range primitives {
-		if p == "" {
+	for _, primitive := range primitives {
+		if primitive == "" {
 			return errors.Errorf(
 				"%w: primitive cannot be empty",
 				ErrEmptyVariable,
 			)
 		}
 
-		if m.idAlreadyExists(p) {
+		if m.idAlreadyExists(primitive) {
 			return errors.Errorf(
 				"%w: primitive %s already exists in model",
-				ErrAlreadyExists,
-				p,
+				ErrVariableAlreadyExists,
+				primitive,
 			)
 		}
 
-		m.variables = append(m.variables, p)
+		m.variables = append(m.variables, primitive)
 	}
 
 	return nil
@@ -281,7 +281,7 @@ func (m *Model) ValidateVariables(variables ...string) error {
 		if !utils.Contains(m.variables, variable) {
 			return errors.Errorf(
 				"%w: %s not in model",
-				ErrVariableNotFound,
+				ErrVariableNotExists,
 				variable,
 			)
 		}

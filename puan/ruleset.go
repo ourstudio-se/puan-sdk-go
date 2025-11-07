@@ -352,8 +352,8 @@ func (r *Ruleset) newRow(coefficients pldag.Coefficients) ([]int, error) {
 		idIndex, err := utils.IndexOf(r.dependentVariables, id)
 		if err != nil {
 			return nil, errors.Errorf(
-				"%w: variable %s not found",
-				ErrInvalidArgument,
+				"%w: variable %s not found in dependent variables",
+				ErrNotFound,
 				id,
 			)
 		}

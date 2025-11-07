@@ -118,9 +118,9 @@ func (c *RuleSetCreator) Prefer(ids ...string) error {
 func (c *RuleSetCreator) negatePreferreds(ids []string) ([]string, error) {
 	negatedIDs := make([]string, len(ids))
 	for i, id := range ids {
-		negatedID, err := c.model.SetNot(id)
+		negatedID, err := c.SetNot(id)
 		if err != nil {
-			return nil, toPuanError(err)
+			return nil, err
 		}
 
 		negatedIDs[i] = negatedID
@@ -280,8 +280,8 @@ func (c *RuleSetCreator) newPeriodVariables() (TimeBoundVariables, error) {
 			period:   period,
 		}
 		periodVariables[i] = period
-		if err := c.model.AddPrimitives(period.variable); err != nil {
-			return nil, toPuanError(err)
+		if err := c.AddPrimitives(period.variable); err != nil {
+			return nil, err
 		}
 	}
 
@@ -316,9 +316,9 @@ func (c *RuleSetCreator) createPeriodConstraints(periodVariables TimeBoundVariab
 	}
 
 	// Choose exactly one period
-	exactlyOnePeriod, err := c.model.SetXor(periodVariables.ids()...)
+	exactlyOnePeriod, err := c.SetXor(periodVariables.ids()...)
 	if err != nil {
-		return toPuanError(err)
+		return err
 	}
 	constraintIDs = append(constraintIDs, exactlyOnePeriod)
 
@@ -369,9 +369,9 @@ func (c *RuleSetCreator) setSingleOrAnd(ids ...string) (string, error) {
 		return ids[0], nil
 	}
 
-	id, err := c.model.SetAnd(ids...)
+	id, err := c.SetAnd(ids...)
 	if err != nil {
-		return "", toPuanError(err)
+		return "", err
 	}
 
 	return id, nil

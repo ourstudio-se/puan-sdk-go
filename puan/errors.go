@@ -26,10 +26,10 @@ func toPuanError(err error) error {
 		return errors.Wrap(errors.Errorf("%w: %w", ErrInvalidArgument, err), 1)
 	case errors.Is(err, pldag.ErrInvalidOperands):
 		return errors.Wrap(errors.Errorf("%w: %w", ErrInvalidArgument, err), 1)
-	case errors.Is(err, pldag.ErrVariableNotFound):
+	case errors.Is(err, pldag.ErrVariableNotExists):
 		return errors.Wrap(errors.Errorf("%w: %w", ErrInvalidArgument, err), 1)
 
-	case errors.Is(err, pldag.ErrAlreadyExists):
+	case errors.Is(err, pldag.ErrVariableAlreadyExists):
 		return errors.Wrap(errors.Errorf("%w: %w", ErrInvalidOperation, err), 1)
 
 	case errors.Is(err, weights.ErrInvalidAction):
