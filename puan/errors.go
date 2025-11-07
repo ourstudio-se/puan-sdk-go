@@ -35,7 +35,9 @@ func toPuanError(err error) error {
 	case errors.Is(err, weights.ErrInvalidAction):
 		return errors.Wrap(errors.Errorf("%w: %w", ErrInvalidArgument, err), 1)
 
-	default:
+	case err != nil:
 		return errors.Wrap(errors.Errorf("%w: %w", ErrUnknown, err), 1)
 	}
+
+	return nil
 }
