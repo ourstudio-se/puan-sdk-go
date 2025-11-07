@@ -24,15 +24,26 @@ func New() *Model {
 
 func (m *Model) AddPrimitives(primitives ...string) error {
 	if utils.ContainsDuplicates(primitives) {
-		return errors.New("primitives contain duplicates")
+		return errors.Errorf(
+			"%w: primitives contain duplicates",
+			ErrDuplicatedVariable,
+		)
 	}
 
 	for _, p := range primitives {
 		if p == "" {
-			return errors.New("primitive cannot be empty")
+			return errors.Errorf(
+				"%w: primitive cannot be empty",
+				ErrEmptyVariable,
+			)
 		}
+
 		if m.idAlreadyExists(p) {
-			return errors.Errorf("primitive %s already exists in model", p)
+			return errors.Errorf(
+				"%w: primitive %s already exists in model",
+				ErrAlreadyExists,
+				p,
+			)
 		}
 
 		m.variables = append(m.variables, p)
@@ -45,12 +56,19 @@ func (m *Model) SetAnd(variables ...string) (string, error) {
 	deduped := utils.Dedupe(variables)
 
 	if len(deduped) < 2 {
-		return "", errors.Errorf("at least two variables are required, got %v", deduped)
+		return "", errors.Errorf(
+			"%w: AND requires at least two variables, got %v",
+			ErrInvalidOperands,
+			deduped,
+		)
 	}
 
 	id, err := m.setAtLeast(deduped, len(deduped))
 	if err != nil {
-		return "", err
+		return "", errors.Errorf(
+			"AND: %w",
+			err,
+		)
 	}
 
 	return id, nil
@@ -60,12 +78,19 @@ func (m *Model) SetOr(variables ...string) (string, error) {
 	deduped := utils.Dedupe(variables)
 
 	if len(deduped) < 2 {
-		return "", errors.Errorf("at least two variables are required, got %v", deduped)
+		return "", errors.Errorf(
+			"%w: OR requires at least two variables, got %v",
+			ErrInvalidOperands,
+			deduped,
+		)
 	}
 
 	id, err := m.setAtLeast(deduped, 1)
 	if err != nil {
-		return "", err
+		return "", errors.Errorf(
+			"OR: %w",
+			err,
+		)
 	}
 
 	return id, nil
@@ -75,7 +100,10 @@ func (m *Model) SetNot(variables ...string) (string, error) {
 	deduped := utils.Dedupe(variables)
 	id, err := m.setAtMost(deduped, 0)
 	if err != nil {
-		return "", err
+		return "", errors.Errorf(
+			"NOT: %w",
+			err,
+		)
 	}
 
 	return id, nil
@@ -84,60 +112,119 @@ func (m *Model) SetNot(variables ...string) (string, error) {
 func (m *Model) SetImply(condition, consequence string) (string, error) {
 	notID, err := m.SetNot(condition)
 	if err != nil {
-		return "", err
+		return "", errors.Errorf(
+			"IMPLY: %w",
+			err,
+		)
 	}
 
-	return m.SetOr([]string{notID, consequence}...)
+	id, err := m.SetOr([]string{notID, consequence}...)
+	if err != nil {
+		return "", errors.Errorf(
+			"IMPLY: %w",
+			err,
+		)
+	}
+
+	return id, nil
 }
 
 func (m *Model) SetXor(variables ...string) (string, error) {
 	deduped := utils.Dedupe(variables)
 
 	if len(deduped) < 2 {
-		return "", errors.Errorf("at least two variables are required, got %v", deduped)
+		return "", errors.Errorf(
+			"%w: XOR requires at least two variables, got %v",
+			ErrInvalidOperands,
+			deduped,
+		)
 	}
 
 	atLeastID, err := m.setAtLeast(deduped, 1)
 	if err != nil {
-		return "", err
+		return "", errors.Errorf(
+			"XOR: %w",
+			err,
+		)
 	}
 
 	atMostID, err := m.setAtMost(deduped, 1)
 	if err != nil {
-		return "", err
+		return "", errors.Errorf(
+			"XOR: %w",
+			err,
+		)
 	}
 
-	return m.SetAnd([]string{atLeastID, atMostID}...)
+	id, err := m.SetAnd([]string{atLeastID, atMostID}...)
+	if err != nil {
+		return "", errors.Errorf(
+			"XOR: %w",
+			err,
+		)
+	}
+
+	return id, nil
 }
 
 func (m *Model) SetOneOrNone(variables ...string) (string, error) {
 	deduped := utils.Dedupe(variables)
 
 	if len(deduped) < 2 {
-		return "", errors.Errorf("at least two variables are required, got %v", deduped)
+		return "", errors.Errorf(
+			"%w: ONE OR NONE requires at least two variables, got %v",
+			ErrInvalidOperands,
+			deduped,
+		)
 	}
 
-	return m.setAtMost(deduped, 1)
+	id, err := m.setAtLeast(deduped, 1)
+	if err != nil {
+		return "", errors.Errorf(
+			"ONE OR NONE: %w",
+			err,
+		)
+	}
+
+	return id, nil
 }
 
 func (m *Model) SetEquivalent(variableOne, variableTwo string) (string, error) {
 	andID, err := m.SetAnd(variableOne, variableTwo)
 	if err != nil {
-		return "", err
-	}
-	notID, err := m.SetNot(variableOne, variableTwo)
-	if err != nil {
-		return "", err
+		return "", errors.Errorf(
+			"EQUIVALENT: %w",
+			err,
+		)
 	}
 
-	return m.SetOr(andID, notID)
+	notID, err := m.SetNot(variableOne, variableTwo)
+	if err != nil {
+		return "", errors.Errorf(
+			"EQUIVALENT: %w",
+			err,
+		)
+	}
+
+	id, err := m.SetOr(andID, notID)
+	if err != nil {
+		return "", errors.Errorf(
+			"EQUIVALENT: %w",
+			err,
+		)
+	}
+
+	return id, nil
 }
 
 func (m *Model) Assume(variables ...string) error {
 	deduped := utils.Dedupe(variables)
 	err := m.ValidateVariables(deduped...)
 	if err != nil {
-		return err
+		return errors.Errorf(
+			"ASSUME: %w",
+			err,
+		)
 	}
 
 	newAssumed := utils.Without(variables, m.assumeConstraints.coefficientIDs())
@@ -190,9 +277,13 @@ func (m *Model) Variables() []string {
 }
 
 func (m *Model) ValidateVariables(variables ...string) error {
-	for _, v := range variables {
-		if !utils.Contains(m.variables, v) {
-			return errors.Errorf("variable %s not in model", v)
+	for _, variable := range variables {
+		if !utils.Contains(m.variables, variable) {
+			return errors.Errorf(
+				"%w: %s not in model",
+				ErrVariableNotFound,
+				variable,
+			)
 		}
 	}
 

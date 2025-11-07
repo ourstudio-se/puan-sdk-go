@@ -27,11 +27,7 @@ func NewRuleSetCreator() *RuleSetCreator {
 
 func (c *RuleSetCreator) AddPrimitives(primitives ...string) error {
 	if err := c.model.AddPrimitives(primitives...); err != nil {
-		return errors.Errorf(
-			"%w: failed to add primitives: %w",
-			ErrInvalidArgument,
-			err,
-		)
+		return toPuanError(err)
 	}
 
 	return nil
@@ -40,11 +36,7 @@ func (c *RuleSetCreator) AddPrimitives(primitives ...string) error {
 func (c *RuleSetCreator) SetAnd(variables ...string) (string, error) {
 	id, err := c.model.SetAnd(variables...)
 	if err != nil {
-		return "", errors.Errorf(
-			"%w: failed to set AND: %w",
-			ErrInvalidArgument,
-			err,
-		)
+		return "", toPuanError(err)
 	}
 
 	return id, nil
@@ -53,11 +45,7 @@ func (c *RuleSetCreator) SetAnd(variables ...string) (string, error) {
 func (c *RuleSetCreator) SetOr(variables ...string) (string, error) {
 	id, err := c.model.SetOr(variables...)
 	if err != nil {
-		return "", errors.Errorf(
-			"%w: failed to set OR: %w",
-			ErrInvalidArgument,
-			err,
-		)
+		return "", toPuanError(err)
 	}
 
 	return id, nil
@@ -66,11 +54,7 @@ func (c *RuleSetCreator) SetOr(variables ...string) (string, error) {
 func (c *RuleSetCreator) SetNot(variable ...string) (string, error) {
 	id, err := c.model.SetNot(variable...)
 	if err != nil {
-		return "", errors.Errorf(
-			"%w: failed to set NOT: %w",
-			ErrInvalidArgument,
-			err,
-		)
+		return "", toPuanError(err)
 	}
 
 	return id, nil
@@ -79,11 +63,7 @@ func (c *RuleSetCreator) SetNot(variable ...string) (string, error) {
 func (c *RuleSetCreator) SetImply(condition, consequence string) (string, error) {
 	id, err := c.model.SetImply(condition, consequence)
 	if err != nil {
-		return "", errors.Errorf(
-			"%w: failed to set IMPLY: %w",
-			ErrInvalidArgument,
-			err,
-		)
+		return "", toPuanError(err)
 	}
 
 	return id, nil
@@ -92,11 +72,7 @@ func (c *RuleSetCreator) SetImply(condition, consequence string) (string, error)
 func (c *RuleSetCreator) SetXor(variables ...string) (string, error) {
 	id, err := c.model.SetXor(variables...)
 	if err != nil {
-		return "", errors.Errorf(
-			"%w: failed to set XOR: %w",
-			ErrInvalidArgument,
-			err,
-		)
+		return "", toPuanError(err)
 	}
 
 	return id, nil
@@ -105,11 +81,7 @@ func (c *RuleSetCreator) SetXor(variables ...string) (string, error) {
 func (c *RuleSetCreator) SetOneOrNone(variables ...string) (string, error) {
 	id, err := c.model.SetOneOrNone(variables...)
 	if err != nil {
-		return "", errors.Errorf(
-			"%w: failed to set ONE OR NONE: %w",
-			ErrInvalidArgument,
-			err,
-		)
+		return "", toPuanError(err)
 	}
 
 	return id, nil
@@ -118,11 +90,7 @@ func (c *RuleSetCreator) SetOneOrNone(variables ...string) (string, error) {
 func (c *RuleSetCreator) SetEquivalent(variableOne, variableTwo string) (string, error) {
 	id, err := c.model.SetEquivalent(variableOne, variableTwo)
 	if err != nil {
-		return "", errors.Errorf(
-			"%w: failed to set EQUIVALENT: %w",
-			ErrInvalidArgument,
-			err,
-		)
+		return "", toPuanError(err)
 	}
 
 	return id, nil
@@ -134,11 +102,7 @@ func (c *RuleSetCreator) Prefer(ids ...string) error {
 
 	err := c.model.ValidateVariables(unpreferredIDs...)
 	if err != nil {
-		return errors.Errorf(
-			"%w: validation failed prefer variables: %w",
-			ErrInvalidArgument,
-			err,
-		)
+		return toPuanError(err)
 	}
 
 	negatedIDs, err := c.negatePreferreds(unpreferredIDs)
@@ -156,11 +120,7 @@ func (c *RuleSetCreator) negatePreferreds(ids []string) ([]string, error) {
 	for i, id := range ids {
 		negatedID, err := c.model.SetNot(id)
 		if err != nil {
-			return nil, errors.Errorf(
-				"%w: failed to negate preferred variable: %w",
-				ErrInvalidArgument,
-				err,
-			)
+			return nil, toPuanError(err)
 		}
 
 		negatedIDs[i] = negatedID
@@ -175,11 +135,7 @@ func (c *RuleSetCreator) Assume(ids ...string) error {
 
 	err := c.model.ValidateVariables(unassumedIDs...)
 	if err != nil {
-		return errors.Errorf(
-			"%w: validation failed assume variables: %w",
-			ErrInvalidArgument,
-			err,
-		)
+		return toPuanError(err)
 	}
 
 	c.assumedVariables = append(c.assumedVariables, unassumedIDs...)
@@ -325,11 +281,7 @@ func (c *RuleSetCreator) newPeriodVariables() (TimeBoundVariables, error) {
 		}
 		periodVariables[i] = period
 		if err := c.model.AddPrimitives(period.variable); err != nil {
-			return nil, errors.Errorf(
-				"%w: failed to add period variable: %w",
-				ErrInvalidArgument,
-				err,
-			)
+			return nil, toPuanError(err)
 		}
 	}
 
@@ -366,11 +318,7 @@ func (c *RuleSetCreator) createPeriodConstraints(periodVariables TimeBoundVariab
 	// Choose exactly one period
 	exactlyOnePeriod, err := c.model.SetXor(periodVariables.ids()...)
 	if err != nil {
-		return errors.Errorf(
-			"%w: failed to set exactly one period constraint: %w",
-			ErrInvalidArgument,
-			err,
-		)
+		return toPuanError(err)
 	}
 	constraintIDs = append(constraintIDs, exactlyOnePeriod)
 
@@ -421,7 +369,12 @@ func (c *RuleSetCreator) setSingleOrAnd(ids ...string) (string, error) {
 		return ids[0], nil
 	}
 
-	return c.SetAnd(ids...)
+	id, err := c.model.SetAnd(ids...)
+	if err != nil {
+		return "", toPuanError(err)
+	}
+
+	return id, nil
 }
 
 func (c *RuleSetCreator) createAssumeConstraints() error {
@@ -434,5 +387,10 @@ func (c *RuleSetCreator) createAssumeConstraints() error {
 		return err
 	}
 
-	return c.model.Assume(root)
+	err = c.model.Assume(root)
+	if err != nil {
+		return toPuanError(err)
+	}
+
+	return nil
 }

@@ -7,6 +7,8 @@ const (
 	REMOVE Action = "REMOVE"
 )
 
+var ErrInvalidAction = errors.New("invalid action")
+
 type Action string
 
 type Selection struct {
@@ -16,7 +18,10 @@ type Selection struct {
 
 func NewSelection(id string, action Action) (Selection, error) {
 	if invalidAction(action) {
-		return Selection{}, errors.Errorf("invalid action: %s", action)
+		return Selection{}, errors.Errorf("%w: %s",
+			ErrInvalidAction,
+			action,
+		)
 	}
 
 	return Selection{

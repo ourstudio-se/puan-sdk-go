@@ -80,7 +80,7 @@ func newRuleset(
 func validateVariables(selectable, dependent, independent, preferreds, periods []string) error {
 	if utils.ContainsAny(dependent, independent) {
 		return errors.Errorf(
-			"%w: dependent and independent variables cannot overlap",
+			"%w: dependent and independent variables cannot share variables",
 			ErrInvalidArgument,
 		)
 	}
@@ -98,21 +98,21 @@ func validateVariables(selectable, dependent, independent, preferreds, periods [
 
 	if !utils.ContainsAll(combined, selectable) {
 		return errors.Errorf(
-			"%w: selectable variables must be part of dependent or independent variables",
+			"%w: selectable variables must exist in dependent or independent variables",
 			ErrInvalidArgument,
 		)
 	}
 
 	if !utils.ContainsAll(dependent, preferreds) {
 		return errors.Errorf(
-			"%w: preferred variables must be part of dependent variables",
+			"%w: preferred variables must be exist in dependent variables",
 			ErrInvalidArgument,
 		)
 	}
 
 	if !utils.ContainsAll(dependent, periods) {
 		return errors.Errorf(
-			"%w: period variables must be part of dependent variables",
+			"%w: period variables must exist in dependent variables",
 			ErrInvalidArgument,
 		)
 	}
@@ -264,11 +264,7 @@ func (r *Ruleset) newWeighSelection(selection Selection) (weights.Selection, err
 
 	weightSelection, err := weights.NewSelection(id, weights.Action(selection.action))
 	if err != nil {
-		return weights.Selection{}, errors.Errorf(
-			"%w: failed to create weights selections: %w",
-			ErrInvalidArgument,
-			err,
-		)
+		return weights.Selection{}, toPuanError(err)
 	}
 
 	return weightSelection, nil
@@ -300,11 +296,7 @@ func newCompositeSelectionConstraint(ids []string) (pldag.Constraint, error) {
 	dedupedIDs := utils.Dedupe(ids)
 	constraint, err := pldag.NewAtLeastConstraint(dedupedIDs, len(dedupedIDs))
 	if err != nil {
-		return pldag.Constraint{}, errors.Errorf(
-			"%w: %s",
-			ErrInvalidArgument,
-			err.Error(),
-		)
+		return pldag.Constraint{}, toPuanError(err)
 	}
 
 	return constraint, nil
@@ -361,7 +353,7 @@ func (r *Ruleset) newRow(coefficients pldag.Coefficients) ([]int, error) {
 		if err != nil {
 			return nil, errors.Errorf(
 				"%w: variable %s not found",
-				ErrInvalidOperation,
+				ErrInvalidArgument,
 				id,
 			)
 		}
@@ -382,11 +374,7 @@ func (r *Ruleset) forbidPassedPeriods(from time.Time) error {
 
 	constraint, err := pldag.NewAtMostConstraint(passedPeriodIDs, 0)
 	if err != nil {
-		return errors.Errorf(
-			"%w: failed to create at most constraint: %w",
-			ErrInvalidArgument,
-			err,
-		)
+		return toPuanError(err)
 	}
 
 	if err = r.setConstraint(constraint); err != nil {
