@@ -8,6 +8,7 @@ import (
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
+	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
 type RuleSetCreator struct {
@@ -79,7 +80,7 @@ func (c *RuleSetCreator) Prefer(ids ...string) error {
 func (c *RuleSetCreator) negatePreferreds(ids []string) ([]string, error) {
 	negatedIDs := make([]string, len(ids))
 	for i, id := range ids {
-		negatedID, err := c.model.SetNot(id)
+		negatedID, err := c.SetNot(id)
 		if err != nil {
 			return nil, err
 		}
@@ -130,7 +131,10 @@ func (c *RuleSetCreator) newTimeBoundVariable(
 	from, to time.Time,
 ) (TimeBoundVariable, error) {
 	if c.period == nil {
-		return TimeBoundVariable{}, errors.New("time support not enabled. Call EnableTime() first")
+		return TimeBoundVariable{}, errors.Errorf(
+			"%w: time support not enabled. Call EnableTime() first",
+			puanerror.InvalidOperation,
+		)
 	}
 
 	period, err := NewPeriod(from, to)
@@ -141,7 +145,8 @@ func (c *RuleSetCreator) newTimeBoundVariable(
 	if !c.period.contains(period) {
 		return TimeBoundVariable{},
 			errors.Errorf(
-				"period %v is outside of enabled period %v",
+				"%w: period %v is outside of enabled period %v",
+				puanerror.InvalidArgument,
 				period,
 				*c.period,
 			)
@@ -237,7 +242,7 @@ func (c *RuleSetCreator) newPeriodVariables() (TimeBoundVariables, error) {
 			period:   period,
 		}
 		periodVariables[i] = period
-		if err := c.model.AddPrimitives(period.variable); err != nil {
+		if err := c.AddPrimitives(period.variable); err != nil {
 			return nil, err
 		}
 	}
@@ -273,7 +278,7 @@ func (c *RuleSetCreator) createPeriodConstraints(periodVariables TimeBoundVariab
 	}
 
 	// Choose exactly one period
-	exactlyOnePeriod, err := c.model.SetXor(periodVariables.ids()...)
+	exactlyOnePeriod, err := c.SetXor(periodVariables.ids()...)
 	if err != nil {
 		return err
 	}
@@ -296,31 +301,37 @@ func (c *RuleSetCreator) setTimeBoundConstraint(
 		return "", err
 	}
 
-	return c.model.SetImply(combinedPeriodsID, combinedAssumedID)
+	return c.SetImply(combinedPeriodsID, combinedAssumedID)
 }
 
 func (c *RuleSetCreator) setSingleOrOR(ids ...string) (string, error) {
 	if len(ids) == 0 {
-		return "", errors.New("at least one id is required")
+		return "", errors.Errorf(
+			"%w: at least one id is required",
+			puanerror.InvalidArgument,
+		)
 	}
 
 	if len(ids) == 1 {
 		return ids[0], nil
 	}
 
-	return c.model.SetOr(ids...)
+	return c.SetOr(ids...)
 }
 
 func (c *RuleSetCreator) setSingleOrAnd(ids ...string) (string, error) {
 	if len(ids) == 0 {
-		return "", errors.New("at least one id is required")
+		return "", errors.Errorf(
+			"%w: at least one id is required",
+			puanerror.InvalidArgument,
+		)
 	}
 
 	if len(ids) == 1 {
 		return ids[0], nil
 	}
 
-	return c.model.SetAnd(ids...)
+	return c.SetAnd(ids...)
 }
 
 func (c *RuleSetCreator) createAssumeConstraints() error {

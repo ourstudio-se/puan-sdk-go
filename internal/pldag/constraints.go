@@ -8,6 +8,8 @@ import (
 	"slices"
 
 	"github.com/go-errors/errors"
+
+	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
 type Constraint struct {
@@ -52,15 +54,24 @@ func NewAtLeastConstraint(variables []string, amount int) (Constraint, error) {
 
 func validateConstraintInput(variables []string, amount int) error {
 	if len(variables) == 0 {
-		return errors.New("variables cannot be empty")
+		return errors.Errorf(
+			"%w: variables cannot be empty",
+			puanerror.InvalidArgument,
+		)
 	}
 
 	if amount > len(variables) {
-		return errors.New("amount cannot be greater than number of variables")
+		return errors.Errorf(
+			"%w: amount cannot be greater than number of variables",
+			puanerror.InvalidArgument,
+		)
 	}
 
 	if amount < 0 {
-		return errors.New("amount cannot be negative")
+		return errors.Errorf(
+			"%w: amount cannot be negative",
+			puanerror.InvalidArgument,
+		)
 	}
 
 	return nil
@@ -223,12 +234,18 @@ func newConstraintID(coefficients Coefficients, bias Bias) (string, error) {
 		h.Write([]byte(key))
 		_, err := fmt.Fprintf(h, "%d", coefficients[key])
 		if err != nil {
-			return "", errors.Errorf("failed to write %s to hash: %w", key, err)
+			return "", errors.Errorf(
+				"failed to write to hash: %w",
+				err,
+			)
 		}
 	}
 	_, err := fmt.Fprintf(h, "%d", bias)
 	if err != nil {
-		return "", errors.Errorf("failed to write %d to hash: %w", bias, err)
+		return "", errors.Errorf(
+			"failed to write to hash: %w",
+			err,
+		)
 	}
 
 	return fmt.Sprintf("%x", h.Sum(nil)), nil

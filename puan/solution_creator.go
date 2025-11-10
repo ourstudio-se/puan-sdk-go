@@ -7,6 +7,7 @@ import (
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
+	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
 type SolverClient interface {
@@ -99,7 +100,8 @@ func validateSelections(selections Selections, ruleset Ruleset) error {
 	for _, selection := range selections {
 		if !utils.ContainsAll(ruleset.selectableVariables, selection.ids()) {
 			return errors.Errorf(
-				"invalid selection: %v",
+				"%w: selection contains non-selectable variables: %v",
+				puanerror.InvalidArgument,
 				selection,
 			)
 		}
@@ -108,7 +110,8 @@ func validateSelections(selections Selections, ruleset Ruleset) error {
 		if hasSubSelection {
 			if utils.ContainsAny(selection.ids(), ruleset.independentVariables) {
 				return errors.Errorf(
-					"independent variables cannot be part of a composite selections: %v",
+					"%w: independent variables cannot be part of a composite selections: %v",
+					puanerror.InvalidArgument,
 					selection,
 				)
 			}
