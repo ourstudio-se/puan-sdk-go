@@ -21,7 +21,7 @@ func NewPeriod(from, to time.Time) (Period, error) {
 		return Period{},
 			errors.Errorf(
 				"%w: from time %v must be before to time %v",
-				puanerror.ErrInvalidArgument,
+				puanerror.InvalidArgument,
 				from,
 				to,
 			)
@@ -162,7 +162,7 @@ func newIdsString(variables []string) (idsString, error) {
 	if len(variables) == 0 {
 		return "", errors.Errorf(
 			"%w: at least one variable is required",
-			puanerror.ErrInvalidArgument,
+			puanerror.InvalidArgument,
 		)
 	}
 

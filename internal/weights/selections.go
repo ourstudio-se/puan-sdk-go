@@ -20,8 +20,8 @@ type Selection struct {
 
 func NewSelection(id string, action Action) (Selection, error) {
 	if invalidAction(action) {
-		return Selection{}, errors.Errorf("%w: %s",
-			puanerror.ErrInvalidAction,
+		return Selection{}, errors.Errorf("%w: invalid action %s",
+			puanerror.InvalidArgument,
 			action,
 		)
 	}

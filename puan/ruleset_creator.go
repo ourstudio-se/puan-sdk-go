@@ -133,7 +133,7 @@ func (c *RuleSetCreator) newTimeBoundVariable(
 	if c.period == nil {
 		return TimeBoundVariable{}, errors.Errorf(
 			"%w: time support not enabled. Call EnableTime() first",
-			puanerror.ErrInvalidOperation,
+			puanerror.InvalidOperation,
 		)
 	}
 
@@ -146,7 +146,7 @@ func (c *RuleSetCreator) newTimeBoundVariable(
 		return TimeBoundVariable{},
 			errors.Errorf(
 				"%w: period %v is outside of enabled period %v",
-				puanerror.ErrInvalidArgument,
+				puanerror.InvalidArgument,
 				period,
 				*c.period,
 			)
@@ -308,7 +308,7 @@ func (c *RuleSetCreator) setSingleOrOR(ids ...string) (string, error) {
 	if len(ids) == 0 {
 		return "", errors.Errorf(
 			"%w: at least one id is required",
-			puanerror.ErrInvalidArgument,
+			puanerror.InvalidArgument,
 		)
 	}
 
@@ -323,7 +323,7 @@ func (c *RuleSetCreator) setSingleOrAnd(ids ...string) (string, error) {
 	if len(ids) == 0 {
 		return "", errors.Errorf(
 			"%w: at least one id is required",
-			puanerror.ErrInvalidArgument,
+			puanerror.InvalidArgument,
 		)
 	}
 

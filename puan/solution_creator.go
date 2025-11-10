@@ -101,7 +101,7 @@ func validateSelections(selections Selections, ruleset Ruleset) error {
 		if !utils.ContainsAll(ruleset.selectableVariables, selection.ids()) {
 			return errors.Errorf(
 				"%w: selection contains non-selectable variables: %v",
-				puanerror.ErrInvalidArgument,
+				puanerror.InvalidArgument,
 				selection,
 			)
 		}
@@ -111,7 +111,7 @@ func validateSelections(selections Selections, ruleset Ruleset) error {
 			if utils.ContainsAny(selection.ids(), ruleset.independentVariables) {
 				return errors.Errorf(
 					"%w: independent variables cannot be part of a composite selections: %v",
-					puanerror.ErrInvalidArgument,
+					puanerror.InvalidArgument,
 					selection,
 				)
 			}

@@ -27,7 +27,7 @@ func (m *Model) AddPrimitives(primitives ...string) error {
 	if utils.ContainsDuplicates(primitives) {
 		return errors.Errorf(
 			"%w: primitives contain duplicates",
-			puanerror.ErrDuplicatedVariable,
+			puanerror.DuplicatedVariable,
 		)
 	}
 
@@ -35,14 +35,14 @@ func (m *Model) AddPrimitives(primitives ...string) error {
 		if primitive == "" {
 			return errors.Errorf(
 				"%w: primitive cannot be empty",
-				puanerror.ErrEmptyVariable,
+				puanerror.EmptyVariable,
 			)
 		}
 
 		if m.idAlreadyExists(primitive) {
 			return errors.Errorf(
 				"%w: primitive %s already exists in model",
-				puanerror.ErrVariableAlreadyExists,
+				puanerror.VariableAlreadyExists,
 				primitive,
 			)
 		}
@@ -59,7 +59,7 @@ func (m *Model) SetAnd(variables ...string) (string, error) {
 	if len(deduped) < 2 {
 		return "", errors.Errorf(
 			"%w: AND requires at least two variables, got %v",
-			puanerror.ErrInvalidOperands,
+			puanerror.InvalidArgument,
 			deduped,
 		)
 	}
@@ -82,7 +82,7 @@ func (m *Model) SetOr(variables ...string) (string, error) {
 	if len(deduped) < 2 {
 		return "", errors.Errorf(
 			"%w: OR requires at least two variables, got %v",
-			puanerror.ErrInvalidOperands,
+			puanerror.InvalidArgument,
 			deduped,
 		)
 	}
@@ -141,7 +141,7 @@ func (m *Model) SetXor(variables ...string) (string, error) {
 	if len(deduped) < 2 {
 		return "", errors.Errorf(
 			"%w: XOR requires at least two variables, got %v",
-			puanerror.ErrInvalidOperands,
+			puanerror.InvalidArgument,
 			deduped,
 		)
 	}
@@ -182,7 +182,7 @@ func (m *Model) SetOneOrNone(variables ...string) (string, error) {
 	if len(deduped) < 2 {
 		return "", errors.Errorf(
 			"%w: ONE OR NONE requires at least two variables, got %v",
-			puanerror.ErrInvalidOperands,
+			puanerror.InvalidArgument,
 			deduped,
 		)
 	}
@@ -295,7 +295,7 @@ func (m *Model) ValidateVariables(variables ...string) error {
 		if !utils.Contains(m.variables, variable) {
 			return errors.Errorf(
 				"%w: %s not in model",
-				puanerror.ErrVariableNotExists,
+				puanerror.VariableNotExists,
 				variable,
 			)
 		}

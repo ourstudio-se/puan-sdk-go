@@ -56,21 +56,21 @@ func validateConstraintInput(variables []string, amount int) error {
 	if len(variables) == 0 {
 		return errors.Errorf(
 			"%w: variables cannot be empty",
-			puanerror.ErrInvalidConstraintArgument,
+			puanerror.InvalidArgument,
 		)
 	}
 
 	if amount > len(variables) {
 		return errors.Errorf(
 			"%w: amount cannot be greater than number of variables",
-			puanerror.ErrInvalidConstraintArgument,
+			puanerror.InvalidArgument,
 		)
 	}
 
 	if amount < 0 {
 		return errors.Errorf(
 			"%w: amount cannot be negative",
-			puanerror.ErrInvalidConstraintArgument,
+			puanerror.InvalidArgument,
 		)
 	}
 

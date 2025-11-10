@@ -53,7 +53,7 @@ func newRuleset(
 	if polyhedron == nil {
 		return Ruleset{}, errors.Errorf(
 			"%w: polyhedron cannot be nil",
-			puanerror.ErrInvalidArgument,
+			puanerror.InvalidArgument,
 		)
 	}
 
@@ -82,7 +82,7 @@ func validateVariables(selectable, dependent, independent, preferreds, periods [
 	if utils.ContainsAny(dependent, independent) {
 		return errors.Errorf(
 			"%w: dependent and independent variables cannot share variables",
-			puanerror.ErrInvalidArgument,
+			puanerror.InvalidArgument,
 		)
 	}
 
@@ -93,28 +93,28 @@ func validateVariables(selectable, dependent, independent, preferreds, periods [
 	if len(combined) == 0 {
 		return errors.Errorf(
 			"%w: dependent and independent variables cannot both be empty",
-			puanerror.ErrInvalidArgument,
+			puanerror.InvalidArgument,
 		)
 	}
 
 	if !utils.ContainsAll(combined, selectable) {
 		return errors.Errorf(
 			"%w: selectable variables must exist in dependent or independent variables",
-			puanerror.ErrInvalidArgument,
+			puanerror.InvalidArgument,
 		)
 	}
 
 	if !utils.ContainsAll(dependent, preferreds) {
 		return errors.Errorf(
 			"%w: preferred variables must exist in dependent variables",
-			puanerror.ErrInvalidArgument,
+			puanerror.InvalidArgument,
 		)
 	}
 
 	if !utils.ContainsAll(dependent, periods) {
 		return errors.Errorf(
 			"%w: period variables must exist in dependent variables",
-			puanerror.ErrInvalidArgument,
+			puanerror.InvalidArgument,
 		)
 	}
 
@@ -161,7 +161,7 @@ func (r *Ruleset) FindPeriodInSolution(solution Solution) (Period, error) {
 				return Period{},
 					errors.Errorf(
 						"%w: multiple periods found: %v and %v",
-						puanerror.ErrAmbiguous,
+						puanerror.Ambiguous,
 						period,
 						periodVariable.period,
 					)
@@ -173,7 +173,7 @@ func (r *Ruleset) FindPeriodInSolution(solution Solution) (Period, error) {
 	if period == nil {
 		return Period{}, errors.Errorf(
 			"%w: period not found for solution",
-			puanerror.ErrNotFound,
+			puanerror.NotFound,
 		)
 	}
 
@@ -354,7 +354,7 @@ func (r *Ruleset) newRow(coefficients pldag.Coefficients) ([]int, error) {
 		if err != nil {
 			return nil, errors.Errorf(
 				"%w: variable %s not found in dependent variables",
-				puanerror.ErrNotFound,
+				puanerror.NotFound,
 				id,
 			)
 		}
