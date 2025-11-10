@@ -62,10 +62,7 @@ func (c *SolutionCreator) findDependentSolution(
 
 	solution, err := c.Solve(query)
 	if err != nil {
-		return nil, errors.Errorf(
-			"failed to solve query: %w",
-			err,
-		)
+		return nil, err
 	}
 
 	primitiveSolution := ruleset.RemoveSupportVariables(solution)
