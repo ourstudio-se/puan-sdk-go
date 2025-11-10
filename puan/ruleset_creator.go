@@ -8,6 +8,7 @@ import (
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
+	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
 type RuleSetCreator struct {
@@ -26,74 +27,35 @@ func NewRuleSetCreator() *RuleSetCreator {
 }
 
 func (c *RuleSetCreator) AddPrimitives(primitives ...string) error {
-	if err := c.model.AddPrimitives(primitives...); err != nil {
-		return toPuanError(err)
-	}
-
-	return nil
+	return c.model.AddPrimitives(primitives...)
 }
 
 func (c *RuleSetCreator) SetAnd(variables ...string) (string, error) {
-	id, err := c.model.SetAnd(variables...)
-	if err != nil {
-		return "", toPuanError(err)
-	}
-
-	return id, nil
+	return c.model.SetAnd(variables...)
 }
 
 func (c *RuleSetCreator) SetOr(variables ...string) (string, error) {
-	id, err := c.model.SetOr(variables...)
-	if err != nil {
-		return "", toPuanError(err)
-	}
-
-	return id, nil
+	return c.model.SetOr(variables...)
 }
 
 func (c *RuleSetCreator) SetNot(variable ...string) (string, error) {
-	id, err := c.model.SetNot(variable...)
-	if err != nil {
-		return "", toPuanError(err)
-	}
-
-	return id, nil
+	return c.model.SetNot(variable...)
 }
 
 func (c *RuleSetCreator) SetImply(condition, consequence string) (string, error) {
-	id, err := c.model.SetImply(condition, consequence)
-	if err != nil {
-		return "", toPuanError(err)
-	}
-
-	return id, nil
+	return c.model.SetImply(condition, consequence)
 }
 
 func (c *RuleSetCreator) SetXor(variables ...string) (string, error) {
-	id, err := c.model.SetXor(variables...)
-	if err != nil {
-		return "", toPuanError(err)
-	}
-
-	return id, nil
+	return c.model.SetXor(variables...)
 }
 
 func (c *RuleSetCreator) SetOneOrNone(variables ...string) (string, error) {
-	id, err := c.model.SetOneOrNone(variables...)
-	if err != nil {
-		return "", toPuanError(err)
-	}
-
-	return id, nil
+	return c.model.SetOneOrNone(variables...)
 }
 
 func (c *RuleSetCreator) SetEquivalent(variableOne, variableTwo string) (string, error) {
-	id, err := c.model.SetEquivalent(variableOne, variableTwo)
-	if err != nil {
-		return "", toPuanError(err)
-	}
-
-	return id, nil
+	return c.model.SetEquivalent(variableOne, variableTwo)
 }
 
 func (c *RuleSetCreator) Prefer(ids ...string) error {
@@ -102,7 +64,7 @@ func (c *RuleSetCreator) Prefer(ids ...string) error {
 
 	err := c.model.ValidateVariables(unpreferredIDs...)
 	if err != nil {
-		return toPuanError(err)
+		return err
 	}
 
 	negatedIDs, err := c.negatePreferreds(unpreferredIDs)
@@ -135,7 +97,7 @@ func (c *RuleSetCreator) Assume(ids ...string) error {
 
 	err := c.model.ValidateVariables(unassumedIDs...)
 	if err != nil {
-		return toPuanError(err)
+		return err
 	}
 
 	c.assumedVariables = append(c.assumedVariables, unassumedIDs...)
@@ -171,7 +133,7 @@ func (c *RuleSetCreator) newTimeBoundVariable(
 	if c.period == nil {
 		return TimeBoundVariable{}, errors.Errorf(
 			"%w: time support not enabled. Call EnableTime() first",
-			ErrInvalidOperation,
+			puanerror.ErrInvalidOperation,
 		)
 	}
 
@@ -184,7 +146,7 @@ func (c *RuleSetCreator) newTimeBoundVariable(
 		return TimeBoundVariable{},
 			errors.Errorf(
 				"%w: period %v is outside of enabled period %v",
-				ErrInvalidArgument,
+				puanerror.ErrInvalidArgument,
 				period,
 				*c.period,
 			)
@@ -346,7 +308,7 @@ func (c *RuleSetCreator) setSingleOrOR(ids ...string) (string, error) {
 	if len(ids) == 0 {
 		return "", errors.Errorf(
 			"%w: at least one id is required",
-			ErrInvalidArgument,
+			puanerror.ErrInvalidArgument,
 		)
 	}
 
@@ -361,7 +323,7 @@ func (c *RuleSetCreator) setSingleOrAnd(ids ...string) (string, error) {
 	if len(ids) == 0 {
 		return "", errors.Errorf(
 			"%w: at least one id is required",
-			ErrInvalidArgument,
+			puanerror.ErrInvalidArgument,
 		)
 	}
 
@@ -382,10 +344,5 @@ func (c *RuleSetCreator) createAssumeConstraints() error {
 		return err
 	}
 
-	err = c.model.Assume(root)
-	if err != nil {
-		return toPuanError(err)
-	}
-
-	return nil
+	return c.model.Assume(root)
 }

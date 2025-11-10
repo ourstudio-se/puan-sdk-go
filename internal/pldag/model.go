@@ -6,6 +6,7 @@ import (
 	"github.com/go-errors/errors"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
+	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
 type Model struct {
@@ -26,7 +27,7 @@ func (m *Model) AddPrimitives(primitives ...string) error {
 	if utils.ContainsDuplicates(primitives) {
 		return errors.Errorf(
 			"%w: primitives contain duplicates",
-			ErrDuplicatedVariable,
+			puanerror.ErrDuplicatedVariable,
 		)
 	}
 
@@ -34,14 +35,14 @@ func (m *Model) AddPrimitives(primitives ...string) error {
 		if primitive == "" {
 			return errors.Errorf(
 				"%w: primitive cannot be empty",
-				ErrEmptyVariable,
+				puanerror.ErrEmptyVariable,
 			)
 		}
 
 		if m.idAlreadyExists(primitive) {
 			return errors.Errorf(
 				"%w: primitive %s already exists in model",
-				ErrVariableAlreadyExists,
+				puanerror.ErrVariableAlreadyExists,
 				primitive,
 			)
 		}
@@ -58,16 +59,17 @@ func (m *Model) SetAnd(variables ...string) (string, error) {
 	if len(deduped) < 2 {
 		return "", errors.Errorf(
 			"%w: AND requires at least two variables, got %v",
-			ErrInvalidOperands,
+			puanerror.ErrInvalidOperands,
 			deduped,
 		)
 	}
 
 	id, err := m.setAtLeast(deduped, len(deduped))
 	if err != nil {
-		return "", errors.Errorf(
-			"AND: %w",
+		return "", errors.WrapPrefix(
 			err,
+			"AND",
+			0,
 		)
 	}
 
@@ -80,16 +82,17 @@ func (m *Model) SetOr(variables ...string) (string, error) {
 	if len(deduped) < 2 {
 		return "", errors.Errorf(
 			"%w: OR requires at least two variables, got %v",
-			ErrInvalidOperands,
+			puanerror.ErrInvalidOperands,
 			deduped,
 		)
 	}
 
 	id, err := m.setAtLeast(deduped, 1)
 	if err != nil {
-		return "", errors.Errorf(
-			"OR: %w",
+		return "", errors.WrapPrefix(
 			err,
+			"OR",
+			0,
 		)
 	}
 
@@ -100,9 +103,10 @@ func (m *Model) SetNot(variables ...string) (string, error) {
 	deduped := utils.Dedupe(variables)
 	id, err := m.setAtMost(deduped, 0)
 	if err != nil {
-		return "", errors.Errorf(
-			"NOT: %w",
+		return "", errors.WrapPrefix(
 			err,
+			"NOT",
+			0,
 		)
 	}
 
@@ -112,17 +116,19 @@ func (m *Model) SetNot(variables ...string) (string, error) {
 func (m *Model) SetImply(condition, consequence string) (string, error) {
 	notID, err := m.SetNot(condition)
 	if err != nil {
-		return "", errors.Errorf(
-			"IMPLY: %w",
+		return "", errors.WrapPrefix(
 			err,
+			"IMPLY",
+			0,
 		)
 	}
 
 	id, err := m.SetOr([]string{notID, consequence}...)
 	if err != nil {
-		return "", errors.Errorf(
-			"IMPLY: %w",
+		return "", errors.WrapPrefix(
 			err,
+			"IMPLY",
+			0,
 		)
 	}
 
@@ -135,32 +141,35 @@ func (m *Model) SetXor(variables ...string) (string, error) {
 	if len(deduped) < 2 {
 		return "", errors.Errorf(
 			"%w: XOR requires at least two variables, got %v",
-			ErrInvalidOperands,
+			puanerror.ErrInvalidOperands,
 			deduped,
 		)
 	}
 
 	atLeastID, err := m.setAtLeast(deduped, 1)
 	if err != nil {
-		return "", errors.Errorf(
-			"XOR: %w",
+		return "", errors.WrapPrefix(
 			err,
+			"XOR",
+			0,
 		)
 	}
 
 	atMostID, err := m.setAtMost(deduped, 1)
 	if err != nil {
-		return "", errors.Errorf(
-			"XOR: %w",
+		return "", errors.WrapPrefix(
 			err,
+			"XOR",
+			0,
 		)
 	}
 
 	id, err := m.SetAnd([]string{atLeastID, atMostID}...)
 	if err != nil {
-		return "", errors.Errorf(
-			"XOR: %w",
+		return "", errors.WrapPrefix(
 			err,
+			"XOR",
+			0,
 		)
 	}
 
@@ -173,16 +182,17 @@ func (m *Model) SetOneOrNone(variables ...string) (string, error) {
 	if len(deduped) < 2 {
 		return "", errors.Errorf(
 			"%w: ONE OR NONE requires at least two variables, got %v",
-			ErrInvalidOperands,
+			puanerror.ErrInvalidOperands,
 			deduped,
 		)
 	}
 
 	id, err := m.setAtMost(deduped, 1)
 	if err != nil {
-		return "", errors.Errorf(
-			"ONE OR NONE: %w",
+		return "", errors.WrapPrefix(
 			err,
+			"ONE OR NONE",
+			0,
 		)
 	}
 
@@ -192,25 +202,28 @@ func (m *Model) SetOneOrNone(variables ...string) (string, error) {
 func (m *Model) SetEquivalent(variableOne, variableTwo string) (string, error) {
 	andID, err := m.SetAnd(variableOne, variableTwo)
 	if err != nil {
-		return "", errors.Errorf(
-			"EQUIVALENT: %w",
+		return "", errors.WrapPrefix(
 			err,
+			"EQUIVALENT",
+			0,
 		)
 	}
 
 	notID, err := m.SetNot(variableOne, variableTwo)
 	if err != nil {
-		return "", errors.Errorf(
-			"EQUIVALENT: %w",
+		return "", errors.WrapPrefix(
 			err,
+			"EQUIVALENT",
+			0,
 		)
 	}
 
 	id, err := m.SetOr(andID, notID)
 	if err != nil {
-		return "", errors.Errorf(
-			"EQUIVALENT: %w",
+		return "", errors.WrapPrefix(
 			err,
+			"EQUIVALENT",
+			0,
 		)
 	}
 
@@ -221,9 +234,10 @@ func (m *Model) Assume(variables ...string) error {
 	deduped := utils.Dedupe(variables)
 	err := m.ValidateVariables(deduped...)
 	if err != nil {
-		return errors.Errorf(
-			"ASSUME: %w",
+		return errors.WrapPrefix(
 			err,
+			"ASSUME",
+			0,
 		)
 	}
 
@@ -281,7 +295,7 @@ func (m *Model) ValidateVariables(variables ...string) error {
 		if !utils.Contains(m.variables, variable) {
 			return errors.Errorf(
 				"%w: %s not in model",
-				ErrVariableNotExists,
+				puanerror.ErrVariableNotExists,
 				variable,
 			)
 		}

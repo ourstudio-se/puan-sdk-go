@@ -8,6 +8,8 @@ import (
 	"slices"
 
 	"github.com/go-errors/errors"
+
+	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
 type Constraint struct {
@@ -54,21 +56,21 @@ func validateConstraintInput(variables []string, amount int) error {
 	if len(variables) == 0 {
 		return errors.Errorf(
 			"%w: variables cannot be empty",
-			ErrInvalidConstraintArgument,
+			puanerror.ErrInvalidConstraintArgument,
 		)
 	}
 
 	if amount > len(variables) {
 		return errors.Errorf(
 			"%w: amount cannot be greater than number of variables",
-			ErrInvalidConstraintArgument,
+			puanerror.ErrInvalidConstraintArgument,
 		)
 	}
 
 	if amount < 0 {
 		return errors.Errorf(
 			"%w: amount cannot be negative",
-			ErrInvalidConstraintArgument,
+			puanerror.ErrInvalidConstraintArgument,
 		)
 	}
 

@@ -1,13 +1,15 @@
 package weights
 
-import "github.com/go-errors/errors"
+import (
+	"github.com/go-errors/errors"
+
+	"github.com/ourstudio-se/puan-sdk-go/puanerror"
+)
 
 const (
 	ADD    Action = "ADD"
 	REMOVE Action = "REMOVE"
 )
-
-var ErrInvalidAction = errors.New("invalid action")
 
 type Action string
 
@@ -19,7 +21,7 @@ type Selection struct {
 func NewSelection(id string, action Action) (Selection, error) {
 	if invalidAction(action) {
 		return Selection{}, errors.Errorf("%w: %s",
-			ErrInvalidAction,
+			puanerror.ErrInvalidAction,
 			action,
 		)
 	}

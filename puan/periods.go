@@ -8,6 +8,7 @@ import (
 	"github.com/go-errors/errors"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
+	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
 type Period struct {
@@ -20,7 +21,7 @@ func NewPeriod(from, to time.Time) (Period, error) {
 		return Period{},
 			errors.Errorf(
 				"%w: from time %v must be before to time %v",
-				ErrInvalidArgument,
+				puanerror.ErrInvalidArgument,
 				from,
 				to,
 			)
@@ -161,7 +162,7 @@ func newIdsString(variables []string) (idsString, error) {
 	if len(variables) == 0 {
 		return "", errors.Errorf(
 			"%w: at least one variable is required",
-			ErrInvalidArgument,
+			puanerror.ErrInvalidArgument,
 		)
 	}
 

@@ -8,6 +8,7 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
+	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
 type Ruleset struct {
@@ -52,7 +53,7 @@ func newRuleset(
 	if polyhedron == nil {
 		return Ruleset{}, errors.Errorf(
 			"%w: polyhedron cannot be nil",
-			ErrInvalidArgument,
+			puanerror.ErrInvalidArgument,
 		)
 	}
 
@@ -81,7 +82,7 @@ func validateVariables(selectable, dependent, independent, preferreds, periods [
 	if utils.ContainsAny(dependent, independent) {
 		return errors.Errorf(
 			"%w: dependent and independent variables cannot share variables",
-			ErrInvalidArgument,
+			puanerror.ErrInvalidArgument,
 		)
 	}
 
@@ -92,28 +93,28 @@ func validateVariables(selectable, dependent, independent, preferreds, periods [
 	if len(combined) == 0 {
 		return errors.Errorf(
 			"%w: dependent and independent variables cannot both be empty",
-			ErrInvalidArgument,
+			puanerror.ErrInvalidArgument,
 		)
 	}
 
 	if !utils.ContainsAll(combined, selectable) {
 		return errors.Errorf(
 			"%w: selectable variables must exist in dependent or independent variables",
-			ErrInvalidArgument,
+			puanerror.ErrInvalidArgument,
 		)
 	}
 
 	if !utils.ContainsAll(dependent, preferreds) {
 		return errors.Errorf(
 			"%w: preferred variables must exist in dependent variables",
-			ErrInvalidArgument,
+			puanerror.ErrInvalidArgument,
 		)
 	}
 
 	if !utils.ContainsAll(dependent, periods) {
 		return errors.Errorf(
 			"%w: period variables must exist in dependent variables",
-			ErrInvalidArgument,
+			puanerror.ErrInvalidArgument,
 		)
 	}
 
@@ -160,7 +161,7 @@ func (r *Ruleset) FindPeriodInSolution(solution Solution) (Period, error) {
 				return Period{},
 					errors.Errorf(
 						"%w: multiple periods found: %v and %v",
-						ErrAmbiguous,
+						puanerror.ErrAmbiguous,
 						period,
 						periodVariable.period,
 					)
@@ -172,7 +173,7 @@ func (r *Ruleset) FindPeriodInSolution(solution Solution) (Period, error) {
 	if period == nil {
 		return Period{}, errors.Errorf(
 			"%w: period not found for solution",
-			ErrNotFound,
+			puanerror.ErrNotFound,
 		)
 	}
 
@@ -264,7 +265,7 @@ func (r *Ruleset) newWeighSelection(selection Selection) (weights.Selection, err
 
 	weightSelection, err := weights.NewSelection(id, weights.Action(selection.action))
 	if err != nil {
-		return weights.Selection{}, toPuanError(err)
+		return weights.Selection{}, err
 	}
 
 	return weightSelection, nil
@@ -296,7 +297,7 @@ func newCompositeSelectionConstraint(ids []string) (pldag.Constraint, error) {
 	dedupedIDs := utils.Dedupe(ids)
 	constraint, err := pldag.NewAtLeastConstraint(dedupedIDs, len(dedupedIDs))
 	if err != nil {
-		return pldag.Constraint{}, toPuanError(err)
+		return pldag.Constraint{}, err
 	}
 
 	return constraint, nil
@@ -353,7 +354,7 @@ func (r *Ruleset) newRow(coefficients pldag.Coefficients) ([]int, error) {
 		if err != nil {
 			return nil, errors.Errorf(
 				"%w: variable %s not found in dependent variables",
-				ErrNotFound,
+				puanerror.ErrNotFound,
 				id,
 			)
 		}
@@ -374,7 +375,7 @@ func (r *Ruleset) forbidPassedPeriods(from time.Time) error {
 
 	constraint, err := pldag.NewAtMostConstraint(passedPeriodIDs, 0)
 	if err != nil {
-		return toPuanError(err)
+		return err
 	}
 
 	if err = r.setConstraint(constraint); err != nil {
