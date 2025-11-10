@@ -27,7 +27,7 @@ func (m *Model) AddPrimitives(primitives ...string) error {
 	if utils.ContainsDuplicates(primitives) {
 		return errors.Errorf(
 			"%w: primitives contain duplicates",
-			puanerror.DuplicatedVariable,
+			puanerror.InvalidArgument,
 		)
 	}
 
@@ -35,14 +35,14 @@ func (m *Model) AddPrimitives(primitives ...string) error {
 		if primitive == "" {
 			return errors.Errorf(
 				"%w: primitive cannot be empty",
-				puanerror.EmptyVariable,
+				puanerror.InvalidArgument,
 			)
 		}
 
 		if m.idAlreadyExists(primitive) {
 			return errors.Errorf(
 				"%w: primitive %s already exists in model",
-				puanerror.VariableAlreadyExists,
+				puanerror.InvalidOperation,
 				primitive,
 			)
 		}
@@ -295,7 +295,7 @@ func (m *Model) ValidateVariables(variables ...string) error {
 		if !utils.Contains(m.variables, variable) {
 			return errors.Errorf(
 				"%w: %s not in model",
-				puanerror.VariableNotExists,
+				puanerror.NotFound,
 				variable,
 			)
 		}
