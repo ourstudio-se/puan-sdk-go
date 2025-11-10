@@ -172,7 +172,7 @@ func (r *Ruleset) FindPeriodInSolution(solution Solution) (Period, error) {
 
 	if period == nil {
 		return Period{}, errors.Errorf(
-			"%w: period not found for solution",
+			"%w: period not found in solution",
 			puanerror.NotFound,
 		)
 	}

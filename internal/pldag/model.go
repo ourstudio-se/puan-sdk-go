@@ -26,7 +26,7 @@ func New() *Model {
 func (m *Model) AddPrimitives(primitives ...string) error {
 	if utils.ContainsDuplicates(primitives) {
 		return errors.Errorf(
-			"%w: primitives contain duplicates",
+			"%w: primitives contains duplicates",
 			puanerror.InvalidArgument,
 		)
 	}
@@ -295,7 +295,7 @@ func (m *Model) ValidateVariables(variables ...string) error {
 		if !utils.Contains(m.variables, variable) {
 			return errors.Errorf(
 				"%w: %s not in model",
-				puanerror.NotFound,
+				puanerror.InvalidArgument,
 				variable,
 			)
 		}
