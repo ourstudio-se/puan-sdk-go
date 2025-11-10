@@ -369,12 +369,7 @@ func (c *RuleSetCreator) setSingleOrAnd(ids ...string) (string, error) {
 		return ids[0], nil
 	}
 
-	id, err := c.SetAnd(ids...)
-	if err != nil {
-		return "", err
-	}
-
-	return id, nil
+	return c.SetAnd(ids...)
 }
 
 func (c *RuleSetCreator) createAssumeConstraints() error {
