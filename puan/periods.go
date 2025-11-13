@@ -95,7 +95,8 @@ func (p TimeBoundVariables) ids() []string {
 
 func (p TimeBoundVariables) passed(timestamp time.Time) TimeBoundVariables {
 	return utils.Filter(p, func(periodVariable TimeBoundVariable) bool {
-		return periodVariable.period.to.Before(timestamp)
+		hasPassed := !periodVariable.period.to.After(timestamp)
+		return hasPassed
 	})
 }
 
