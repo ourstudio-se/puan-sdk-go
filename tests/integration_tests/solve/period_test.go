@@ -165,8 +165,7 @@ func Test_itemIncludedInLaterPeriod_andFromInEarlierPeriod_shouldChooseEarlierPe
 		startTime.Add(30*time.Minute),
 		endTime)
 
-	ruleset, err := creator.Create()
-	_ = err
+	ruleset, _ := creator.Create()
 
 	from := startTime.Add(15 * time.Minute)
 
