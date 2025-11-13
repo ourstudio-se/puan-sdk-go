@@ -12,5 +12,10 @@ SDK for configuration using ILP.
 
 Run `make glpk`. This will start a detached glpk api Docker container. The default port of the api is `9000`.
 
+## Examples
+
+Example usage of this SDK is in the [examples folder](examples/).
+
 ## License
+
 All rights reserved. See [LICENSE.md](./LICENSE.md) for full details.
