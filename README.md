@@ -14,7 +14,7 @@ Run `make glpk`. This will start a detached glpk api Docker container. The defau
 
 ## Examples
 
-Example usage of this SDK is in the [examples folder](examples/).
+Example usages of this SDK are in the [examples folder](examples/).
 
 ## License
 
