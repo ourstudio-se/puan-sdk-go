@@ -760,6 +760,59 @@ func Test_isEqual_givenNotEqual_shouldReturnFalse(t *testing.T) {
 	assert.False(t, period.isEqual(other))
 }
 
+func Test_passed_givenEqualTimestamps_shouldReturnSameVariables(t *testing.T) {
+	timestamp := newTestTime("2024-01-01T00:00:00Z")
+	variable := TimeBoundVariable{
+		variable: "",
+		period: Period{
+			to: timestamp,
+		},
+	}
+
+	variables := TimeBoundVariables{
+		variable,
+	}
+
+	actual := variables.passed(timestamp)
+
+	assert.Equal(t, variables, actual)
+}
+
+func Test_passed_givenAfterTimestamp_shouldReturnSameVariables(t *testing.T) {
+	timestamp := newTestTime("2024-01-01T00:00:00Z")
+	variable := TimeBoundVariable{
+		variable: "",
+		period: Period{
+			to: timestamp.Add(-time.Second),
+		},
+	}
+
+	variables := TimeBoundVariables{
+		variable,
+	}
+
+	actual := variables.passed(timestamp)
+
+	assert.Equal(t, variables, actual)
+}
+
+func Test_passed_givenBeforeTimestamp_shouldReturnNoVariables(t *testing.T) {
+	timestamp := newTestTime("2024-01-01T00:00:00Z")
+	variable := TimeBoundVariable{
+		variable: "",
+		period: Period{
+			to: timestamp.Add(time.Second),
+		},
+	}
+
+	variables := TimeBoundVariables{
+		variable,
+	}
+
+	actual := variables.passed(timestamp)
+	assert.Empty(t, actual)
+}
+
 func newTestTime(value string) time.Time {
 	t, err := time.Parse(time.RFC3339, value)
 	if err != nil {
