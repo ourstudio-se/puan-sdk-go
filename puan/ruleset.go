@@ -161,7 +161,7 @@ func (r *Ruleset) FindPeriodInSolution(solution Solution) (Period, error) {
 				return Period{},
 					errors.Errorf(
 						"%w: multiple periods found: %v and %v",
-						puanerror.Ambiguous,
+						puanerror.InvalidArgument,
 						period,
 						periodVariable.period,
 					)
