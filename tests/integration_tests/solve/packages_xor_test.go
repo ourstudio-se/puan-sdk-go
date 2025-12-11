@@ -33,7 +33,7 @@ func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldGivePreferred(
 			"itemY":    1,
 			"itemZ":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -60,7 +60,7 @@ func Test_exactlyOnePackage_selectNotPreferred(t *testing.T) {
 			"itemY":    1,
 			"itemZ":    1,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 

@@ -274,3 +274,19 @@ func Test_calculateSelectionThreshold(t *testing.T) {
 		})
 	}
 }
+
+func Test_abs(t *testing.T) {
+	theories := []struct {
+		input    int
+		expected int
+	}{
+		{input: 1, expected: 1},
+		{input: -1, expected: 1},
+		{input: 0, expected: 0},
+	}
+
+	for _, theory := range theories {
+		actual := abs(theory.input)
+		assert.Equal(t, theory.expected, actual)
+	}
+}

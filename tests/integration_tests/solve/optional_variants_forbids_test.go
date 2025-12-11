@@ -41,7 +41,7 @@ func Test_optionalVariantsWithForbids_shouldReturnPreferred(t *testing.T) {
 			"itemC":    1,
 			"itemD":    1,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -76,7 +76,7 @@ func Test_optionalVariantsWithForbids_shouldReturnNOTPreferred(t *testing.T) {
 			"itemC":    0,
 			"itemD":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 

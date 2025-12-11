@@ -33,7 +33,7 @@ func Test_exactlyOnePackage_selectSmallestPackage(t *testing.T) {
 			"itemZ":    0,
 			"itemK":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -62,7 +62,7 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case2(t *testing.T) {
 			"itemZ":    1,
 			"itemK":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -91,7 +91,7 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case3(t *testing.T) {
 			"itemZ":    1,
 			"itemK":    1,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -120,7 +120,7 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case4(t *testing.T) {
 			"itemZ":    1,
 			"itemK":    1,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -149,7 +149,7 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case1(t *testing.T) {
 			"itemZ":    0,
 			"itemK":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -178,7 +178,7 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case2(t *testing.T) {
 			"itemZ":    0,
 			"itemK":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -207,7 +207,7 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case3(t *testing.T) {
 			"itemZ":    1,
 			"itemK":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -233,7 +233,7 @@ func Test_exactlyOnePackage_noSelection_shouldGivePreferred(t *testing.T) {
 			"itemZ":    0,
 			"itemK":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 

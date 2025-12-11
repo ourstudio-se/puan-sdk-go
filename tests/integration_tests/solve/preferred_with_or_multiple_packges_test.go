@@ -27,7 +27,7 @@ func Test_multiplePackagesWithOr_noSelectionExpectPreferred(t *testing.T) {
 			"packageC": 0,
 			"packageD": 0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -52,7 +52,7 @@ func Test_multiplePackagesWithOr_selectPackageB(t *testing.T) {
 			"packageC": 0,
 			"packageD": 0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -77,7 +77,7 @@ func Test_multiplePackagesWithOr_selectPackageC(t *testing.T) {
 			"packageC": 1,
 			"packageD": 0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -104,7 +104,7 @@ func Test_multiplePackagesWithOr_allSelectedExceptA(t *testing.T) {
 			"packageC": 1,
 			"packageD": 1,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 

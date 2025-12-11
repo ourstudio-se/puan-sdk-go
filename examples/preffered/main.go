@@ -65,7 +65,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("x: ", solution["x"]) // = 1
-	fmt.Println("y: ", solution["y"]) // = 1
-	fmt.Println("z: ", solution["z"]) // = 0
+	fmt.Println("x: ", solution.Solution["x"]) // = 1
+	fmt.Println("y: ", solution.Solution["y"]) // = 1
+	fmt.Println("z: ", solution.Solution["z"]) // = 0
 }

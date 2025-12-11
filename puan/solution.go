@@ -1,5 +1,9 @@
 package puan
 
+type SolutionExtended struct {
+	Solution        Solution
+	WeightSaturated bool
+}
 type Solution map[string]int
 
 func (s Solution) Extract(variables ...string) Solution {

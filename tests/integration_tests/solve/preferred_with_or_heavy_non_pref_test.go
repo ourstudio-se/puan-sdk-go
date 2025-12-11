@@ -26,7 +26,7 @@ func Test_heavyNonPreferredWithOr_emptySelection(t *testing.T) {
 			"itemX":    0,
 			"itemY":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -49,7 +49,7 @@ func Test_heavyNonPreferredWithOr_preferSelection(t *testing.T) {
 			"itemX":    0,
 			"itemY":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -72,7 +72,7 @@ func Test_heavyNonPreferredWithOr_notPreferSelection(t *testing.T) {
 			"itemX":    1,
 			"itemY":    1,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -96,7 +96,7 @@ func Test_heavyNonPreferredWithOr_bothPackagesSelection(t *testing.T) {
 			"itemX":    1,
 			"itemY":    1,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 

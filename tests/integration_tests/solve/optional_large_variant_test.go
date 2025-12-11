@@ -39,7 +39,7 @@ func Test_optionalLargeVariantWithXOR_removePreselectedItem(t *testing.T) {
 			"itemR":    1,
 			"itemS":    1,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -68,7 +68,7 @@ func Test_optionalLargeVariantWithXOR_shouldChangeVariant(t *testing.T) {
 			"itemR":    1,
 			"itemS":    1,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -92,7 +92,7 @@ func Test_optionalLargeVariantWithXOR_noSelection(t *testing.T) {
 			"itemR":    0,
 			"itemS":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -118,7 +118,7 @@ func Test_optionalLargeVariantWithXOR_singleItemSelection(t *testing.T) {
 			"itemR":    0,
 			"itemS":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 

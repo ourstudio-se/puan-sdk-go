@@ -41,7 +41,7 @@ func Test_optionalPackagesWithForbids_changeToSmallerPackage(t *testing.T) {
 			"itemY":    0,
 			"itemZ":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -76,7 +76,7 @@ func Test_optionalPackagesWithForbids_changeToLargerPackage(t *testing.T) {
 			"itemY":    1,
 			"itemZ":    1,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -98,7 +98,7 @@ func Test_optionalPackagesWithForbids_noSelection(t *testing.T) {
 			"itemY":    0,
 			"itemZ":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 

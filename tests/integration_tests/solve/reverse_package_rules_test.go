@@ -58,7 +58,7 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 			"itemN":    1,
 			"itemM":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -107,7 +107,7 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 			"itemY":    1,
 			"itemZ":    1,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -164,6 +164,6 @@ func Test_twoPackagesWithSharedItems_selectLargestPackage(t *testing.T) {
 			"itemY":    1,
 			"itemZ":    1,
 		},
-		solution,
+		solution.Solution,
 	)
 }

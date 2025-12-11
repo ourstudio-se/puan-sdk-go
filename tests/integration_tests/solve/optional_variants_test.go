@@ -29,7 +29,7 @@ func Test_optionalVariant_selectNotPreferred(t *testing.T) {
 			"itemY":    0,
 			"itemZ":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -54,7 +54,7 @@ func Test_optionalVariant_selectPreferred(t *testing.T) {
 			"itemY":    1,
 			"itemZ":    1,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -80,7 +80,7 @@ func Test_optionalVariant_deselectingVariant_shouldGiveEmptySolution(t *testing.
 			"itemY":    0,
 			"itemZ":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -105,7 +105,7 @@ func Test_optionalVariant_changeVariant(t *testing.T) {
 			"itemY":    0,
 			"itemZ":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -130,7 +130,7 @@ func Test_optionalVariant_selectItemInAnotherVariant_shouldChangeVariant(t *test
 			"itemY":    1,
 			"itemZ":    1,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -149,7 +149,7 @@ func Test_optionalVariant_noSelection_shouldGiveEmptySolution(t *testing.T) {
 			"itemY":    0,
 			"itemZ":    0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 

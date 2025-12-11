@@ -23,7 +23,7 @@ func Test_givenNoFreeSelection_shouldGiveZeroValueFreeVariables(t *testing.T) {
 			"independentItem1": 0,
 			"independentItem2": 0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -44,7 +44,7 @@ func Test_givenOneFreeSelection_shouldGiveSelectedFreeVariable(t *testing.T) {
 			"independentItem1": 1,
 			"independentItem2": 0,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -66,7 +66,7 @@ func Test_givenAllFreeSelection_shouldGiveAllSelectedFreeVariable(t *testing.T) 
 			"independentItem1": 1,
 			"independentItem2": 1,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -89,7 +89,7 @@ func Test_givenAllFreeSelectionAndDependantSelection_shouldGiveAllSelectedVariab
 			"independentItem1": 1,
 			"independentItem2": 1,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 
@@ -123,7 +123,7 @@ func Test_tmp(t *testing.T) {
 			"itemX": 0,
 			"itemY": 1,
 		},
-		solution,
+		solution.Solution,
 	)
 }
 

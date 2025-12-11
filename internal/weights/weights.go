@@ -34,6 +34,18 @@ func (w Weights) sum() int {
 	return sum
 }
 
+func (w Weights) MaxWeight() int {
+	maxWeight := 0
+	for _, weight := range w {
+		absWeight := abs(weight)
+		if absWeight > maxWeight {
+			maxWeight = absWeight
+		}
+	}
+
+	return maxWeight
+}
+
 func Calculate(
 	selectableIDs []string,
 	selections Selections,
@@ -148,4 +160,12 @@ func calculateSelectionThreshold(
 	minPeriodWeight int,
 ) int {
 	return -(notSelectedSum + preferredWeightsSum + minPeriodWeight)
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+
+	return x
 }

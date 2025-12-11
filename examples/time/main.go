@@ -60,11 +60,11 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("x: ", solution["x"]) // = 1
-	fmt.Println("y: ", solution["y"]) // = 0
-	fmt.Println("z: ", solution["z"]) // = 1
+	fmt.Println("x: ", solution.Solution["x"]) // = 1
+	fmt.Println("y: ", solution.Solution["y"]) // = 0
+	fmt.Println("z: ", solution.Solution["z"]) // = 1
 
-	period, err := ruleSet.FindPeriodInSolution(solution)
+	period, err := ruleSet.FindPeriodInSolution(solution.Solution)
 	if err != nil {
 		panic(err)
 	}
