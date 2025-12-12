@@ -24,7 +24,7 @@ func Test_saturatedWeights_givenManySelections_shouldReturnSaturatedTrue(t *test
 	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.True(
 		t,
-		solution.WeightSaturated,
+		solution.WeightsToLarge,
 	)
 }
 
@@ -42,7 +42,7 @@ func Test_saturatedWeights_givenFewSelections_shouldReturnSaturatedFalse(t *test
 	solution, _ := solutionCreator.Create(selections, ruleset, nil)
 	assert.False(
 		t,
-		solution.WeightSaturated,
+		solution.WeightsToLarge,
 	)
 }
 
@@ -57,7 +57,7 @@ func rulesetWithPrimitivesForSaturationTests() (puan.Ruleset, []string) {
 	)
 	_ = creator.AddPrimitives(primitives...)
 
-	// Needed to set some rules to avoid having all variables as independent
+	// Needed to set some rule to avoid having all variables as independent
 	andID, _ := creator.SetAnd(primitives...)
 	_ = creator.Assume(andID)
 

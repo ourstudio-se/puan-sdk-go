@@ -48,7 +48,11 @@ func (c *SolutionCreator) Create(
 	dependantSelections, independentSelections :=
 		categorizeSelections(selections, ruleset.independentVariables)
 
-	dependentSolution, isSaturated, err := c.findDependentSolution(dependantSelections, ruleset, from)
+	dependentSolution, weightsToLarge, err := c.findDependentSolution(
+		dependantSelections,
+		ruleset,
+		from,
+	)
 	if err != nil {
 		return SolutionExtended{}, err
 	}
@@ -58,8 +62,8 @@ func (c *SolutionCreator) Create(
 	solution := dependentSolution.merge(independentSolution)
 
 	return SolutionExtended{
-		Solution:        solution,
-		WeightSaturated: isSaturated,
+		Solution:       solution,
+		WeightsToLarge: weightsToLarge,
 	}, nil
 }
 
@@ -73,7 +77,7 @@ func (c *SolutionCreator) findDependentSolution(
 		return nil, false, err
 	}
 
-	isSaturated := query.weights.MaxWeight() > WEIGHT_SATURATION_LIMIT
+	isToLarge := query.weights.MaxWeight() > WEIGHT_SATURATION_LIMIT
 
 	solution, err := c.Solve(query)
 	if err != nil {
@@ -82,7 +86,7 @@ func (c *SolutionCreator) findDependentSolution(
 
 	primitiveSolution := ruleset.RemoveSupportVariables(solution)
 
-	return primitiveSolution, isSaturated, nil
+	return primitiveSolution, isToLarge, nil
 }
 
 func findIndependentSolution(independentVariables []string, selections Selections) Solution {

@@ -1,8 +1,8 @@
 package puan
 
 type SolutionExtended struct {
-	Solution        Solution
-	WeightSaturated bool
+	Solution       Solution
+	WeightsToLarge bool
 }
 type Solution map[string]int
 
