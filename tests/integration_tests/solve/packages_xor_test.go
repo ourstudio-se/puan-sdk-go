@@ -23,7 +23,8 @@ func Test_exactlyOnePackage_selectNotPreferredThenPreferred_shouldGivePreferred(
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -50,7 +51,8 @@ func Test_exactlyOnePackage_selectNotPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{

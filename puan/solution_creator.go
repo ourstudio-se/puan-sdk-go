@@ -30,45 +30,59 @@ func (c *SolutionCreator) Create(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
-) (Solution, error) {
+) (SolutionEnvelope, error) {
 	err := validateSelections(selections, ruleset)
 	if err != nil {
-		return nil, err
+		return SolutionEnvelope{}, err
 	}
 
 	dependantSelections, independentSelections :=
 		categorizeSelections(selections, ruleset.independentVariables)
 
-	dependentSolution, err := c.findDependentSolution(dependantSelections, ruleset, from)
+	envelope, err := c.findDependentSolution(
+		dependantSelections,
+		ruleset,
+		from,
+	)
 	if err != nil {
-		return nil, err
+		return SolutionEnvelope{}, err
 	}
+	dependentSolution := envelope.Solution()
+	weightsTooLarge := envelope.WeightsTooLarge()
 
 	independentSolution := findIndependentSolution(ruleset.independentVariables, independentSelections)
 
 	solution := dependentSolution.merge(independentSolution)
 
-	return solution, nil
+	return SolutionEnvelope{
+		solution:        solution,
+		weightsTooLarge: weightsTooLarge,
+	}, nil
 }
 
 func (c *SolutionCreator) findDependentSolution(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
-) (Solution, error) {
+) (SolutionEnvelope, error) {
 	query, err := newQuery(selections, ruleset, from)
 	if err != nil {
-		return nil, err
+		return SolutionEnvelope{}, err
 	}
+
+	tooLarge := query.weights.ContainsTooLargeWeight()
 
 	solution, err := c.Solve(query)
 	if err != nil {
-		return nil, err
+		return SolutionEnvelope{}, err
 	}
 
 	primitiveSolution := ruleset.RemoveSupportVariables(solution)
 
-	return primitiveSolution, nil
+	return SolutionEnvelope{
+		solution:        primitiveSolution,
+		weightsTooLarge: tooLarge,
+	}, nil
 }
 
 func findIndependentSolution(independentVariables []string, selections Selections) Solution {

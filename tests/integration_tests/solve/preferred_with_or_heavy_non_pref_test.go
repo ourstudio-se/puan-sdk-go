@@ -17,7 +17,8 @@ func Test_heavyNonPreferredWithOr_emptySelection(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -40,7 +41,8 @@ func Test_heavyNonPreferredWithOr_preferSelection(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -63,7 +65,8 @@ func Test_heavyNonPreferredWithOr_notPreferSelection(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -87,7 +90,8 @@ func Test_heavyNonPreferredWithOr_bothPackagesSelection(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{

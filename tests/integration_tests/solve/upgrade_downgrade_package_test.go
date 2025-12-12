@@ -21,7 +21,8 @@ func Test_exactlyOnePackage_selectSmallestPackage(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -50,7 +51,8 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case2(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -79,7 +81,8 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case3(t *testing.T) {
 		puan.NewSelectionBuilder("packageC").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -108,7 +111,8 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case4(t *testing.T) {
 		puan.NewSelectionBuilder("packageC").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -137,7 +141,8 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case1(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -166,7 +171,8 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case2(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -195,7 +201,8 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case3(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -221,7 +228,8 @@ func Test_exactlyOnePackage_noSelection_shouldGivePreferred(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{

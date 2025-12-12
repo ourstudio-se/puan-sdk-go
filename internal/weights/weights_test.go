@@ -274,3 +274,53 @@ func Test_calculateSelectionThreshold(t *testing.T) {
 		})
 	}
 }
+
+func Test_abs(t *testing.T) {
+	theories := []struct {
+		input    int
+		expected int
+	}{
+		{input: 1, expected: 1},
+		{input: -1, expected: 1},
+		{input: 0, expected: 0},
+	}
+
+	for _, theory := range theories {
+		actual := abs(theory.input)
+		assert.Equal(t, theory.expected, actual)
+	}
+}
+
+func Test_Weights_maxWeight(t *testing.T) {
+	theories := []struct {
+		weights  Weights
+		expected int
+	}{
+		{
+			weights: Weights{
+				"a": 1,
+				"b": 2,
+			},
+			expected: 2,
+		},
+		{
+			weights: Weights{
+				"a": -1,
+				"b": -2,
+			},
+			expected: 2,
+		},
+		{
+			weights: Weights{
+				"a": -2,
+				"b": 1,
+			},
+			expected: 2,
+		},
+	}
+
+	for _, theory := range theories {
+		actual := theory.weights.maxWeight()
+		assert.Equal(t, theory.expected, actual)
+	}
+}

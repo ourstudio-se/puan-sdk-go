@@ -60,12 +60,13 @@ func main() {
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient("http://127.0.0.1:9000"))
 
 	// Create the solution
-	solution, err := solutionCreator.Create(selections, ruleset, nil)
+	envelope, err := solutionCreator.Create(selections, ruleset, nil)
 	if err != nil {
 		panic(err)
 	}
+	solution := envelope.Solution()
 
 	fmt.Println("x: ", solution["x"]) // = 1
-	fmt.Println("y: ", solution["y"]) // = 1
 	fmt.Println("z: ", solution["z"]) // = 0
+	fmt.Println("y: ", solution["y"]) // = 1
 }

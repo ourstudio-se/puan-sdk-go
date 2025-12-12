@@ -15,6 +15,15 @@ const NOT_SELECTED_WEIGHT = -2
 // This constant can be tweaked to change the weight of periods
 const PERIOD_WEIGHT_MULTIPLIER = NOT_SELECTED_WEIGHT * 6
 
+// WEIGHT_SATURATION_LIMIT is set to 2^55.
+// The limit is set lower than 2^63 to allow for some headroom
+// and enable early detection before reaching the overflow limit.
+// Note: Weights for selected variables increase exponentially with the number of selections.
+// The highest weight is calculated as 2^(n-1) * (c + 1),
+// where n is the number of selections and c is a constant
+// derived from the sum of none selected primitives, preferred, and period weights.
+const WEIGHT_SATURATION_LIMIT = 36028797018963968
+
 type Weights map[string]int
 
 func (w Weights) concat(weightsToConcat Weights) Weights {
@@ -32,6 +41,23 @@ func (w Weights) sum() int {
 	}
 
 	return sum
+}
+
+func (w Weights) maxWeight() int {
+	maxWeight := 0
+	for _, weight := range w {
+		absWeight := abs(weight)
+		if absWeight > maxWeight {
+			maxWeight = absWeight
+		}
+	}
+
+	return maxWeight
+}
+
+func (w Weights) ContainsTooLargeWeight() bool {
+	tooLarge := w.maxWeight() > WEIGHT_SATURATION_LIMIT
+	return tooLarge
 }
 
 func Calculate(
@@ -148,4 +174,12 @@ func calculateSelectionThreshold(
 	minPeriodWeight int,
 ) int {
 	return -(notSelectedSum + preferredWeightsSum + minPeriodWeight)
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+
+	return x
 }

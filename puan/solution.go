@@ -1,5 +1,9 @@
 package puan
 
+type SolutionEnvelope struct {
+	solution        Solution
+	weightsTooLarge bool
+}
 type Solution map[string]int
 
 func (s Solution) Extract(variables ...string) Solution {
@@ -19,4 +23,12 @@ func (s Solution) merge(other Solution) Solution {
 	}
 
 	return s
+}
+
+func (se SolutionEnvelope) Solution() Solution {
+	return se.solution
+}
+
+func (se SolutionEnvelope) WeightsTooLarge() bool {
+	return se.weightsTooLarge
 }
