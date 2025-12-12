@@ -1,6 +1,6 @@
 package puan
 
-type SolutionExtended struct {
+type SolutionEnvelope struct {
 	Solution       Solution
 	WeightsToLarge bool
 }

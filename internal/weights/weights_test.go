@@ -290,3 +290,37 @@ func Test_abs(t *testing.T) {
 		assert.Equal(t, theory.expected, actual)
 	}
 }
+
+func Test_Weights_MaxWeight(t *testing.T) {
+	theories := []struct {
+		weights  Weights
+		expected int
+	}{
+		{
+			weights: Weights{
+				"a": 1,
+				"b": 2,
+			},
+			expected: 2,
+		},
+		{
+			weights: Weights{
+				"a": -1,
+				"b": -2,
+			},
+			expected: 2,
+		},
+		{
+			weights: Weights{
+				"a": -2,
+				"b": 1,
+			},
+			expected: 2,
+		},
+	}
+
+	for _, theory := range theories {
+		actual := theory.weights.MaxWeight()
+		assert.Equal(t, theory.expected, actual)
+	}
+}

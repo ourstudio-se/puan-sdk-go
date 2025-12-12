@@ -39,10 +39,10 @@ func (c *SolutionCreator) Create(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
-) (SolutionExtended, error) {
+) (SolutionEnvelope, error) {
 	err := validateSelections(selections, ruleset)
 	if err != nil {
-		return SolutionExtended{}, err
+		return SolutionEnvelope{}, err
 	}
 
 	dependantSelections, independentSelections :=
@@ -54,14 +54,14 @@ func (c *SolutionCreator) Create(
 		from,
 	)
 	if err != nil {
-		return SolutionExtended{}, err
+		return SolutionEnvelope{}, err
 	}
 
 	independentSolution := findIndependentSolution(ruleset.independentVariables, independentSelections)
 
 	solution := dependentSolution.merge(independentSolution)
 
-	return SolutionExtended{
+	return SolutionEnvelope{
 		Solution:       solution,
 		WeightsToLarge: weightsToLarge,
 	}, nil
