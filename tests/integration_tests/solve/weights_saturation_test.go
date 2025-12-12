@@ -10,7 +10,7 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
-func Test_saturatedWeights_givenManySelections_shouldReturnSaturatedTrue(t *testing.T) {
+func Test_WeightsTooLarge_givenManySelections_weightsShouldBeTooLarge(t *testing.T) {
 	ruleset, primitives := rulesetWithPrimitivesForSaturationTests()
 
 	selections := puan.Selections{}
@@ -29,7 +29,7 @@ func Test_saturatedWeights_givenManySelections_shouldReturnSaturatedTrue(t *test
 	)
 }
 
-func Test_saturatedWeights_givenFewSelections_shouldReturnSaturatedFalse(t *testing.T) {
+func Test_WeightsTooLarge_givenFewSelections_weightsShouldNotBeTooLarge(t *testing.T) {
 	ruleset, primitives := rulesetWithPrimitivesForSaturationTests()
 
 	selections := puan.Selections{}
