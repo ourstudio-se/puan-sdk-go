@@ -28,7 +28,8 @@ func Test_optionalPackagesWithForbids_changeToSmallerPackage(t *testing.T) {
 		puan.NewSelectionBuilder("packageC").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -41,7 +42,7 @@ func Test_optionalPackagesWithForbids_changeToSmallerPackage(t *testing.T) {
 			"itemY":    0,
 			"itemZ":    0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -63,7 +64,8 @@ func Test_optionalPackagesWithForbids_changeToLargerPackage(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemN").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -76,7 +78,7 @@ func Test_optionalPackagesWithForbids_changeToLargerPackage(t *testing.T) {
 			"itemY":    1,
 			"itemZ":    1,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -85,7 +87,8 @@ func Test_optionalPackagesWithForbids_noSelection(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -98,7 +101,7 @@ func Test_optionalPackagesWithForbids_noSelection(t *testing.T) {
 			"itemY":    0,
 			"itemZ":    0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 

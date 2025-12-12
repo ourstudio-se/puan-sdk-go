@@ -27,7 +27,8 @@ func Test_itemIncludedInPeriod(t *testing.T) {
 
 	ruleset, _ := creator.Create()
 
-	solution, _ := solutionCreator.Create(nil, ruleset, nil)
+	envelope, _ := solutionCreator.Create(nil, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -35,7 +36,7 @@ func Test_itemIncludedInPeriod(t *testing.T) {
 			"period_0": 1,
 			"period_1": 0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -67,7 +68,8 @@ func Test_manyItemsIncludedInPeriod_shouldChooseLaterPeriod(t *testing.T) {
 
 	ruleset, _ := creator.Create()
 
-	solution, _ := solutionCreator.Create(nil, ruleset, nil)
+	envelope, _ := solutionCreator.Create(nil, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -80,7 +82,7 @@ func Test_manyItemsIncludedInPeriod_shouldChooseLaterPeriod(t *testing.T) {
 			"period_0": 0,
 			"period_1": 1,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -102,7 +104,8 @@ func Test_itemIncludedInLaterPeriod_shouldChooseEarlierPeriod(t *testing.T) {
 
 	ruleset, _ := creator.Create()
 
-	solution, _ := solutionCreator.Create(nil, ruleset, nil)
+	envelope, _ := solutionCreator.Create(nil, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -110,7 +113,7 @@ func Test_itemIncludedInLaterPeriod_shouldChooseEarlierPeriod(t *testing.T) {
 			"period_0": 1,
 			"period_1": 0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -134,7 +137,8 @@ func Test_itemIncludedInLaterPeriod_andFromInLaterPeriod_shouldChooseLaterPeriod
 
 	from := startTime.Add(45 * time.Minute)
 
-	solution, _ := solutionCreator.Create(nil, ruleset, &from)
+	envelope, _ := solutionCreator.Create(nil, ruleset, &from)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -142,7 +146,7 @@ func Test_itemIncludedInLaterPeriod_andFromInLaterPeriod_shouldChooseLaterPeriod
 			"period_0": 0,
 			"period_1": 1,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -169,7 +173,8 @@ func Test_itemIncludedInLaterPeriod_andFromInEarlierPeriod_shouldChooseEarlierPe
 
 	from := startTime.Add(15 * time.Minute)
 
-	solution, _ := solutionCreator.Create(nil, ruleset, &from)
+	envelope, _ := solutionCreator.Create(nil, ruleset, &from)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -177,7 +182,7 @@ func Test_itemIncludedInLaterPeriod_andFromInEarlierPeriod_shouldChooseEarlierPe
 			"period_0": 1,
 			"period_1": 0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -208,7 +213,8 @@ func Test_itemSelectableInPeriod_givenItemSelected_shouldChoosePeriod(t *testing
 		puan.NewSelectionBuilder("itemX").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -217,7 +223,7 @@ func Test_itemSelectableInPeriod_givenItemSelected_shouldChoosePeriod(t *testing
 			"period_1": 1,
 			"period_2": 0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -283,7 +289,8 @@ func Test_itemSelectableInPeriod_andManyItemsIncludedInThatPeriod_givenItemSelec
 		puan.NewSelectionBuilder("itemX").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -304,7 +311,7 @@ func Test_itemSelectableInPeriod_andManyItemsIncludedInThatPeriod_givenItemSelec
 			"period_1": 1,
 			"period_2": 0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -342,7 +349,8 @@ func Test_includedPackageInEarlierPeriod_withPreferred_shouldChooseEarlierPeriod
 
 	ruleset, _ := creator.Create()
 
-	solution, _ := solutionCreator.Create(nil, ruleset, nil)
+	envelope, _ := solutionCreator.Create(nil, ruleset, nil)
+	solution := envelope.Solution()
 
 	assert.Equal(
 		t,
@@ -356,6 +364,6 @@ func Test_includedPackageInEarlierPeriod_withPreferred_shouldChooseEarlierPeriod
 			"period_0": 1,
 			"period_1": 0,
 		},
-		solution.Solution,
+		solution,
 	)
 }

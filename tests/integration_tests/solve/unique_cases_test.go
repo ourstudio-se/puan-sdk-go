@@ -34,7 +34,8 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -43,7 +44,7 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred(t *testing.T) {
 			"packageC": 0,
 			"itemX":    1,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -63,14 +64,15 @@ func Test_packageImpliesAnotherPackage_addAndRemove_shouldGiveEmptySolution(t *t
 		puan.NewSelectionBuilder("packageB").WithAction(puan.REMOVE).Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
 			"packageA": 0,
 			"packageB": 0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -95,7 +97,8 @@ func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldGivePreferred(t 
 		puan.NewSelectionBuilder("packageB").WithAction(puan.REMOVE).Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -103,7 +106,7 @@ func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldGivePreferred(t 
 			"packageB": 0,
 			"packageC": 0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -138,7 +141,8 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldGivePreferred(t *testing.T) 
 
 	selections := puan.Selections{}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -149,7 +153,7 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldGivePreferred(t *testing.T) 
 			"itemM":    0,
 			"itemO":    0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -180,7 +184,8 @@ func Test_implicationChain_shouldGiveAll(t *testing.T) {
 		puan.NewSelectionBuilder("packageE").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -191,7 +196,7 @@ func Test_implicationChain_shouldGiveAll(t *testing.T) {
 			"itemY":    1,
 			"itemZ":    1,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -216,7 +221,8 @@ func Test_multiplePackagesWithXOR_shouldGiveLastSelected(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -226,7 +232,7 @@ func Test_multiplePackagesWithXOR_shouldGiveLastSelected(t *testing.T) {
 			"packageD": 0,
 			"packageE": 0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -296,7 +302,8 @@ func Test_packageInDefaultConfig(t *testing.T) {
 		puan.NewSelectionBuilder("itemX").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -309,7 +316,7 @@ func Test_packageInDefaultConfig(t *testing.T) {
 			"itemN":    0,
 			"itemO":    0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -342,7 +349,8 @@ func Test_selectPackageWithItemAfterSingleConflictingItemSelection_shouldGivePac
 		puan.NewSelectionBuilder("packageP").WithSubSelectionID("itemY").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -352,7 +360,7 @@ func Test_selectPackageWithItemAfterSingleConflictingItemSelection_shouldGivePac
 			"itemX":    0,
 			"itemY":    1,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -385,7 +393,8 @@ func Test_changeVariant_shouldGiveLastSelected(t *testing.T) {
 		puan.NewSelectionBuilder("packageP").WithSubSelectionID("itemX").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -396,7 +405,7 @@ func Test_changeVariant_shouldGiveLastSelected(t *testing.T) {
 			"itemB":    1,
 			"itemC":    1,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -446,7 +455,8 @@ func Test_subComponentsAndPackageInDefaultConfig(t *testing.T) {
 		puan.NewSelectionBuilder("itemX").WithAction(puan.REMOVE).Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -457,7 +467,7 @@ func Test_subComponentsAndPackageInDefaultConfig(t *testing.T) {
 			"itemY":    0,
 			"itemZ":    1,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -496,7 +506,8 @@ func Test_duplicatedPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("itemA").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -506,7 +517,7 @@ func Test_duplicatedPreferred(t *testing.T) {
 			"itemX": 0,
 			"itemY": 0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -553,7 +564,8 @@ func Test_xorBetweenPackagesAndItems_shouldGiveLastSelection(t *testing.T) {
 		puan.NewSelectionBuilder("itemY").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -563,7 +575,7 @@ func Test_xorBetweenPackagesAndItems_shouldGiveLastSelection(t *testing.T) {
 			"itemY":    1,
 			"itemZ":    0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -614,7 +626,8 @@ func Test_xorBetweenPackagesAndItemsWithPreferred_shouldGiveLastSelection(t *tes
 		puan.NewSelectionBuilder("itemY").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -624,7 +637,7 @@ func Test_xorBetweenPackagesAndItemsWithPreferred_shouldGiveLastSelection(t *tes
 			"itemY":    1,
 			"itemZ":    0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -682,7 +695,8 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 		puan.NewSelectionBuilder("itemN").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -694,7 +708,7 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 			"itemY": 0,
 			"itemZ": 0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -714,7 +728,8 @@ func Test_removingItemInAddedPackage_shouldRemovePackageAsWell(t *testing.T) {
 		puan.NewSelectionBuilder("itemX").WithAction(puan.REMOVE).Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -722,7 +737,7 @@ func Test_removingItemInAddedPackage_shouldRemovePackageAsWell(t *testing.T) {
 			"itemX":    0,
 			"itemY":    0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -751,7 +766,8 @@ func Test_removePackageWithSubselection_shouldGiveEmptySolution(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemZ").WithAction(puan.REMOVE).Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -762,6 +778,6 @@ func Test_removePackageWithSubselection_shouldGiveEmptySolution(t *testing.T) {
 			"itemM":    0,
 			"itemN":    0,
 		},
-		solution.Solution,
+		solution,
 	)
 }

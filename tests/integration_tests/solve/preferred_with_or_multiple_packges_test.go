@@ -17,7 +17,8 @@ func Test_multiplePackagesWithOr_noSelectionExpectPreferred(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -27,7 +28,7 @@ func Test_multiplePackagesWithOr_noSelectionExpectPreferred(t *testing.T) {
 			"packageC": 0,
 			"packageD": 0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -42,7 +43,8 @@ func Test_multiplePackagesWithOr_selectPackageB(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -52,7 +54,7 @@ func Test_multiplePackagesWithOr_selectPackageB(t *testing.T) {
 			"packageC": 0,
 			"packageD": 0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -67,7 +69,8 @@ func Test_multiplePackagesWithOr_selectPackageC(t *testing.T) {
 		puan.NewSelectionBuilder("packageC").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -77,7 +80,7 @@ func Test_multiplePackagesWithOr_selectPackageC(t *testing.T) {
 			"packageC": 1,
 			"packageD": 0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -94,7 +97,8 @@ func Test_multiplePackagesWithOr_allSelectedExceptA(t *testing.T) {
 		puan.NewSelectionBuilder("packageD").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -104,7 +108,7 @@ func Test_multiplePackagesWithOr_allSelectedExceptA(t *testing.T) {
 			"packageC": 1,
 			"packageD": 1,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 

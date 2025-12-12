@@ -13,7 +13,8 @@ func Test_givenNoFreeSelection_shouldGiveZeroValueFreeVariables(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -23,7 +24,7 @@ func Test_givenNoFreeSelection_shouldGiveZeroValueFreeVariables(t *testing.T) {
 			"independentItem1": 0,
 			"independentItem2": 0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -34,7 +35,8 @@ func Test_givenOneFreeSelection_shouldGiveSelectedFreeVariable(t *testing.T) {
 		puan.NewSelectionBuilder("independentItem1").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -44,7 +46,7 @@ func Test_givenOneFreeSelection_shouldGiveSelectedFreeVariable(t *testing.T) {
 			"independentItem1": 1,
 			"independentItem2": 0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -56,7 +58,8 @@ func Test_givenAllFreeSelection_shouldGiveAllSelectedFreeVariable(t *testing.T) 
 		puan.NewSelectionBuilder("independentItem2").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -66,7 +69,7 @@ func Test_givenAllFreeSelection_shouldGiveAllSelectedFreeVariable(t *testing.T) 
 			"independentItem1": 1,
 			"independentItem2": 1,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -79,7 +82,8 @@ func Test_givenAllFreeSelectionAndDependantSelection_shouldGiveAllSelectedVariab
 		puan.NewSelectionBuilder("itemZ").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -89,7 +93,7 @@ func Test_givenAllFreeSelectionAndDependantSelection_shouldGiveAllSelectedVariab
 			"independentItem1": 1,
 			"independentItem2": 1,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -116,14 +120,15 @@ func Test_tmp(t *testing.T) {
 		puan.NewSelectionBuilder("itemY").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
 			"itemX": 0,
 			"itemY": 1,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 

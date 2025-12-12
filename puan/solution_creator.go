@@ -10,15 +10,6 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
-// WEIGHT_SATURATION_LIMIT is set to 2^55.
-// The limit is set lower than 2^63 to allow for some headroom
-// and enable early detection before reaching the overflow limit.
-// Note: Weights for selected variables increase exponentially with the number of selections.
-// The highest weight is calculated as 2^(n-1) * (c + 1),
-// where n is the number of selections and c is a constant
-// derived from the sum of none selected primitives, preferred, and period weights.
-const WEIGHT_SATURATION_LIMIT = 36028797018963968
-
 type SolverClient interface {
 	Solve(query *Query) (Solution, error)
 }
@@ -48,7 +39,7 @@ func (c *SolutionCreator) Create(
 	dependantSelections, independentSelections :=
 		categorizeSelections(selections, ruleset.independentVariables)
 
-	dependentSolution, weightsToLarge, err := c.findDependentSolution(
+	envelope, err := c.findDependentSolution(
 		dependantSelections,
 		ruleset,
 		from,
@@ -56,14 +47,16 @@ func (c *SolutionCreator) Create(
 	if err != nil {
 		return SolutionEnvelope{}, err
 	}
+	dependentSolution := envelope.Solution()
+	weightsTooLarge := envelope.WeightsTooLarge()
 
 	independentSolution := findIndependentSolution(ruleset.independentVariables, independentSelections)
 
 	solution := dependentSolution.merge(independentSolution)
 
 	return SolutionEnvelope{
-		Solution:       solution,
-		WeightsToLarge: weightsToLarge,
+		solution:        solution,
+		weightsTooLarge: weightsTooLarge,
 	}, nil
 }
 
@@ -71,22 +64,25 @@ func (c *SolutionCreator) findDependentSolution(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
-) (Solution, bool, error) {
+) (SolutionEnvelope, error) {
 	query, err := newQuery(selections, ruleset, from)
 	if err != nil {
-		return nil, false, err
+		return SolutionEnvelope{}, err
 	}
 
-	isToLarge := query.weights.MaxWeight() > WEIGHT_SATURATION_LIMIT
+	tooLarge := query.weights.ContainsTooLargeWeight()
 
 	solution, err := c.Solve(query)
 	if err != nil {
-		return nil, false, err
+		return SolutionEnvelope{}, err
 	}
 
 	primitiveSolution := ruleset.RemoveSupportVariables(solution)
 
-	return primitiveSolution, isToLarge, nil
+	return SolutionEnvelope{
+		solution:        primitiveSolution,
+		weightsTooLarge: tooLarge,
+	}, nil
 }
 
 func findIndependentSolution(independentVariables []string, selections Selections) Solution {

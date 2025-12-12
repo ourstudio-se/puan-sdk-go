@@ -51,7 +51,7 @@ func main() {
 	solutionCreator := puan.NewSolutionCreator(glpk.NewClient("http://127.0.0.1:9000"))
 
 	inSecondPeriod := endOfFirstPeriod.Add(5 * time.Minute)
-	solution, err := solutionCreator.Create(
+	envelope, err := solutionCreator.Create(
 		nil,
 		ruleSet,
 		&inSecondPeriod,
@@ -59,12 +59,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	solution := envelope.Solution()
 
-	fmt.Println("x: ", solution.Solution["x"]) // = 1
-	fmt.Println("y: ", solution.Solution["y"]) // = 0
-	fmt.Println("z: ", solution.Solution["z"]) // = 1
+	fmt.Println("x: ", solution["x"]) // = 1
+	fmt.Println("y: ", solution["y"]) // = 0
+	fmt.Println("z: ", solution["z"]) // = 1
 
-	period, err := ruleSet.FindPeriodInSolution(solution.Solution)
+	period, err := ruleSet.FindPeriodInSolution(solution)
 	if err != nil {
 		panic(err)
 	}

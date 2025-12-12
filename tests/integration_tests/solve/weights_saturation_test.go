@@ -21,10 +21,11 @@ func Test_saturatedWeights_givenManySelections_shouldReturnSaturatedTrue(t *test
 		)
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	weightsTooLarge := envelope.WeightsTooLarge()
 	assert.True(
 		t,
-		solution.WeightsToLarge,
+		weightsTooLarge,
 	)
 }
 
@@ -39,10 +40,11 @@ func Test_saturatedWeights_givenFewSelections_shouldReturnSaturatedFalse(t *test
 		)
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	weightsTooLarge := envelope.WeightsTooLarge()
 	assert.False(
 		t,
-		solution.WeightsToLarge,
+		weightsTooLarge,
 	)
 }
 

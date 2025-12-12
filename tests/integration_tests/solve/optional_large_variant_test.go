@@ -24,7 +24,8 @@ func Test_optionalLargeVariantWithXOR_removePreselectedItem(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -39,7 +40,7 @@ func Test_optionalLargeVariantWithXOR_removePreselectedItem(t *testing.T) {
 			"itemR":    1,
 			"itemS":    1,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -53,7 +54,8 @@ func Test_optionalLargeVariantWithXOR_shouldChangeVariant(t *testing.T) {
 		puan.NewSelectionBuilder("itemY").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -68,7 +70,7 @@ func Test_optionalLargeVariantWithXOR_shouldChangeVariant(t *testing.T) {
 			"itemR":    1,
 			"itemS":    1,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -77,7 +79,8 @@ func Test_optionalLargeVariantWithXOR_noSelection(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -92,7 +95,7 @@ func Test_optionalLargeVariantWithXOR_noSelection(t *testing.T) {
 			"itemR":    0,
 			"itemS":    0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
@@ -103,7 +106,8 @@ func Test_optionalLargeVariantWithXOR_singleItemSelection(t *testing.T) {
 		puan.NewSelectionBuilder("itemM").Build(),
 	}
 
-	solution, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	solution := envelope.Solution()
 	assert.Equal(
 		t,
 		puan.Solution{
@@ -118,7 +122,7 @@ func Test_optionalLargeVariantWithXOR_singleItemSelection(t *testing.T) {
 			"itemR":    0,
 			"itemS":    0,
 		},
-		solution.Solution,
+		solution,
 	)
 }
 
