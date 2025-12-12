@@ -135,7 +135,7 @@ func TestModel_NewPolyhedron(t *testing.T) {
 
 	lp := CreatePolyhedron(model.variables, model.constraints, model.assumeConstraints)
 
-	expectedVector := []int{0, 1, 1, 2, 4, 0, 1, 1, 1, -1, 0, 0, -2, 1, -1, 0, -1, 1}
+	expectedVector := []int{0, 1, 1, 2, 4, 0, 1, 1, 1, -1, 0, 0, -2, 1, -1, 0, -1}
 	expectedMatrix := [][]int{
 		{-1, -1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0},
 		{0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0},
@@ -154,7 +154,6 @@ func TestModel_NewPolyhedron(t *testing.T) {
 		{0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, -2, 0},
 		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, -2},
 		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
 	}
 
 	assertEqual(t, expectedMatrix, lp.aMatrix, expectedVector, lp.bVector)
@@ -178,7 +177,7 @@ func TestModel_NewPolyhedron_withImpliesOr(t *testing.T) {
 	}
 	lp := CreatePolyhedron(model.variables, model.constraints, model.assumeConstraints)
 
-	expectedVector := []int{1, 1, 1, 0, -1, 0, -1, 1}
+	expectedVector := []int{1, 1, 1, 0, -1, 0, -1}
 	expectedMatrix := [][]int{
 		{0, -1, -1, 2, 0, 0},
 		{1, 0, 0, 0, 1, 0},
@@ -187,7 +186,6 @@ func TestModel_NewPolyhedron_withImpliesOr(t *testing.T) {
 		{-1, 0, 0, 0, -2, 0},
 		{0, 0, 0, 1, 1, -2},
 		{0, 0, 0, 0, 0, -1},
-		{0, 0, 0, 0, 0, 1},
 	}
 
 	assertEqual(t, expectedMatrix, lp.aMatrix, expectedVector, lp.bVector)
