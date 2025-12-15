@@ -386,13 +386,6 @@ func (r *Ruleset) forbidPassedPeriods(from time.Time) error {
 }
 
 func (r *Ruleset) assume(id string) error {
-	constraints := pldag.NewAssumedConstraints(id)
-	for _, constraint := range constraints {
-		err := r.setAuxiliaryConstraint(constraint)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	constraint := pldag.NewAssumedConstraint(id)
+	return r.setAuxiliaryConstraint(constraint)
 }

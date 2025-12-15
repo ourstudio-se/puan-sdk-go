@@ -243,8 +243,8 @@ func (m *Model) Assume(variables ...string) error {
 
 	newAssumed := utils.Without(variables, m.assumeConstraints.coefficientIDs())
 
-	constraints := NewAssumedConstraints(newAssumed...)
-	m.assumeConstraints = append(m.assumeConstraints, constraints...)
+	constraint := NewAssumedConstraint(newAssumed...)
+	m.assumeConstraints = append(m.assumeConstraints, constraint)
 
 	return nil
 }
