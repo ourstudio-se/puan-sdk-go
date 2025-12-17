@@ -314,12 +314,9 @@ func toAuxiliaryConstraintsWithSupport(constraints Constraints) AuxiliaryConstra
 }
 
 func (m *Model) setAtLeast(variables []string, amount int) (string, error) {
-	if !utils.ContainsAll(m.variables, variables) {
-		return "", errors.Errorf(
-			"%w: variables do not exist in model: %v",
-			puanerror.InvalidArgument,
-			variables,
-		)
+	err := m.ValidateVariables(variables...)
+	if err != nil {
+		return "", err
 	}
 
 	constraint, err := NewAtLeastConstraint(variables, amount)
@@ -333,12 +330,9 @@ func (m *Model) setAtLeast(variables []string, amount int) (string, error) {
 }
 
 func (m *Model) setAtMost(variables []string, amount int) (string, error) {
-	if !utils.ContainsAll(m.variables, variables) {
-		return "", errors.Errorf(
-			"%w: variables do not exist in model: %v",
-			puanerror.InvalidArgument,
-			variables,
-		)
+	err := m.ValidateVariables(variables...)
+	if err != nil {
+		return "", err
 	}
 
 	constraint, err := NewAtMostConstraint(variables, amount)
