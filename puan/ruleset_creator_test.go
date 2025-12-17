@@ -12,7 +12,7 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
 )
 
-func Test_RuleSetCreator_newTimeBoundVariable_givenTimeEnabled_andValidPeriod(t *testing.T) {
+func Test_RulesetCreator_newTimeBoundVariable_givenTimeEnabled_andValidPeriod(t *testing.T) {
 	id := uuid.New().String()
 	from := newTestTime("2024-01-01T00:00:00Z")
 	to := newTestTime("2024-01-31T00:00:00Z")
@@ -33,7 +33,7 @@ func Test_RuleSetCreator_newTimeBoundVariable_givenTimeEnabled_andValidPeriod(t 
 	assert.Equal(t, to, variable.period.To())
 }
 
-func Test_RuleSetCreator_newTimeBoundVariable_givenTimeNotEnabled_shouldReturnError(
+func Test_RulesetCreator_newTimeBoundVariable_givenTimeNotEnabled_shouldReturnError(
 	t *testing.T,
 ) {
 	id := uuid.New().String()
@@ -45,7 +45,7 @@ func Test_RuleSetCreator_newTimeBoundVariable_givenTimeNotEnabled_shouldReturnEr
 	assert.Error(t, err)
 }
 
-func Test_RuleSetCreator_newTimeBoundVariable_givenTimeEnabled_andInvalidPeriod_shouldReturnError(
+func Test_RulesetCreator_newTimeBoundVariable_givenTimeEnabled_andInvalidPeriod_shouldReturnError(
 	t *testing.T,
 ) {
 	id := uuid.New().String()
@@ -64,7 +64,7 @@ func Test_RuleSetCreator_newTimeBoundVariable_givenTimeEnabled_andInvalidPeriod_
 }
 
 // nolint:lll
-func Test_RuleSetCreator_newTimeBoundVariable_givenTimeEnabled_andAssumedPeriodOutsideOfEnabledPeriod_shouldReturnError(
+func Test_RulesetCreator_newTimeBoundVariable_givenTimeEnabled_andAssumedPeriodOutsideOfEnabledPeriod_shouldReturnError(
 	t *testing.T,
 ) {
 	id := uuid.New().String()
@@ -139,7 +139,7 @@ func Test_Create_givenDifferentModelingOrder_shouldReturnSamePolyhedron(
 	assert.Equalf(t, rulesetOne.polyhedron.B(), rulesetTwo.polyhedron.B(), "B vectors are not equal")
 }
 
-func Test_RulSetCreator_AssumeInPeriod_givenSamePeriod_shouldUseAssume(t *testing.T) {
+func Test_RulesetCreator_AssumeInPeriod_givenSamePeriod_shouldUseAssume(t *testing.T) {
 	creator := NewRulesetCreator()
 	from, to := newTestTime("2024-01-01T00:00:00Z"), newTestTime("2024-01-31T23:59:59Z")
 	err := creator.EnableTime(
@@ -157,7 +157,7 @@ func Test_RulSetCreator_AssumeInPeriod_givenSamePeriod_shouldUseAssume(t *testin
 }
 
 // nolint:lll
-func Test_RulSetCreator_AssumeInPeriod_givenDifferentPeriod_shouldAddTimeBoundVariable(t *testing.T) {
+func Test_RulesetCreator_AssumeInPeriod_givenDifferentPeriod_shouldAddTimeBoundVariable(t *testing.T) {
 	creator := NewRulesetCreator()
 	from, to := newTestTime("2024-01-01T00:00:00Z"), newTestTime("2024-01-31T23:59:59Z")
 	err := creator.EnableTime(
