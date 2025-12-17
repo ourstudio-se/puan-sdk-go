@@ -328,3 +328,53 @@ func Test_SetPrimitives_givenValidVariablesTwice(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"a", "b", "c", "d"}, model.variables)
 }
+
+func TestModel_setAtLeast_givenValidVariables_shouldReturnNoError(t *testing.T) {
+	model := New()
+	err := model.AddPrimitives("a")
+	assert.NoError(t, err)
+
+	_, err = model.setAtLeast([]string{"a"}, 0)
+	assert.NoError(t, err)
+}
+
+func TestModel_setAtLeast_givenVariableNotInModel_shouldReturnError(t *testing.T) {
+	model := New()
+	err := model.AddPrimitives("a")
+	assert.NoError(t, err)
+
+	_, err = model.setAtLeast([]string{"a", "b"}, 0)
+	assert.Error(t, err)
+}
+
+func TestModel_setAtLeast_givenEmptyModelVariables_shouldReturnError(t *testing.T) {
+	model := New()
+
+	_, err := model.setAtLeast([]string{"a"}, 0)
+	assert.Error(t, err)
+}
+
+func TestModel_setAtMost_givenValidVariables_shouldReturnNoError(t *testing.T) {
+	model := New()
+	err := model.AddPrimitives("a")
+	assert.NoError(t, err)
+
+	_, err = model.setAtMost([]string{"a"}, 0)
+	assert.NoError(t, err)
+}
+
+func TestModel_setAtMost_givenVariableNotInModel_shouldReturnError(t *testing.T) {
+	model := New()
+	err := model.AddPrimitives("a")
+	assert.NoError(t, err)
+
+	_, err = model.setAtMost([]string{"a", "b"}, 0)
+	assert.Error(t, err)
+}
+
+func TestModel_setAtMost_givenEmptyModelVariables_shouldReturnError(t *testing.T) {
+	model := New()
+
+	_, err := model.setAtMost([]string{"a"}, 0)
+	assert.Error(t, err)
+}
