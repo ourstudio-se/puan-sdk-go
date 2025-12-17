@@ -21,7 +21,7 @@ type Ruleset struct {
 }
 
 // For when creating a rule set from a serialized representation
-// When setting up new rule sets, use RuleSetCreator instead
+// When setting up new rule sets, use RulesetCreator instead
 func HydrateRuleSet(
 	aMatrix [][]int,
 	bVector []int,

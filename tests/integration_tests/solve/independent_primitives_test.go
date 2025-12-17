@@ -98,7 +98,7 @@ func Test_givenAllFreeSelectionAndDependantSelection_shouldGiveAllSelectedVariab
 }
 
 func rulesetWithIndependentPrimitives() puan.Ruleset {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 	_ = creator.AddPrimitives("itemX", "itemY", "itemZ", "independentItem1", "independentItem2")
 	exactlyOneItem, _ := creator.SetXor("itemX", "itemY", "itemZ")
 
@@ -133,7 +133,7 @@ func Test_tmp(t *testing.T) {
 }
 
 func tmp() puan.Ruleset {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 	_ = creator.AddPrimitives("itemX", "itemY")
 	exactlyOneItem, _ := creator.SetXor("itemX", "itemY")
 

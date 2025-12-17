@@ -113,7 +113,7 @@ func Test_multiplePackagesWithOr_allSelectedExceptA(t *testing.T) {
 }
 
 func multiplePackagesWithOr() puan.Ruleset {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "packageC", "packageD")
 
 	anyOfThePackages, _ := creator.SetOr("packageA", "packageB", "packageC", "packageD")

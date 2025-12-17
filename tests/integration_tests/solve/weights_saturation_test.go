@@ -49,7 +49,7 @@ func Test_WeightsTooLarge_givenFewSelections_weightsShouldNotBeTooLarge(t *testi
 }
 
 func rulesetWithPrimitivesForSaturationTests() (puan.Ruleset, []string) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	primitives := fake.New[[]string](
 		func(oo *options.Options) {

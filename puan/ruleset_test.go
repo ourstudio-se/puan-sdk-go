@@ -79,7 +79,7 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintDoesNotExist_sh
 	primaryID := uuid.New().String()
 	subID := uuid.New().String()
 
-	creator := NewRuleSetCreator()
+	creator := NewRulesetCreator()
 	_ = creator.AddPrimitives(primaryID, subID)
 
 	// need to create a constraint to have both primaryID and subID
@@ -106,7 +106,7 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintExists_shouldNo
 	primaryID := uuid.New().String()
 	subID := uuid.New().String()
 
-	creator := NewRuleSetCreator()
+	creator := NewRulesetCreator()
 	_ = creator.AddPrimitives(primaryID, subID)
 	_, _ = creator.SetAnd(primaryID, subID)
 	ruleset, _ := creator.Create()

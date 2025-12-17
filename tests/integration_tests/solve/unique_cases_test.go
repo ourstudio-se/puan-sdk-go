@@ -17,7 +17,7 @@ var solutionCreator = puan.NewSolutionCreator(glpk.NewClient("http://127.0.0.1:9
 // Description: Exactly one of package A, B or C must be selected. A is preferred. B requires another
 // variable itemX. Now, A is preselected and we select B. We expect (B, itemX) as result.
 func Test_exactlyOnePackage_selectPreferredThenNotPreferred(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("packageA", "packageB", "packageC", "itemX")
 	exactlyOnePackage, _ := creator.SetXor("packageA", "packageB", "packageC")
@@ -52,7 +52,7 @@ func Test_exactlyOnePackage_selectPreferredThenNotPreferred(t *testing.T) {
 // Ref: test_select_same_not_constrainted_selected_component
 // Description: package A requires B. B has been preselected and is then removed.
 func Test_packageImpliesAnotherPackage_addAndRemove_shouldGiveEmptySolution(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 	_ = creator.AddPrimitives("packageA", "packageB")
 	packageARequiredPackageB, _ := creator.SetImply("packageA", "packageB")
 
@@ -81,7 +81,7 @@ func Test_packageImpliesAnotherPackage_addAndRemove_shouldGiveEmptySolution(t *t
 // Description: Exactly one of package A, B or C must be selected, but A is preferred.
 // B has been preselected but is removed again. We now expect A to be selected.
 func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldGivePreferred(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("packageA", "packageB", "packageC")
 
@@ -116,7 +116,7 @@ func Test_exactlyOnePackage_selectAndDeselectNotPreferred_shouldGivePreferred(t 
 // with preferred on the former.
 // Nothing is preselected and we expect (A, itemX, itemY, itemN) as our result configuration.
 func Test_exactlyOnePackage_nothingIsSelected_shouldGivePreferred(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemM", "itemN", "itemO")
 
 	itemsXAndY, _ := creator.SetAnd("itemX", "itemY")
@@ -162,7 +162,7 @@ func Test_exactlyOnePackage_nothingIsSelected_shouldGivePreferred(t *testing.T) 
 // Description: There exists a chain of requirements: E -> F -> A -> (itemX, itemY,itemZ).
 // We select E and expect our result configuration to (E, F, A, itemX, itemY, itemZ)
 func Test_implicationChain_shouldGiveAll(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("packageA", "packageE", "packageF", "itemX", "itemY", "itemZ")
 
@@ -207,7 +207,7 @@ func Test_implicationChain_shouldGiveAll(t *testing.T) {
 // We have already selected packageA and now we select packageB.
 // We expect packageB to be the only one in configuration
 func Test_multiplePackagesWithXOR_shouldGiveLastSelected(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("packageA", "packageB", "packageC", "packageD", "packageE")
 	exactlyOnePackage, _ := creator.SetXor("packageA", "packageB", "packageC", "packageD", "packageE")
@@ -242,7 +242,7 @@ func Test_multiplePackagesWithXOR_shouldGiveLastSelected(t *testing.T) {
 // packageA -> (itemX, itemY)
 // We give pre selected action ['notExistingID'], expects error
 func Test_notExistingVariable_shouldGiveError(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("packageA", "itemX", "itemY")
 
@@ -275,7 +275,7 @@ func Test_notExistingVariable_shouldGiveError(t *testing.T) {
 // Comment: How should we interpret the python test, with defaultconfiguration?
 func Test_packageInDefaultConfig(t *testing.T) {
 	t.Skip()
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 	_ = creator.AddPrimitives("packageA", "packageZ", "itemB", "itemX", "itemY", "itemM", "itemN", "itemO")
 
 	exactlyOneIfItemXAndY, _ := creator.SetXor("itemX", "itemY")
@@ -328,7 +328,7 @@ func Test_packageInDefaultConfig(t *testing.T) {
 // We preselect itemB and itemX then selects package P.
 // We expect (packageP, itemY) and itemB to be selected
 func Test_selectPackageWithItemAfterSingleConflictingItemSelection_shouldGivePackage(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 	_ = creator.AddPrimitives("packageA", "packageP", "itemB", "itemX", "itemY")
 
 	exactlyOneOfItemXAndY, _ := creator.SetXor("itemX", "itemY")
@@ -372,7 +372,7 @@ func Test_selectPackageWithItemAfterSingleConflictingItemSelection_shouldGivePac
 // we preselect (packageP, itemY) and select (packageP, itemX). We
 // expects (packageP, itemY) to be removed from selected variants.
 func Test_changeVariant_shouldGiveLastSelected(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 	_ = creator.AddPrimitives("packageP", "itemX", "itemY", "itemA", "itemB", "itemC")
 
 	includedItemsInPackage, _ := creator.SetAnd("itemA", "itemB", "itemC")
@@ -426,7 +426,7 @@ func Test_changeVariant_shouldGiveLastSelected(t *testing.T) {
 // Comment: How should we interpret the python test, with defaultconfiguration?
 func Test_subComponentsAndPackageInDefaultConfig(t *testing.T) {
 	t.Skip()
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 	_ = creator.AddPrimitives("packageP", "itemA", "itemB", "itemX", "itemY", "itemZ")
 
 	exactlyOneOfTheItemsXYZ, _ := creator.SetXor("itemX", "itemY", "itemZ")
@@ -479,7 +479,7 @@ func Test_subComponentsAndPackageInDefaultConfig(t *testing.T) {
 // but we want to check that it also works for duplicated rules.
 // Comment: returns error due to duplicated variables.
 func Test_duplicatedPreferred(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("itemA", "itemB", "itemC", "itemX", "itemY")
 
@@ -535,7 +535,7 @@ func Test_duplicatedPreferred(t *testing.T) {
 // This is because itemX was selected firstly and has most less
 // priority.
 func Test_xorBetweenPackagesAndItems_shouldGiveLastSelection(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 
@@ -595,7 +595,7 @@ func Test_xorBetweenPackagesAndItems_shouldGiveLastSelection(t *testing.T) {
 // priority. The configuration is expected as (packageA, itemY), since
 // packageA is preferred over packageB, and itemY since it was later selected than itemX.
 func Test_xorBetweenPackagesAndItemsWithPreferred_shouldGiveLastSelection(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 
@@ -662,7 +662,7 @@ func Test_xorBetweenPackagesAndItemsWithPreferred_shouldGiveLastSelection(t *tes
 // Comment: How should we interpret the python test, with defaultconfiguration?
 func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferred(t *testing.T) {
 	t.Skip()
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("itemA", "itemB", "itemC", "itemN", "itemX", "itemY", "itemZ")
 
@@ -713,7 +713,7 @@ func Test_checkConflictingPreferred_shouldReturnSelectionsWithUnselectedPreferre
 }
 
 func Test_removingItemInAddedPackage_shouldRemovePackageAsWell(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 	_ = creator.AddPrimitives("packageA", "itemX", "itemY")
 
 	itemXAndY, _ := creator.SetAnd("itemX", "itemY")
@@ -742,7 +742,7 @@ func Test_removingItemInAddedPackage_shouldRemovePackageAsWell(t *testing.T) {
 }
 
 func Test_removePackageWithSubselection_shouldGiveEmptySolution(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemZ", "itemM", "itemN")
 
 	exactlyOneOfItemXYZ, _ := creator.SetXor("itemX", "itemY", "itemZ")

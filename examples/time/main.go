@@ -10,7 +10,7 @@ import (
 
 //nolint:gocyclo
 func main() {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	// Enable time, and set start and end time
 	startTime := time.Now()

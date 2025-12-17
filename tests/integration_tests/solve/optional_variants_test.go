@@ -160,7 +160,7 @@ func Test_optionalVariant_noSelection_shouldGiveEmptySolution(t *testing.T) {
 }
 
 func optionalVariantsWithXORBetweenItemsLargeVariantPreferred() puan.Ruleset {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemZ")
 
 	xorItem1Item2, _ := creator.SetXor("itemX", "itemY")

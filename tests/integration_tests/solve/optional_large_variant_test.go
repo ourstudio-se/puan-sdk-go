@@ -127,7 +127,7 @@ func Test_optionalLargeVariantWithXOR_singleItemSelection(t *testing.T) {
 }
 
 func optionalLargeVariantWithXOR() puan.Ruleset {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemM", "itemN", "itemO", "itemP", "itemQ", "itemR", "itemS")
 
 	exactlyOneOfItemXAndY, _ := creator.SetXor("itemX", "itemY")
