@@ -181,17 +181,17 @@ func (r *Ruleset) FindPeriodInSolution(solution Solution) (Period, error) {
 }
 
 func (r *Ruleset) copy() Ruleset {
-	source := r.polyhedron.A()
-	aMatrix := make([][]int, len(source))
-	for i := range source {
-		aMatrix[i] = make([]int, len(source[i]))
-		copy(aMatrix[i], source[i])
+	aMatrix := r.polyhedron.A()
+	aMatrixCopy := make([][]int, len(r.polyhedron.A()))
+	for i := range aMatrix {
+		aMatrixCopy[i] = make([]int, len(aMatrix[i]))
+		copy(aMatrixCopy[i], aMatrix[i])
 	}
 
 	bVector := make([]int, len(r.polyhedron.B()))
 	copy(bVector, r.polyhedron.B())
 
-	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
+	polyhedron := pldag.NewPolyhedron(aMatrixCopy, bVector)
 
 	dependantVariableIDs := make([]string, len(r.dependentVariables))
 	copy(dependantVariableIDs, r.dependentVariables)
