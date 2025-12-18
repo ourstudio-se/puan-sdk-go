@@ -13,7 +13,7 @@ func Test_validateSelections_givenIndependentVariableInSubSelection_shouldReturn
 	primaryID := fake.New[string]()
 	subID := fake.New[string]()
 
-	creator := NewRuleSetCreator()
+	creator := NewRulesetCreator()
 	_ = creator.AddPrimitives(primaryID, subID)
 	_ = creator.Assume(primaryID)
 	ruleset, _ := creator.Create()
@@ -31,7 +31,7 @@ func Test_validateSelections_givenIndependentVariableSelectionWithSubSelection_s
 	primaryID := fake.New[string]()
 	subID := fake.New[string]()
 
-	creator := NewRuleSetCreator()
+	creator := NewRulesetCreator()
 	_ = creator.AddPrimitives(primaryID, subID)
 	_ = creator.Assume(subID)
 	ruleset, _ := creator.Create()
@@ -50,7 +50,7 @@ func Test_validateSelections_givenNotExistingID_shouldReturnError(t *testing.T) 
 	subID := fake.New[string]()
 
 	invalidID := fake.New[string]()
-	creator := NewRuleSetCreator()
+	creator := NewRulesetCreator()
 	_ = creator.AddPrimitives(primaryID, subID)
 	ruleset, _ := creator.Create()
 
@@ -67,7 +67,7 @@ func Test_validateSelections_givenEmptySelection_shouldReturnNoError(t *testing.
 	primaryID := fake.New[string]()
 	subID := fake.New[string]()
 
-	creator := NewRuleSetCreator()
+	creator := NewRulesetCreator()
 	_ = creator.AddPrimitives(primaryID, subID)
 	ruleset, _ := creator.Create()
 

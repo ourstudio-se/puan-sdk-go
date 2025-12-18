@@ -12,7 +12,7 @@ import (
 // An item is included, but later is not. The solver should choose the earlier period
 // with the item.
 func Test_itemIncludedInPeriod(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("itemX")
 
@@ -44,7 +44,7 @@ func Test_itemIncludedInPeriod(t *testing.T) {
 // since the cost-savings of not having the items out weights the punishment of choosing the
 // later period.
 func Test_manyItemsIncludedInPeriod_shouldChooseLaterPeriod(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	items := []string{
 		"item1",
@@ -89,7 +89,7 @@ func Test_manyItemsIncludedInPeriod_shouldChooseLaterPeriod(t *testing.T) {
 // Item is included in later period. The solver should choose the earlier period,
 // since it is cheaper both because of less items and because it is an earlier period.
 func Test_itemIncludedInLaterPeriod_shouldChooseEarlierPeriod(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("itemX")
 
@@ -120,7 +120,7 @@ func Test_itemIncludedInLaterPeriod_shouldChooseEarlierPeriod(t *testing.T) {
 // Item is included in later period, and `from` is within that later period. The solver
 // should choose the later period, as the earlier is forbidden.
 func Test_itemIncludedInLaterPeriod_andFromInLaterPeriod_shouldChooseLaterPeriod(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("itemX")
 
@@ -156,7 +156,7 @@ func Test_itemIncludedInLaterPeriod_andFromInLaterPeriod_shouldChooseLaterPeriod
 func Test_itemIncludedInLaterPeriod_andFromInEarlierPeriod_shouldChooseEarlierPeriod(
 	t *testing.T,
 ) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("itemX")
 
@@ -189,7 +189,7 @@ func Test_itemIncludedInLaterPeriod_andFromInEarlierPeriod_shouldChooseEarlierPe
 // An item is only available during a period. When the item is selected, the solver should
 // choose that period.
 func Test_itemSelectableInPeriod_givenItemSelected_shouldChoosePeriod(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("itemX")
 
@@ -234,7 +234,7 @@ func Test_itemSelectableInPeriod_givenItemSelected_shouldChoosePeriod(t *testing
 func Test_itemSelectableInPeriod_andManyItemsIncludedInThatPeriod_givenItemSelected_shouldChoosePeriod(
 	t *testing.T,
 ) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	selectableItems := []string{"itemX"}
 	includedItems := []string{
@@ -321,7 +321,7 @@ func Test_itemSelectableInPeriod_andManyItemsIncludedInThatPeriod_givenItemSelec
 func Test_includedPackageInEarlierPeriod_withPreferred_shouldChooseEarlierPeriodWithPreferredPackage(
 	t *testing.T,
 ) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	startTime := time.Now()
 	endTime := startTime.Add(1 * time.Hour)

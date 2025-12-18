@@ -1,8 +1,6 @@
 package pldag
 
 import (
-	"slices"
-
 	"github.com/go-errors/errors"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
@@ -316,6 +314,11 @@ func toAuxiliaryConstraintsWithSupport(constraints Constraints) AuxiliaryConstra
 }
 
 func (m *Model) setAtLeast(variables []string, amount int) (string, error) {
+	err := m.ValidateVariables(variables...)
+	if err != nil {
+		return "", err
+	}
+
 	constraint, err := NewAtLeastConstraint(variables, amount)
 	if err != nil {
 		return "", err
@@ -327,6 +330,11 @@ func (m *Model) setAtLeast(variables []string, amount int) (string, error) {
 }
 
 func (m *Model) setAtMost(variables []string, amount int) (string, error) {
+	err := m.ValidateVariables(variables...)
+	if err != nil {
+		return "", err
+	}
+
 	constraint, err := NewAtMostConstraint(variables, amount)
 	if err != nil {
 		return "", err
@@ -351,5 +359,5 @@ func (m *Model) Constraints() Constraints {
 }
 
 func (m *Model) idAlreadyExists(id string) bool {
-	return slices.Contains(m.variables, id)
+	return utils.Contains(m.variables, id)
 }

@@ -18,7 +18,7 @@ import (
 // package variant (A, itemX, itemY, itemZ, itemN) (and not select single itemN)
 // Note: package A is mandatory according to rule set.
 func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_shouldGiveNewVariant(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemZ", "itemN", "itemM")
 
@@ -68,7 +68,7 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 // Description: Given rules package A -> xor(itemX, itemY), package A -> xor(itemX, itemZ). itemX is preferred oved (itemY, itemZ).
 // We first select the preferred package variant and the change to the not preferred variant.
 func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemZ")
 
@@ -124,7 +124,7 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 // (itemX, itemY, itemX) -> packageB
 // We have already selected packageA and now we select packageB. We expect packageB to be selected.
 func Test_twoPackagesWithSharedItems_selectLargestPackage(t *testing.T) {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("packageA", "packageB", "itemX", "itemY", "itemZ")
 

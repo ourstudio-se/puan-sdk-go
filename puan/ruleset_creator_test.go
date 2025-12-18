@@ -12,12 +12,12 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
 )
 
-func Test_RuleSetCreator_newTimeBoundVariable_givenTimeEnabled_andValidPeriod(t *testing.T) {
+func Test_RulesetCreator_newTimeBoundVariable_givenTimeEnabled_andValidPeriod(t *testing.T) {
 	id := uuid.New().String()
 	from := newTestTime("2024-01-01T00:00:00Z")
 	to := newTestTime("2024-01-31T00:00:00Z")
 
-	creator := NewRuleSetCreator()
+	creator := NewRulesetCreator()
 	err := creator.EnableTime(from, to)
 	assert.NoError(t, err)
 
@@ -33,26 +33,26 @@ func Test_RuleSetCreator_newTimeBoundVariable_givenTimeEnabled_andValidPeriod(t 
 	assert.Equal(t, to, variable.period.To())
 }
 
-func Test_RuleSetCreator_newTimeBoundVariable_givenTimeNotEnabled_shouldReturnError(
+func Test_RulesetCreator_newTimeBoundVariable_givenTimeNotEnabled_shouldReturnError(
 	t *testing.T,
 ) {
 	id := uuid.New().String()
 	from := newTestTime("2024-01-01T00:00:00Z")
 	to := newTestTime("2024-01-31T00:00:00Z")
 
-	creator := NewRuleSetCreator()
+	creator := NewRulesetCreator()
 	_, err := creator.newTimeBoundVariable(id, from, to)
 	assert.Error(t, err)
 }
 
-func Test_RuleSetCreator_newTimeBoundVariable_givenTimeEnabled_andInvalidPeriod_shouldReturnError(
+func Test_RulesetCreator_newTimeBoundVariable_givenTimeEnabled_andInvalidPeriod_shouldReturnError(
 	t *testing.T,
 ) {
 	id := uuid.New().String()
 	from := newTestTime("2024-01-31T00:00:00Z")
 	to := newTestTime("2024-01-01T00:00:00Z")
 
-	creator := NewRuleSetCreator()
+	creator := NewRulesetCreator()
 	err := creator.EnableTime(
 		newTestTime("2024-01-01T00:00:00Z"),
 		newTestTime("2024-02-01T00:00:00Z"),
@@ -64,14 +64,14 @@ func Test_RuleSetCreator_newTimeBoundVariable_givenTimeEnabled_andInvalidPeriod_
 }
 
 // nolint:lll
-func Test_RuleSetCreator_newTimeBoundVariable_givenTimeEnabled_andAssumedPeriodOutsideOfEnabledPeriod_shouldReturnError(
+func Test_RulesetCreator_newTimeBoundVariable_givenTimeEnabled_andAssumedPeriodOutsideOfEnabledPeriod_shouldReturnError(
 	t *testing.T,
 ) {
 	id := uuid.New().String()
 	from := newTestTime("2024-01-01T00:00:00Z")
 	to := newTestTime("2024-01-31T00:00:00Z")
 
-	creator := NewRuleSetCreator()
+	creator := NewRulesetCreator()
 	err := creator.EnableTime(
 		from.Add(1*24*time.Hour),
 		to.Add(-1*24*time.Hour),
@@ -95,7 +95,7 @@ func Test_Create_givenDifferentModelingOrder_shouldReturnSamePolyhedron(
 		},
 	)
 
-	creatorOne := NewRuleSetCreator()
+	creatorOne := NewRulesetCreator()
 	_ = creatorOne.AddPrimitives(primitives...)
 
 	id1One, _ := creatorOne.SetImply(primitives[0], primitives[1])
@@ -116,7 +116,7 @@ func Test_Create_givenDifferentModelingOrder_shouldReturnSamePolyhedron(
 
 	// Create a second creator with the same primitives
 	// and rules but in a different order.
-	creatorTwo := NewRuleSetCreator()
+	creatorTwo := NewRulesetCreator()
 	_ = creatorTwo.AddPrimitives(shuffledPrimitives...)
 	id1Two, _ := creatorTwo.SetAnd(primitives[4], primitives[5])
 	id2Two, _ := creatorTwo.SetImply(primitives[0], primitives[1])
@@ -139,8 +139,8 @@ func Test_Create_givenDifferentModelingOrder_shouldReturnSamePolyhedron(
 	assert.Equalf(t, rulesetOne.polyhedron.B(), rulesetTwo.polyhedron.B(), "B vectors are not equal")
 }
 
-func Test_RulSetCreator_AssumeInPeriod_givenSamePeriod_shouldUseAssume(t *testing.T) {
-	creator := NewRuleSetCreator()
+func Test_RulesetCreator_AssumeInPeriod_givenSamePeriod_shouldUseAssume(t *testing.T) {
+	creator := NewRulesetCreator()
 	from, to := newTestTime("2024-01-01T00:00:00Z"), newTestTime("2024-01-31T23:59:59Z")
 	err := creator.EnableTime(
 		from,
@@ -157,8 +157,8 @@ func Test_RulSetCreator_AssumeInPeriod_givenSamePeriod_shouldUseAssume(t *testin
 }
 
 // nolint:lll
-func Test_RulSetCreator_AssumeInPeriod_givenDifferentPeriod_shouldAddTimeBoundVariable(t *testing.T) {
-	creator := NewRuleSetCreator()
+func Test_RulesetCreator_AssumeInPeriod_givenDifferentPeriod_shouldAddTimeBoundVariable(t *testing.T) {
+	creator := NewRulesetCreator()
 	from, to := newTestTime("2024-01-01T00:00:00Z"), newTestTime("2024-01-31T23:59:59Z")
 	err := creator.EnableTime(
 		from,

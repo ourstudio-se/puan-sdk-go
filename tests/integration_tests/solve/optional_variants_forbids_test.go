@@ -83,7 +83,7 @@ func Test_optionalVariantsWithForbids_shouldReturnNOTPreferred(t *testing.T) {
 }
 
 func optionalVariantsWithForbids() puan.Ruleset {
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	_ = creator.AddPrimitives("itemA", "itemB", "itemC", "itemD", "packageX")
 

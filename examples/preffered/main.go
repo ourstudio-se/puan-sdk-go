@@ -10,7 +10,7 @@ import (
 //nolint:gocyclo
 func main() {
 	// Initialize the ruleset creator
-	creator := puan.NewRuleSetCreator()
+	creator := puan.NewRulesetCreator()
 
 	// Adds x, y, z as boolean primitive variables
 	_ = creator.AddPrimitives([]string{"x", "y", "z"}...)
