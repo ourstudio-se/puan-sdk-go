@@ -62,11 +62,6 @@ func (c *RulesetCreator) Prefer(ids ...string) error {
 	dedupedIDs := utils.Dedupe(ids)
 	unpreferredIDs := utils.Without(dedupedIDs, c.preferredVariables)
 
-	err := c.model.ValidateVariables(unpreferredIDs...)
-	if err != nil {
-		return err
-	}
-
 	negatedIDs, err := c.negatePreferreds(unpreferredIDs)
 	if err != nil {
 		return err
