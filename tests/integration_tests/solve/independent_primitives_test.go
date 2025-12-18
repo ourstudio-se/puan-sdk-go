@@ -112,38 +112,3 @@ func rulesetWithIndependentPrimitives() puan.Ruleset {
 
 	return ruleset
 }
-
-func Test_tmp(t *testing.T) {
-	ruleset := tmp()
-
-	selections := puan.Selections{
-		puan.NewSelectionBuilder("itemY").Build(),
-	}
-
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
-	solution := envelope.Solution()
-	assert.Equal(
-		t,
-		puan.Solution{
-			"itemX": 0,
-			"itemY": 1,
-		},
-		solution,
-	)
-}
-
-func tmp() puan.Ruleset {
-	creator := puan.NewRulesetCreator()
-	_ = creator.AddPrimitives("itemX", "itemY")
-	exactlyOneItem, _ := creator.SetXor("itemX", "itemY")
-
-	_ = creator.Assume(
-		exactlyOneItem,
-	)
-
-	_ = creator.Prefer("itemX")
-
-	ruleset, _ := creator.Create()
-
-	return ruleset
-}
