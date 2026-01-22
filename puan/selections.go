@@ -34,7 +34,7 @@ func (s Selections) ids() []string {
 	return ids
 }
 
-func (s Selection) isComposite() bool {
+func (s Selection) IsComposite() bool {
 	return len(s.subSelectionIDs) > 0
 }
 
@@ -107,7 +107,7 @@ func (s Selection) makesRedundant(other Selection) bool {
 		return true
 	}
 
-	prioritisedIsNotComposite := !s.isComposite()
+	prioritisedIsNotComposite := !s.IsComposite()
 
 	return prioritisedIsNotComposite
 }
@@ -130,7 +130,7 @@ func (s Selection) modifySelection() Selections {
 		return Selections{removeSelection}
 	}
 
-	if s.isComposite() {
+	if s.IsComposite() {
 		primaryPrimitiveSelection := NewSelectionBuilder(s.id).
 			WithAction(s.action).
 			Build()

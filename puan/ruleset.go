@@ -276,7 +276,7 @@ func (r *Ruleset) newWeighSelection(selection Selection) (weights.Selection, err
 }
 
 func (r *Ruleset) obtainQuerySelectionID(selection Selection) (string, error) {
-	if selection.isComposite() {
+	if selection.IsComposite() {
 		return r.setCompositeSelectionConstraint(selection.ids())
 	}
 
