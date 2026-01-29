@@ -374,74 +374,79 @@ func Test_validateVariables_givenUniquePeriod_shouldReturnError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func Test_RuleSet_isValidTime_givenNilTimestamp_shouldReturnTrue(t *testing.T) {
-	ruleset := Ruleset{}
-
-	got := ruleset.isValidTime(nil)
-
-	assert.True(t, got)
-}
-
-func Test_RuleSet_isValidTime_givenNoTimeboundVariablesInRuleset_shouldReturnTrue(t *testing.T) {
-	ruleset := Ruleset{}
+func Test_RuleSet_isValidTime(t *testing.T) {
 	timestamp := fake.New[time.Time]()
+	before := timestamp.Add(-1 * time.Hour)
+	after := timestamp.Add(1 * time.Hour)
 
-	got := ruleset.isValidTime(&timestamp)
-
-	assert.True(t, got)
-}
-
-func Test_RuleSet_isValidTime_givenTimeboundVariablesEndingAfterTimestamp_shouldReturnTrue(t *testing.T) {
-	timestamp := fake.New[time.Time]()
-	afterTimestamp := timestamp.Add(1 * time.Hour)
-	timeboundVariables := TimeBoundVariable{
-		period: Period{
-			to: afterTimestamp,
-		},
-	}
-	ruleset := Ruleset{
-		periodVariables: TimeBoundVariables{
-			timeboundVariables,
-		},
+	type testCase struct {
+		name      string
+		ruleset   Ruleset
+		timestamp *time.Time
+		want      bool
 	}
 
-	got := ruleset.isValidTime(&timestamp)
-
-	assert.True(t, got)
-}
-
-func Test_RuleSet_isValidTime_givenTimeboundVariablesEndingAtTimestamp_shouldReturnTrue(t *testing.T) {
-	timestamp := fake.New[time.Time]()
-	timeboundVariables := TimeBoundVariable{
-		period: Period{
-			to: timestamp,
+	cases := []testCase{
+		{
+			name:      "given nil timestamp, should return true",
+			ruleset:   Ruleset{},
+			timestamp: nil,
+			want:      true,
+		},
+		{
+			name:      "given no timebound variables in ruleset, should return true",
+			ruleset:   Ruleset{},
+			timestamp: &timestamp,
+			want:      true,
+		},
+		{
+			name: "given timebound variables ending after timestamp, should return true",
+			ruleset: Ruleset{
+				periodVariables: TimeBoundVariables{
+					{
+						period: Period{
+							to: after,
+						},
+					},
+				},
+			},
+			timestamp: &timestamp,
+			want:      true,
+		},
+		{
+			name: "given timebound variables ending at timestamp, should return true",
+			ruleset: Ruleset{
+				periodVariables: TimeBoundVariables{
+					{
+						period: Period{
+							to: timestamp,
+						},
+					},
+				},
+			},
+			timestamp: &timestamp,
+			want:      true,
+		},
+		{
+			name: "given only timebound variables before timestamp, should return false",
+			ruleset: Ruleset{
+				periodVariables: TimeBoundVariables{
+					{
+						period: Period{
+							to: before,
+						},
+					},
+				},
+			},
+			timestamp: &timestamp,
+			want:      false,
 		},
 	}
-	ruleset := Ruleset{
-		periodVariables: TimeBoundVariables{
-			timeboundVariables,
-		},
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.ruleset.isValidTime(tt.timestamp)
+			assert.Equal(t, tt.want, got)
+		})
 	}
-
-	got := ruleset.isValidTime(&timestamp)
-
-	assert.True(t, got)
-}
-func Test_RuleSet_isValidTime_givenOnlyTimeboundVariablesBeforeTimestamp_shouldReturnFalse(t *testing.T) {
-	timestamp := fake.New[time.Time]()
-	beforeTimestamp := timestamp.Add(-1 * time.Hour)
-	timeboundVariables := TimeBoundVariable{
-		period: Period{
-			to: beforeTimestamp,
-		},
-	}
-	ruleset := Ruleset{
-		periodVariables: TimeBoundVariables{
-			timeboundVariables,
-		},
-	}
-
-	got := ruleset.isValidTime(&timestamp)
-
-	assert.False(t, got)
 }
