@@ -368,7 +368,10 @@ func Test_includedPackageInEarlierPeriod_withPreferred_shouldChooseEarlierPeriod
 	)
 }
 
-func Test_timeEnabled_andNoVariablesAssumedInPeriod_andNoFromSpecified_shouldGetRulesetPeriod(
+// Time is enabled, but no variables are assumed in a period.
+// `from` is not specified. The solution should contain the ruleset's
+// period as default.
+func Test_givenTimeEnabledWithoutTimeboundConstraints_andNoFromSpecified_shouldGetRulesetPeriod(
 	t *testing.T,
 ) {
 	creator := puan.NewRulesetCreator()
@@ -397,7 +400,10 @@ func Test_timeEnabled_andNoVariablesAssumedInPeriod_andNoFromSpecified_shouldGet
 	)
 }
 
-func Test_timeEnabled_andNoVariablesAssumedInPeriod_andEarlierFromSpecified_shouldGetRulesetPeriod(
+// Time is enabled, but no variables are assumed in a period.
+// `from` is before the ruleset's period. The solution should
+// "jump forward" to the ruleset's period.
+func Test_givenTimeEnabledWithoutTimeboundConstraints_andEarlyFromSpecified_shouldGetRulesetPeriod(
 	t *testing.T,
 ) {
 	creator := puan.NewRulesetCreator()
@@ -427,7 +433,10 @@ func Test_timeEnabled_andNoVariablesAssumedInPeriod_andEarlierFromSpecified_shou
 	)
 }
 
-func Test_timeEnabled_andNoVariablesAssumedInPeriod_andAfterFromSpecified_shouldGetError(
+// Time is enabled, but no variables are assumed in a period.
+// `from` is after the ruleset's period. The solution should
+// return an error, since this is not allowed.
+func Test_givenTimeEnabledWithoutTimeboundConstraints_andLateFromSpecified_shouldReturnError(
 	t *testing.T,
 ) {
 	creator := puan.NewRulesetCreator()
