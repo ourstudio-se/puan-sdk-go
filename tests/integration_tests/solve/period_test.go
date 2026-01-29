@@ -367,3 +367,82 @@ func Test_includedPackageInEarlierPeriod_withPreferred_shouldChooseEarlierPeriod
 		solution,
 	)
 }
+
+func Test_timeEnabled_andNoVariablesAssumedInPeriod_andNoFromSpecified_shouldGetRulesetPeriod(
+	t *testing.T,
+) {
+	creator := puan.NewRulesetCreator()
+
+	startTime := time.Now()
+	endTime := startTime.Add(1 * time.Hour)
+	_ = creator.EnableTime(startTime, endTime)
+
+	_ = creator.AddPrimitives("itemX", "itemY")
+	xOrY, _ := creator.SetOr("itemX", "itemY")
+	_ = creator.Assume(xOrY)
+
+	ruleset, _ := creator.Create()
+
+	envelope, _ := solutionCreator.Create(nil, ruleset, nil)
+	solution := envelope.Solution()
+
+	assert.Equal(
+		t,
+		puan.Solution{
+			"itemX":    1,
+			"itemY":    0,
+			"period_0": 1,
+		},
+		solution,
+	)
+}
+
+func Test_timeEnabled_andNoVariablesAssumedInPeriod_andEarlierFromSpecified_shouldGetRulesetPeriod(
+	t *testing.T,
+) {
+	creator := puan.NewRulesetCreator()
+
+	startTime := time.Now()
+	endTime := startTime.Add(1 * time.Hour)
+	_ = creator.EnableTime(startTime, endTime)
+
+	_ = creator.AddPrimitives("itemX", "itemY")
+	xOrY, _ := creator.SetOr("itemX", "itemY")
+	_ = creator.Assume(xOrY)
+
+	ruleset, _ := creator.Create()
+
+	beforeStart := startTime.Add(-1 * time.Hour)
+	envelope, _ := solutionCreator.Create(nil, ruleset, &beforeStart)
+	solution := envelope.Solution()
+
+	assert.Equal(
+		t,
+		puan.Solution{
+			"itemX":    1,
+			"itemY":    0,
+			"period_0": 1,
+		},
+		solution,
+	)
+}
+
+func Test_timeEnabled_andNoVariablesAssumedInPeriod_andAfterFromSpecified_shouldGetError(
+	t *testing.T,
+) {
+	creator := puan.NewRulesetCreator()
+
+	startTime := time.Now()
+	endTime := startTime.Add(1 * time.Hour)
+	_ = creator.EnableTime(startTime, endTime)
+
+	_ = creator.AddPrimitives("itemX", "itemY")
+	xOrY, _ := creator.SetOr("itemX", "itemY")
+	_ = creator.Assume(xOrY)
+
+	ruleset, _ := creator.Create()
+
+	afterEnd := endTime.Add(1 * time.Hour)
+	_, err := solutionCreator.Create(nil, ruleset, &afterEnd)
+	assert.Error(t, err)
+}

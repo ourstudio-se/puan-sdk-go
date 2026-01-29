@@ -221,8 +221,8 @@ func (c *RulesetCreator) findDependantVariables() []string {
 }
 
 func (c *RulesetCreator) newPeriodVariables() (TimeBoundVariables, error) {
-	if len(c.timeBoundAssumedVariables) == 0 {
-		return nil, nil
+	if c.timeDisabled() {
+		return TimeBoundVariables{}, nil
 	}
 
 	nonOverlappingPeriods := calculateCompletePeriods(
@@ -245,6 +245,10 @@ func (c *RulesetCreator) newPeriodVariables() (TimeBoundVariables, error) {
 	return periodVariables, nil
 }
 
+func (c *RulesetCreator) timeDisabled() bool {
+	return c.period == nil
+}
+
 func (c *RulesetCreator) periods() []Period {
 	periods := []Period{}
 	periods = append(periods, *c.period)
@@ -253,7 +257,7 @@ func (c *RulesetCreator) periods() []Period {
 }
 
 func (c *RulesetCreator) createPeriodConstraints(periodVariables TimeBoundVariables) error {
-	if len(c.timeBoundAssumedVariables) == 0 {
+	if c.timeDisabled() {
 		return nil
 	}
 
@@ -273,7 +277,7 @@ func (c *RulesetCreator) createPeriodConstraints(periodVariables TimeBoundVariab
 	}
 
 	// Choose exactly one period
-	exactlyOnePeriod, err := c.SetXor(periodVariables.ids()...)
+	exactlyOnePeriod, err := c.setSingleOrXOR(periodVariables.ids()...)
 	if err != nil {
 		return err
 	}
@@ -312,6 +316,21 @@ func (c *RulesetCreator) setSingleOrOR(ids ...string) (string, error) {
 	}
 
 	return c.SetOr(ids...)
+}
+
+func (c *RulesetCreator) setSingleOrXOR(ids ...string) (string, error) {
+	if len(ids) == 0 {
+		return "", errors.Errorf(
+			"%w: at least one id is required",
+			puanerror.InvalidArgument,
+		)
+	}
+
+	if len(ids) == 1 {
+		return ids[0], nil
+	}
+
+	return c.SetXor(ids...)
 }
 
 func (c *RulesetCreator) setSingleOrAnd(ids ...string) (string, error) {
