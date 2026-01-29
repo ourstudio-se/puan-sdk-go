@@ -9,6 +9,7 @@ import (
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/puan"
+	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
 var VALID_STATUSES = map[string]any{
@@ -31,6 +32,10 @@ func (solution SolutionResponse) validate() error {
 
 	status := strings.ToLower(solution.Solutions[0].Status)
 	if _, ok := VALID_STATUSES[status]; !ok {
+		if status == "mipfailed" {
+			return puanerror.NoSolutionFound
+		}
+
 		return errors.Errorf(
 			"got invalid status: %s, expected one of %v",
 			status,

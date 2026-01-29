@@ -393,3 +393,22 @@ func (r *Ruleset) assume(id string) error {
 	constraint := pldag.NewAssumedConstraint(id)
 	return r.setAuxiliaryConstraint(constraint)
 }
+
+func (r *Ruleset) isValidTime(timestamp *time.Time) bool {
+	if timestamp == nil {
+		return true
+	}
+
+	if len(r.periodVariables) == 0 {
+		return true
+	}
+
+	for _, periodVariable := range r.periodVariables {
+		isBeforeEnd := !timestamp.After(periodVariable.period.To())
+		if isBeforeEnd {
+			return true
+		}
+	}
+
+	return false
+}

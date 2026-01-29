@@ -3,6 +3,7 @@ package puan
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -371,4 +372,76 @@ func Test_validateVariables_givenUniquePeriod_shouldReturnError(t *testing.T) {
 
 	err := validateVariables(nil, dependent, independent, nil, period)
 	assert.Error(t, err)
+}
+
+func Test_RuleSet_isValidTime_givenNilTimestamp_shouldReturnTrue(t *testing.T) {
+	ruleset := Ruleset{}
+
+	got := ruleset.isValidTime(nil)
+
+	assert.True(t, got)
+}
+
+func Test_RuleSet_isValidTime_givenNoTimeboundVariablesInRuleset_shouldReturnTrue(t *testing.T) {
+	ruleset := Ruleset{}
+	timestamp := fake.New[time.Time]()
+
+	got := ruleset.isValidTime(&timestamp)
+
+	assert.True(t, got)
+}
+
+func Test_RuleSet_isValidTime_givenTimeboundVariablesEndingAfterTimestamp_shouldReturnTrue(t *testing.T) {
+	timestamp := fake.New[time.Time]()
+	afterTimestamp := timestamp.Add(1 * time.Hour)
+	timeboundVariables := TimeBoundVariable{
+		period: Period{
+			to: afterTimestamp,
+		},
+	}
+	ruleset := Ruleset{
+		periodVariables: TimeBoundVariables{
+			timeboundVariables,
+		},
+	}
+
+	got := ruleset.isValidTime(&timestamp)
+
+	assert.True(t, got)
+}
+
+func Test_RuleSet_isValidTime_givenTimeboundVariablesEndingAtTimestamp_shouldReturnTrue(t *testing.T) {
+	timestamp := fake.New[time.Time]()
+	timeboundVariables := TimeBoundVariable{
+		period: Period{
+			to: timestamp,
+		},
+	}
+	ruleset := Ruleset{
+		periodVariables: TimeBoundVariables{
+			timeboundVariables,
+		},
+	}
+
+	got := ruleset.isValidTime(&timestamp)
+
+	assert.True(t, got)
+}
+func Test_RuleSet_isValidTime_givenOnlyTimeboundVariablesBeforeTimestamp_shouldReturnFalse(t *testing.T) {
+	timestamp := fake.New[time.Time]()
+	beforeTimestamp := timestamp.Add(-1 * time.Hour)
+	timeboundVariables := TimeBoundVariable{
+		period: Period{
+			to: beforeTimestamp,
+		},
+	}
+	ruleset := Ruleset{
+		periodVariables: TimeBoundVariables{
+			timeboundVariables,
+		},
+	}
+
+	got := ruleset.isValidTime(&timestamp)
+
+	assert.False(t, got)
 }
