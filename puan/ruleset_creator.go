@@ -222,7 +222,7 @@ func (c *RulesetCreator) findDependantVariables() []string {
 
 func (c *RulesetCreator) newPeriodVariables() (TimeBoundVariables, error) {
 	if c.timeDisabled() {
-		return TimeBoundVariables{}, nil
+		return nil, nil
 	}
 
 	nonOverlappingPeriods := calculateCompletePeriods(

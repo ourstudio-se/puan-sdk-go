@@ -374,7 +374,7 @@ func Test_validateVariables_givenUniquePeriod_shouldReturnError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func Test_RuleSet_isValidTime(t *testing.T) {
+func Test_RuleSet_isValidFromTime(t *testing.T) {
 	timestamp := fake.New[time.Time]()
 	before := timestamp.Add(-1 * time.Hour)
 	after := timestamp.Add(1 * time.Hour)
@@ -445,7 +445,7 @@ func Test_RuleSet_isValidTime(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.ruleset.isValidTime(tt.timestamp)
+			got := tt.ruleset.isValidFromTime(tt.timestamp)
 			assert.Equal(t, tt.want, got)
 		})
 	}

@@ -192,10 +192,10 @@ func updateSolveError(
 ) error {
 	noSolutionFound := errors.Is(err, puanerror.NoSolutionFound)
 	if noSolutionFound {
-		invalidTime := !ruleset.isValidTime(from)
+		invalidTime := !ruleset.isValidFromTime(from)
 		if invalidTime {
 			return errors.Errorf(
-				"%wFrom '%s' is not valid for the ruleset",
+				"%w: from '%s' is not valid for the ruleset",
 				puanerror.InvalidArgument,
 				from,
 			)

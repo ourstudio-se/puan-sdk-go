@@ -394,21 +394,25 @@ func (r *Ruleset) assume(id string) error {
 	return r.setAuxiliaryConstraint(constraint)
 }
 
-func (r *Ruleset) isValidTime(timestamp *time.Time) bool {
-	if timestamp == nil {
+func (r *Ruleset) isValidFromTime(from *time.Time) bool {
+	if r.timeDisabled() {
 		return true
 	}
 
-	if len(r.periodVariables) == 0 {
+	if from == nil {
 		return true
 	}
 
 	for _, periodVariable := range r.periodVariables {
-		isBeforeEnd := !timestamp.After(periodVariable.period.To())
-		if isBeforeEnd {
+		isValid := !from.After(periodVariable.period.To())
+		if isValid {
 			return true
 		}
 	}
 
 	return false
+}
+
+func (r *Ruleset) timeDisabled() bool {
+	return len(r.periodVariables) == 0
 }
