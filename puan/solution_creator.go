@@ -190,8 +190,8 @@ func updateSolveError(
 	ruleset Ruleset,
 	from *time.Time,
 ) error {
-	noSolutionFound := errors.Is(err, puanerror.NoSolutionFound)
-	if noSolutionFound {
+	solverFailed := errors.Is(err, puanerror.SolverFailed)
+	if solverFailed {
 		invalidTime := !ruleset.isValidFromTime(from)
 		if invalidTime {
 			return errors.Errorf(
