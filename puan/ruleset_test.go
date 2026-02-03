@@ -3,6 +3,7 @@ package puan
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -371,4 +372,81 @@ func Test_validateVariables_givenUniquePeriod_shouldReturnError(t *testing.T) {
 
 	err := validateVariables(nil, dependent, independent, nil, period)
 	assert.Error(t, err)
+}
+
+func Test_RuleSet_isValidFromTime(t *testing.T) {
+	timestamp := fake.New[time.Time]()
+	before := timestamp.Add(-1 * time.Hour)
+	after := timestamp.Add(1 * time.Hour)
+
+	type testCase struct {
+		name      string
+		ruleset   Ruleset
+		timestamp *time.Time
+		want      bool
+	}
+
+	cases := []testCase{
+		{
+			name:      "given nil timestamp, should return true",
+			ruleset:   Ruleset{},
+			timestamp: nil,
+			want:      true,
+		},
+		{
+			name:      "given no timebound variables in ruleset, should return true",
+			ruleset:   Ruleset{},
+			timestamp: &timestamp,
+			want:      true,
+		},
+		{
+			name: "given timebound variables ending after timestamp, should return true",
+			ruleset: Ruleset{
+				periodVariables: TimeBoundVariables{
+					{
+						period: Period{
+							to: after,
+						},
+					},
+				},
+			},
+			timestamp: &timestamp,
+			want:      true,
+		},
+		{
+			name: "given timebound variables ending at timestamp, should return true",
+			ruleset: Ruleset{
+				periodVariables: TimeBoundVariables{
+					{
+						period: Period{
+							to: timestamp,
+						},
+					},
+				},
+			},
+			timestamp: &timestamp,
+			want:      true,
+		},
+		{
+			name: "given only timebound variables before timestamp, should return false",
+			ruleset: Ruleset{
+				periodVariables: TimeBoundVariables{
+					{
+						period: Period{
+							to: before,
+						},
+					},
+				},
+			},
+			timestamp: &timestamp,
+			want:      false,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.ruleset.isValidFromTime(tt.timestamp)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }

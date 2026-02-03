@@ -367,3 +367,91 @@ func Test_includedPackageInEarlierPeriod_withPreferred_shouldChooseEarlierPeriod
 		solution,
 	)
 }
+
+// Time is enabled, but no variables are assumed in a period.
+// `from` is not specified. The solution should contain the ruleset's
+// period as default.
+func Test_givenTimeEnabledWithoutTimeboundConstraints_andNoFromSpecified_shouldGetRulesetPeriod(
+	t *testing.T,
+) {
+	creator := puan.NewRulesetCreator()
+
+	startTime := time.Now()
+	endTime := startTime.Add(1 * time.Hour)
+	_ = creator.EnableTime(startTime, endTime)
+
+	_ = creator.AddPrimitives("itemX", "itemY")
+	xOrY, _ := creator.SetOr("itemX", "itemY")
+	_ = creator.Assume(xOrY)
+
+	ruleset, _ := creator.Create()
+
+	envelope, _ := solutionCreator.Create(nil, ruleset, nil)
+	solution := envelope.Solution()
+
+	assert.Equal(
+		t,
+		puan.Solution{
+			"itemX":    1,
+			"itemY":    0,
+			"period_0": 1,
+		},
+		solution,
+	)
+}
+
+// Time is enabled, but no variables are assumed in a period.
+// `from` is before the ruleset's period. The solution should
+// "jump forward" to the ruleset's period.
+func Test_givenTimeEnabledWithoutTimeboundConstraints_andEarlyFromSpecified_shouldGetRulesetPeriod(
+	t *testing.T,
+) {
+	creator := puan.NewRulesetCreator()
+
+	startTime := time.Now()
+	endTime := startTime.Add(1 * time.Hour)
+	_ = creator.EnableTime(startTime, endTime)
+
+	_ = creator.AddPrimitives("itemX", "itemY")
+	xOrY, _ := creator.SetOr("itemX", "itemY")
+	_ = creator.Assume(xOrY)
+
+	ruleset, _ := creator.Create()
+
+	beforeStart := startTime.Add(-1 * time.Hour)
+	envelope, _ := solutionCreator.Create(nil, ruleset, &beforeStart)
+	solution := envelope.Solution()
+
+	assert.Equal(
+		t,
+		puan.Solution{
+			"itemX":    1,
+			"itemY":    0,
+			"period_0": 1,
+		},
+		solution,
+	)
+}
+
+// Time is enabled, but no variables are assumed in a period.
+// `from` is after the ruleset's period. The solution should
+// return an error, since this is not allowed.
+func Test_givenTimeEnabledWithoutTimeboundConstraints_andLateFromSpecified_shouldReturnError(
+	t *testing.T,
+) {
+	creator := puan.NewRulesetCreator()
+
+	startTime := time.Now()
+	endTime := startTime.Add(1 * time.Hour)
+	_ = creator.EnableTime(startTime, endTime)
+
+	_ = creator.AddPrimitives("itemX", "itemY")
+	xOrY, _ := creator.SetOr("itemX", "itemY")
+	_ = creator.Assume(xOrY)
+
+	ruleset, _ := creator.Create()
+
+	afterEnd := endTime.Add(1 * time.Hour)
+	_, err := solutionCreator.Create(nil, ruleset, &afterEnd)
+	assert.Error(t, err)
+}

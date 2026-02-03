@@ -9,6 +9,7 @@ import (
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/puan"
+	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
 var VALID_STATUSES = map[string]any{
@@ -24,22 +25,40 @@ func (solution SolutionResponse) getSolutionEntity() (puan.Solution, error) {
 	return solution.asEntity(), nil
 }
 
-func (solution SolutionResponse) validate() error {
-	if len(solution.Solutions) != 1 {
-		return errors.Errorf("got %d solutions, expected 1", len(solution.Solutions))
-	}
-
-	status := strings.ToLower(solution.Solutions[0].Status)
-	if _, ok := VALID_STATUSES[status]; !ok {
+func (response SolutionResponse) validate() error {
+	if len(response.Solutions) != 1 {
 		return errors.Errorf(
-			"got invalid status: %s, expected one of %v",
+			"got %d solutions, expected 1",
+			len(response.Solutions),
+		)
+	}
+	solution := response.Solutions[0]
+
+	status := strings.ToLower(solution.Status)
+	if _, ok := VALID_STATUSES[status]; !ok {
+		var msg string
+		if solution.Error != nil {
+			msg = *solution.Error
+		}
+
+		if status == "mipfailed" {
+			return errors.Errorf(
+				"%w: message: %s",
+				puanerror.SolverFailed,
+				msg,
+			)
+		}
+
+		return errors.Errorf(
+			"got invalid status: %s, expected one of %v. Message: %s",
 			status,
 			VALID_STATUSES,
+			msg,
 		)
 	}
 
-	if solution.Solutions[0].Error != nil {
-		return errors.Errorf("got error: %s", *solution.Solutions[0].Error)
+	if response.Solutions[0].Error != nil {
+		return errors.Errorf("got error: %s", *solution.Error)
 	}
 
 	return nil

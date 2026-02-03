@@ -74,6 +74,7 @@ func (c *SolutionCreator) findDependentSolution(
 
 	solution, err := c.Solve(query)
 	if err != nil {
+		err = updateSolveError(err, ruleset, from)
 		return SolutionEnvelope{}, err
 	}
 
@@ -182,4 +183,24 @@ func newQuery(selections Selections, ruleset Ruleset, from *time.Time) (*Query, 
 	)
 
 	return query, nil
+}
+
+func updateSolveError(
+	err error,
+	ruleset Ruleset,
+	from *time.Time,
+) error {
+	solverFailed := errors.Is(err, puanerror.SolverFailed)
+	if solverFailed {
+		invalidTime := !ruleset.isValidFromTime(from)
+		if invalidTime {
+			return errors.Errorf(
+				"%w: from '%s' is not valid for the ruleset",
+				puanerror.InvalidArgument,
+				from,
+			)
+		}
+	}
+
+	return err
 }
