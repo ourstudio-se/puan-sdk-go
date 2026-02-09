@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
+	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
 func Test_RulesetCreator_newTimeBoundVariable_givenTimeEnabled_andValidPeriod(t *testing.T) {
@@ -173,4 +174,52 @@ func Test_RulesetCreator_AssumeInPeriod_givenDifferentPeriod_shouldAddTimeBoundV
 
 	assert.NotContains(t, creator.assumedVariables, "itemX")
 	assert.Contains(t, creator.timeBoundAssumedVariables.ids(), "itemX")
+}
+
+func Test_RulesetCreator_setSingleOrOR_givenNoIDs_shouldReturnError(t *testing.T) {
+	creator := NewRulesetCreator()
+	_, err := creator.setSingleOrOR([]string{}...)
+
+	assert.ErrorIs(t, err, puanerror.InvalidArgument)
+}
+
+func Test_RulesetCreator_setSingleOrOR_givenDuplicatedIDs_shouldReturnID(t *testing.T) {
+	code := fake.New[string]()
+	creator := NewRulesetCreator()
+	got, err := creator.setSingleOrOR(code, code)
+
+	assert.NoError(t, err)
+	assert.Equal(t, code, got)
+}
+
+func Test_RulesetCreator_setSingleOrXOR_givenNoIDs_shouldReturnError(t *testing.T) {
+	creator := NewRulesetCreator()
+	_, err := creator.setSingleOrXOR([]string{}...)
+
+	assert.ErrorIs(t, err, puanerror.InvalidArgument)
+}
+
+func Test_RulesetCreator_setSingleOrXOR_givenDuplicatedIDs_shouldReturnID(t *testing.T) {
+	code := fake.New[string]()
+	creator := NewRulesetCreator()
+	got, err := creator.setSingleOrXOR(code, code)
+
+	assert.NoError(t, err)
+	assert.Equal(t, code, got)
+}
+
+func Test_RulesetCreator_setSingleOrAND_givenNoIDs_shouldReturnError(t *testing.T) {
+	creator := NewRulesetCreator()
+	_, err := creator.setSingleOrAnd([]string{}...)
+
+	assert.ErrorIs(t, err, puanerror.InvalidArgument)
+}
+
+func Test_RulesetCreator_setSingleOrAND_givenDuplicatedIDs_shouldReturnID(t *testing.T) {
+	code := fake.New[string]()
+	creator := NewRulesetCreator()
+	got, err := creator.setSingleOrAnd(code, code)
+
+	assert.NoError(t, err)
+	assert.Equal(t, code, got)
 }
