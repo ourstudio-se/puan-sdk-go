@@ -311,11 +311,12 @@ func (c *RulesetCreator) setSingleOrOR(ids ...string) (string, error) {
 		)
 	}
 
-	if len(ids) == 1 {
-		return ids[0], nil
+	deduped := utils.Dedupe(ids)
+	if len(deduped) == 1 {
+		return deduped[0], nil
 	}
 
-	return c.SetOr(ids...)
+	return c.SetOr(deduped...)
 }
 
 func (c *RulesetCreator) setSingleOrXOR(ids ...string) (string, error) {
@@ -326,11 +327,12 @@ func (c *RulesetCreator) setSingleOrXOR(ids ...string) (string, error) {
 		)
 	}
 
-	if len(ids) == 1 {
-		return ids[0], nil
+	deduped := utils.Dedupe(ids)
+	if len(deduped) == 1 {
+		return deduped[0], nil
 	}
 
-	return c.SetXor(ids...)
+	return c.SetXor(deduped...)
 }
 
 func (c *RulesetCreator) setSingleOrAnd(ids ...string) (string, error) {
@@ -341,11 +343,12 @@ func (c *RulesetCreator) setSingleOrAnd(ids ...string) (string, error) {
 		)
 	}
 
-	if len(ids) == 1 {
-		return ids[0], nil
+	deduped := utils.Dedupe(ids)
+	if len(deduped) == 1 {
+		return deduped[0], nil
 	}
 
-	return c.SetAnd(ids...)
+	return c.SetAnd(deduped...)
 }
 
 func (c *RulesetCreator) createAssumeConstraints() error {
