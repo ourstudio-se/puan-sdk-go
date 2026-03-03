@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 
-	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
 	"github.com/ourstudio-se/puan-sdk-go/puan"
+	"github.com/ourstudio-se/puan-sdk-go/solver"
 )
 
 //nolint:gocyclo
@@ -57,7 +58,8 @@ func main() {
 	}
 
 	// Create a solution creator with a solver client
-	solutionCreator := puan.NewSolutionCreator(glpk.NewDefaultClient("http://127.0.0.1:9000"))
+	solverClient := solver.NewClient("http://127.0.0.1:9000", "1234567890", &http.Client{})
+	solutionCreator := puan.NewSolutionCreator(solverClient)
 
 	// Create the solution
 	envelope, err := solutionCreator.Create(selections, ruleset, nil)
