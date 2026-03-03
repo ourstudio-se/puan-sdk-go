@@ -57,7 +57,7 @@ func main() {
 	}
 
 	// Create a solution creator with a solver client
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient("http://127.0.0.1:9000"))
+	solutionCreator := puan.NewSolutionCreator(glpk.NewDefaultClient("http://127.0.0.1:9000"))
 
 	// Create the solution
 	envelope, err := solutionCreator.Create(selections, ruleset, nil)

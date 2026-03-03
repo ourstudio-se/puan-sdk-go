@@ -11,15 +11,28 @@ import (
 )
 
 type Client struct {
-	BaseURL string
+	*http.Client
 
-	http.Client
+	baseURL string
+	apiKey  string
 }
 
-func NewClient(baseURL string) *Client {
+func NewDefaultClient(baseURL string) *Client {
 	return &Client{
-		BaseURL: baseURL,
-		Client:  http.Client{},
+		Client:  &http.Client{},
+		baseURL: baseURL,
+	}
+}
+
+func NewClient(
+	baseURL string,
+	apiKey string,
+	client *http.Client,
+) *Client {
+	return &Client{
+		Client:  client,
+		baseURL: baseURL,
+		apiKey:  apiKey,
 	}
 }
 
@@ -84,12 +97,13 @@ func (c *Client) newRequest(body SolveRequest) (*http.Request, error) {
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, c.BaseURL+"/solve", buffer)
+	req, err := http.NewRequest(http.MethodPost, c.baseURL+"/solve", buffer)
 	if err != nil {
 		return nil, errors.Wrap(err, 0)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-KEY", c.apiKey)
 
 	return req, nil
 }

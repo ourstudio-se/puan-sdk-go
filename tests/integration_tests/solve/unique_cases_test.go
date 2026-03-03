@@ -10,7 +10,7 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
-var solutionCreator = puan.NewSolutionCreator(glpk.NewClient("http://127.0.0.1:9000"))
+var solutionCreator = puan.NewSolutionCreator(glpk.NewDefaultClient("http://127.0.0.1:9000"))
 
 // Test_exactlyOnePackage_selectPreferredThenNotPreferred
 // Ref: test_select_exactly_one_constrainted_component_with_additional_requirements

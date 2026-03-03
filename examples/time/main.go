@@ -48,7 +48,7 @@ func main() {
 		panic(err)
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient("http://127.0.0.1:9000"))
+	solutionCreator := puan.NewSolutionCreator(glpk.NewDefaultClient("http://127.0.0.1:9000"))
 
 	inSecondPeriod := endOfFirstPeriod.Add(5 * time.Minute)
 	envelope, err := solutionCreator.Create(
