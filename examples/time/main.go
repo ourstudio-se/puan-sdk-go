@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
-	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
 	"github.com/ourstudio-se/puan-sdk-go/puan"
+	"github.com/ourstudio-se/puan-sdk-go/solver"
 )
 
 //nolint:gocyclo
@@ -48,7 +49,8 @@ func main() {
 		panic(err)
 	}
 
-	solutionCreator := puan.NewSolutionCreator(glpk.NewClient("http://127.0.0.1:9000"))
+	solverClient := solver.NewClient("http://127.0.0.1:9000", "1234567890", &http.Client{})
+	solutionCreator := puan.NewSolutionCreator(solverClient)
 
 	inSecondPeriod := endOfFirstPeriod.Add(5 * time.Minute)
 	envelope, err := solutionCreator.Create(
