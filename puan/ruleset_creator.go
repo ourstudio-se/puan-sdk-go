@@ -16,8 +16,9 @@ type RulesetCreator struct {
 	preferredVariables []string
 	assumedVariables   []string
 
-	period                    *Period
-	timeBoundAssumedVariables TimeBoundVariables
+	period                      *Period
+	timeBoundAssumedVariables   TimeBoundVariables
+	timeBoundPreferredVariables TimeBoundVariables
 }
 
 func NewRulesetCreator() *RulesetCreator {
@@ -84,6 +85,27 @@ func (c *RulesetCreator) negatePreferreds(ids []string) ([]string, error) {
 	}
 
 	return negatedIDs, nil
+}
+
+func (c *RulesetCreator) PreferInPeriod(
+	id string,
+	from, to time.Time,
+) error {
+	variable, err := c.newTimeBoundVariable(id, from, to)
+	if err != nil {
+		return err
+	}
+
+	// If the variable period is equal to the ruleset period,
+	// i.e., is preferred during the entire ruleset period,
+	// it can be preferred directly without time bounding.
+	if c.period.isEqual(variable.period) {
+		return c.Prefer(id)
+	}
+
+	c.timeBoundPreferredVariables = append(c.timeBoundPreferredVariables, variable)
+
+	return nil
 }
 
 func (c *RulesetCreator) Assume(ids ...string) error {
@@ -177,6 +199,11 @@ func (c *RulesetCreator) Create() (Ruleset, error) {
 		return Ruleset{}, err
 	}
 
+	err = c.createPreferredsInPeriods(periodVariables)
+	if err != nil {
+		return Ruleset{}, err
+	}
+
 	err = c.createAssumeConstraints()
 	if err != nil {
 		return Ruleset{}, err
@@ -253,6 +280,7 @@ func (c *RulesetCreator) periods() []Period {
 	periods := []Period{}
 	periods = append(periods, *c.period)
 	periods = append(periods, c.timeBoundAssumedVariables.periods()...)
+	periods = append(periods, c.timeBoundPreferredVariables.periods()...)
 	return periods
 }
 
@@ -284,6 +312,50 @@ func (c *RulesetCreator) createPeriodConstraints(periodVariables TimeBoundVariab
 	constraintIDs = append(constraintIDs, exactlyOnePeriod)
 
 	return c.Assume(constraintIDs...)
+}
+
+func (c *RulesetCreator) createPreferredsInPeriods(periodVariables TimeBoundVariables) error {
+	if c.timeDisabled() {
+		return nil
+	}
+
+	groupedByPeriods, err := groupByPeriods(periodVariables, c.timeBoundPreferredVariables)
+	if err != nil {
+		return err
+	}
+
+	for serializedPeriodIDs, preferredIDs := range groupedByPeriods {
+		periodIDs := serializedPeriodIDs.ids()
+		anyPeriodID, err := c.setSingleOrOR(periodIDs...)
+		if err != nil {
+			return err
+		}
+
+		err = c.createPreferredsInPeriod(anyPeriodID, preferredIDs...)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *RulesetCreator) createPreferredsInPeriod(periodID string, preferredIDs ...string) error {
+	for _, preferredID := range preferredIDs {
+		negatedID, err := c.SetNot(preferredID)
+		if err != nil {
+			return err
+		}
+
+		id, err := c.SetAnd(periodID, negatedID)
+		if err != nil {
+			return err
+		}
+
+		c.preferredVariables = append(c.preferredVariables, id)
+	}
+
+	return nil
 }
 
 func (c *RulesetCreator) setTimeBoundConstraint(
