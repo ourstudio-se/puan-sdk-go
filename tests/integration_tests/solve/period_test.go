@@ -40,10 +40,9 @@ func Test_itemIncludedInPeriod(t *testing.T) {
 	)
 }
 
-// Many items are included, but later none of them are. The solver should choose the later period,
-// since the cost-savings of not having the items out weights the punishment of choosing the
-// later period.
-func Test_manyItemsIncludedInPeriod_shouldChooseLaterPeriod(t *testing.T) {
+// Many items are included, but later none of them are.
+// The solver should choose the earliest period despite the many items.
+func Test_manyItemsIncludedInPeriod_shouldChooseEarliestPeriod(t *testing.T) {
 	creator := puan.NewRulesetCreator()
 
 	items := []string{
@@ -73,14 +72,14 @@ func Test_manyItemsIncludedInPeriod_shouldChooseLaterPeriod(t *testing.T) {
 	assert.Equal(
 		t,
 		puan.Solution{
-			"item1":    0,
-			"item2":    0,
-			"item3":    0,
-			"item4":    0,
-			"item5":    0,
-			"item6":    0,
-			"period_0": 0,
-			"period_1": 1,
+			"item1":    1,
+			"item2":    1,
+			"item3":    1,
+			"item4":    1,
+			"item5":    1,
+			"item6":    1,
+			"period_0": 1,
+			"period_1": 0,
 		},
 		solution,
 	)
