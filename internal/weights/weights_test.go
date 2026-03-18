@@ -280,9 +280,11 @@ func Test_absSum(t *testing.T) {
 		terms    []int
 		expected int
 	}{
-		{terms: []int{1, -2, 3}, expected: 6},
-		{terms: []int{-1, -2, -3}, expected: 6},
+		{terms: []int{}, expected: 0},
 		{terms: []int{0, 0, 0}, expected: 0},
+		{terms: []int{-1, -2, -3}, expected: 6},
+		{terms: []int{1, 2, 3}, expected: 6},
+		{terms: []int{-1, -2, -3}, expected: 6},
 	}
 
 	for _, theory := range theories {
@@ -308,8 +310,8 @@ func Test_calculatePeriodWeights(t *testing.T) {
 			name:      "given periodIDs and zero notSelectedSum and preferredSum",
 			periodIDs: []string{"a", "b"},
 			want: Weights{
-				"a": -1,
-				"b": -2,
+				"a": 0,
+				"b": -1,
 			},
 		},
 		{
@@ -317,8 +319,8 @@ func Test_calculatePeriodWeights(t *testing.T) {
 			periodIDs:      []string{"a", "b"},
 			notSelectedSum: 1,
 			want: Weights{
-				"a": -2,
-				"b": -4,
+				"a": 0,
+				"b": -2,
 			},
 		},
 		{
@@ -326,8 +328,8 @@ func Test_calculatePeriodWeights(t *testing.T) {
 			periodIDs:      []string{"a", "b"},
 			notSelectedSum: -1,
 			want: Weights{
-				"a": -2,
-				"b": -4,
+				"a": 0,
+				"b": -2,
 			},
 		},
 		{
@@ -336,8 +338,8 @@ func Test_calculatePeriodWeights(t *testing.T) {
 			notSelectedSum: -1,
 			preferredSum:   -2,
 			want: Weights{
-				"a": -4,
-				"b": -8,
+				"a": 0,
+				"b": -4,
 			},
 		},
 	}

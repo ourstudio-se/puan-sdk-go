@@ -8,10 +8,8 @@ import (
 
 const NOT_SELECTED_WEIGHT = -2
 
-// WEIGHT_SATURATION_LIMIT is set to 2^30.
-// Weights for periods and selected variables increase exponentially
-// with the number of periods and selections.
-const WEIGHT_SATURATION_LIMIT = 1073741824
+// WEIGHTS_SATURATION_LIMIT is set to 2^32.
+const WEIGHTS_SATURATION_LIMIT = 4294967296
 
 type Weights map[string]int
 
@@ -44,8 +42,9 @@ func (w Weights) absMaxWeight() int {
 	return maxWeight
 }
 
-func (w Weights) ContainsTooLargeWeight() bool {
-	tooLarge := w.absMaxWeight() > WEIGHT_SATURATION_LIMIT
+func (w Weights) WeightsToLarge() bool {
+	sum := w.sum()
+	tooLarge := abs(sum) > WEIGHTS_SATURATION_LIMIT
 	return tooLarge
 }
 
@@ -68,13 +67,13 @@ func Calculate(
 		notSelectedSum,
 		preferredSum,
 	)
-	absMaxPeriodWeight := periodWeights.absMaxWeight()
+	maxPeriodWeight := periodWeights.absMaxWeight()
 
 	selectedWeights := calculateSelectedWeights(
 		selections,
 		notSelectedSum,
 		preferredSum,
-		absMaxPeriodWeight,
+		maxPeriodWeight,
 	)
 
 	weights := notSelectedWeights.
@@ -114,15 +113,21 @@ func calculatePreferredWeights(
 
 func calculatePeriodWeights(
 	periodIDs []string,
-	notSelectedSum,
-	preferredSum int,
+	notSelectedSum int,
+	preferredWeightsSum int,
 ) Weights {
 	periodWeights := make(Weights)
 
-	threshold := -absSum(notSelectedSum, preferredSum)
+	threshold := -absSum(notSelectedSum, preferredWeightsSum)
 
 	periodWeightSum := threshold
-	for _, periodID := range periodIDs {
+	for i, periodID := range periodIDs {
+		if i == 0 {
+			periodWeights[periodID] = 0
+
+			continue
+		}
+
 		weight := periodWeightSum - 1
 		periodWeights[periodID] = weight
 		periodWeightSum += weight
@@ -135,11 +140,11 @@ func calculateSelectedWeights(
 	selections Selections,
 	notSelectedSum,
 	preferredWeightsSum int,
-	absMaxPeriodWeight int,
+	maxPeriodWeight int,
 ) Weights {
 	selectedWeights := make(Weights)
 
-	threshold := absSum(notSelectedSum, preferredWeightsSum, absMaxPeriodWeight)
+	threshold := absSum(notSelectedSum, preferredWeightsSum, maxPeriodWeight)
 
 	selectionWeightSum := threshold
 	for _, selection := range selections {

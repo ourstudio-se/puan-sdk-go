@@ -4,8 +4,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-faker/faker/v4/pkg/options"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
 	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
@@ -453,4 +455,122 @@ func Test_givenTimeEnabledWithoutTimeboundConstraints_andLateFromSpecified_shoul
 	afterEnd := endTime.Add(1 * time.Hour)
 	_, err := solutionCreator.Create(nil, ruleset, &afterEnd)
 	assert.Error(t, err)
+}
+
+// Global XOR rule for item1 and item2,
+// item2 has many consequences in the first period.
+// The solver should choose the first period when item2 is selected.
+func Test_givenXORWithManyConsequencesInFirstPeriod_shouldChooseFirstPeriod(t *testing.T) {
+	creator := puan.NewRulesetCreator()
+	startTime := time.Now()
+	endTime := startTime.Add(1 * time.Hour)
+	_ = creator.EnableTime(startTime, endTime)
+
+	item1 := fake.New[string]()
+	item2 := fake.New[string]()
+	_ = creator.AddPrimitives(item1, item2)
+	xorID, _ := creator.SetXor(item1, item2)
+	_ = creator.Assume(xorID)
+
+	item2Consequences := fake.New[[]string](
+		func(oo *options.Options) {
+			oo.RandomMinSliceSize = 50
+			oo.RandomMaxSliceSize = 50
+		},
+	)
+	_ = creator.AddPrimitives(item2Consequences...)
+
+	andID, _ := creator.SetAnd(item2Consequences...)
+	item2Implies, _ := creator.SetImply(item2, andID)
+
+	endOfFirstPeriod := startTime.Add(30 * time.Minute)
+	_ = creator.AssumeInPeriod(item2Implies, startTime, endOfFirstPeriod)
+
+	ruleset, _ := creator.Create()
+
+	envelope, _ := solutionCreator.Create(
+		puan.Selections{
+			puan.NewSelectionBuilder(item2).Build(),
+		},
+		ruleset,
+		&startTime,
+	)
+
+	solution := envelope.Solution()
+
+	asserter := newSolutionAsserter(solution)
+	asserter.assertActive(t, item2)
+	asserter.assertActive(t, "period_0")
+	asserter.assertActive(t, item2Consequences...)
+	asserter.assertInactive(t, item1)
+	asserter.assertInactive(t, "period_1")
+}
+
+// Global XOR rules for item1 and many other items,
+// all other items are preferred in the first period.
+// The solver should choose the first period when item1 is selected.
+func Test_givenXORWithManyPreferredInFirstPeriod_shouldChooseFirstPeriod(t *testing.T) {
+	creator := puan.NewRulesetCreator()
+	startTime := time.Now()
+	endTime := startTime.Add(1 * time.Hour)
+	_ = creator.EnableTime(startTime, endTime)
+
+	item1 := fake.New[string]()
+	_ = creator.AddPrimitives(item1)
+
+	otherItems := fake.New[[]string](
+		func(oo *options.Options) {
+			oo.RandomMinSliceSize = 50
+			oo.RandomMaxSliceSize = 50
+		},
+	)
+	_ = creator.AddPrimitives(otherItems...)
+
+	endOfFirstPeriod := startTime.Add(30 * time.Minute)
+	for _, otherItem := range otherItems {
+		xorID, _ := creator.SetXor(item1, otherItem)
+		_ = creator.Assume(xorID)
+		preferredOtherItem, _ := creator.SetImply(xorID, otherItem)
+		_ = creator.PreferInPeriod(preferredOtherItem, startTime, endOfFirstPeriod)
+	}
+
+	ruleset, _ := creator.Create()
+
+	envelope, _ := solutionCreator.Create(
+		puan.Selections{
+			puan.NewSelectionBuilder(item1).Build(),
+		},
+		ruleset,
+		&startTime,
+	)
+
+	solution := envelope.Solution()
+
+	asserter := newSolutionAsserter(solution)
+	asserter.assertActive(t, item1)
+	asserter.assertActive(t, "period_0")
+	asserter.assertInactive(t, otherItems...)
+	asserter.assertInactive(t, "period_1")
+}
+
+type solutionAsserter struct {
+	puan.Solution
+}
+
+func newSolutionAsserter(solution puan.Solution) solutionAsserter {
+	return solutionAsserter{solution}
+}
+
+func (s solutionAsserter) assertActive(t *testing.T, variables ...string) {
+	solution := s.Extract(variables...)
+	for variable, value := range solution {
+		assert.Equal(t, 1, value, "expected %s to be active", variable)
+	}
+}
+
+func (s solutionAsserter) assertInactive(t *testing.T, variables ...string) {
+	solution := s.Extract(variables...)
+	for variable, value := range solution {
+		assert.Equal(t, 0, value, "expected %s to be inactive", variable)
+	}
 }
