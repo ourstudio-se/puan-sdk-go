@@ -2,6 +2,7 @@ package puan
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -28,6 +29,17 @@ func NewRulesetCreator() *RulesetCreator {
 }
 
 func (c *RulesetCreator) AddPrimitives(primitives ...string) error {
+	for _, primitive := range primitives {
+		// Prefix 'period_' is reserved for internal use to handle time support.
+		if strings.HasPrefix(primitive, "period_") {
+			return errors.Errorf(
+				"%w: primitive %s cannot start with reserved prefix 'period_'",
+				puanerror.InvalidArgument,
+				primitive,
+			)
+		}
+	}
+
 	return c.model.AddPrimitives(primitives...)
 }
 
@@ -96,7 +108,8 @@ func (c *RulesetCreator) PreferInPeriod(
 	// If the variable period is equal to the ruleset period,
 	// i.e., is preferred during the entire ruleset period,
 	// it can be preferred directly without time bounding.
-	if c.period.isEqual(variable.period) {
+	preferredDuringRulesetPeriod := c.period.isEqual(variable.period)
+	if preferredDuringRulesetPeriod {
 		return c.Prefer(id)
 	}
 
@@ -196,7 +209,7 @@ func (c *RulesetCreator) Create() (Ruleset, error) {
 		return Ruleset{}, err
 	}
 
-	err = c.createPreferredsInPeriods(periodVariables)
+	err = c.createPreferredsManyInPeriods(periodVariables)
 	if err != nil {
 		return Ruleset{}, err
 	}
@@ -262,7 +275,7 @@ func (c *RulesetCreator) newPeriodVariables() (TimeBoundVariables, error) {
 			period:   period,
 		}
 		periodVariables[i] = period
-		if err := c.AddPrimitives(period.variable); err != nil {
+		if err := c.model.AddPrimitives(period.variable); err != nil {
 			return nil, err
 		}
 	}
@@ -312,7 +325,7 @@ func (c *RulesetCreator) createPeriodConstraints(periodVariables TimeBoundVariab
 	return c.Assume(constraintIDs...)
 }
 
-func (c *RulesetCreator) createPreferredsInPeriods(periodVariables TimeBoundVariables) error {
+func (c *RulesetCreator) createPreferredsManyInPeriods(periodVariables TimeBoundVariables) error {
 	if c.timeDisabled() {
 		return nil
 	}

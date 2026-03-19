@@ -223,3 +223,15 @@ func Test_RulesetCreator_setSingleOrAND_givenDuplicatedIDs_shouldReturnID(t *tes
 	assert.NoError(t, err)
 	assert.Equal(t, code, got)
 }
+
+func Test_AddPrimitives_givenPrimitiveWithPeriodPrefix_shouldReturnError(t *testing.T) {
+	creator := NewRulesetCreator()
+	err := creator.AddPrimitives("period_")
+	assert.ErrorIs(t, err, puanerror.InvalidArgument)
+}
+
+func Test_AddPrimitives_givenPrimitiveWithoutPeriodPrefix_shouldReturnNoError(t *testing.T) {
+	creator := NewRulesetCreator()
+	err := creator.AddPrimitives(fake.New[string]())
+	assert.NoError(t, err)
+}

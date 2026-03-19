@@ -66,6 +66,7 @@ func rulesetWithPrimitivesForSaturationTests() (puan.Ruleset, []string) {
 	orID, _ := creator.SetOr(primitives...)
 	_ = creator.Assume(orID)
 
+	// Create 10 assumes for different primitives in different periods
 	assumeFrom := from
 	for i := 0; i < 10; i++ {
 		assumeEnd := assumeFrom.Add(5 * time.Minute)
@@ -73,6 +74,7 @@ func rulesetWithPrimitivesForSaturationTests() (puan.Ruleset, []string) {
 		assumeFrom = assumeEnd
 	}
 
+	// Create 10 preferreds for different primitives in different periods
 	preferFrom := from
 	for i := 10; i < 20; i++ {
 		preferEnd := preferFrom.Add(5 * time.Minute)

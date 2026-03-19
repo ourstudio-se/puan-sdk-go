@@ -43,6 +43,8 @@ func (w Weights) maxWeight() int {
 }
 
 func (w Weights) WeightsTooLarge() bool {
+	// sum is used for making sure that the external solver
+	// can compare different 'objectives' without overflowing.
 	sum := abs(w.sum())
 	tooLarge := sum > WEIGHTS_SATURATION_LIMIT
 	return tooLarge
