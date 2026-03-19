@@ -1,3 +1,4 @@
+// nolint:lll
 package solve
 
 import (
@@ -407,7 +408,7 @@ func Test_givenTimeEnabledWithoutTimeboundConstraints_andLateFromSpecified_shoul
 // Global XOR rule for item1 and item2,
 // item2 has many consequences in the first period.
 // The solver should choose the first period when item2 is selected.
-func Test_givenXORWithManyConsequencesInFirstPeriod_shouldChooseFirstPeriod(t *testing.T) {
+func Test_givenXORWithManyConsequencesInFirstPeriod_selectExpensiveItem_shouldChooseFirstPeriod(t *testing.T) {
 	creator := puan.NewRulesetCreator()
 	startTime := time.Now()
 	endTime := startTime.Add(1 * time.Hour)
@@ -455,7 +456,7 @@ func Test_givenXORWithManyConsequencesInFirstPeriod_shouldChooseFirstPeriod(t *t
 // Global XOR rules for item1 and many other items,
 // all other items are preferred in the first period.
 // The solver should choose the first period when item1 is selected.
-func Test_givenXORWithManyPreferredInFirstPeriod_shouldChooseFirstPeriod(t *testing.T) {
+func Test_givenXORWithManyPreferredInFirstPeriod_selectNonPreferredItem_shouldChooseFirstPeriod(t *testing.T) {
 	creator := puan.NewRulesetCreator()
 	startTime := time.Now()
 	endTime := startTime.Add(1 * time.Hour)
