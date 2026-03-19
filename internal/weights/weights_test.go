@@ -241,7 +241,7 @@ func Test_abs(t *testing.T) {
 	}
 }
 
-func Test_Weights_absMaxWeight(t *testing.T) {
+func Test_Weights_maxWeight(t *testing.T) {
 	theories := []struct {
 		weights  Weights
 		expected int
@@ -270,7 +270,7 @@ func Test_Weights_absMaxWeight(t *testing.T) {
 	}
 
 	for _, theory := range theories {
-		actual := theory.weights.absMaxWeight()
+		actual := theory.weights.maxWeight()
 		assert.Equal(t, theory.expected, actual)
 	}
 }
@@ -284,7 +284,7 @@ func Test_absSum(t *testing.T) {
 		{terms: []int{0, 0, 0}, expected: 0},
 		{terms: []int{-1, -2, -3}, expected: 6},
 		{terms: []int{1, 2, 3}, expected: 6},
-		{terms: []int{-1, -2, -3}, expected: 6},
+		{terms: []int{-1, 2, -3}, expected: 6},
 	}
 
 	for _, theory := range theories {
@@ -302,12 +302,12 @@ func Test_calculatePeriodWeights(t *testing.T) {
 		want           Weights
 	}{
 		{
-			name:      "given no periodIDs should return empty Weights",
+			name:      "no periodIDs should return empty Weights",
 			periodIDs: []string{},
 			want:      Weights{},
 		},
 		{
-			name:      "given periodIDs and zero notSelectedSum and preferredSum",
+			name:      "zero notSelectedSum and preferredSum",
 			periodIDs: []string{"a", "b"},
 			want: Weights{
 				"a": 0,
@@ -315,7 +315,7 @@ func Test_calculatePeriodWeights(t *testing.T) {
 			},
 		},
 		{
-			name:           "given periodIDs and non-zero positive notSelectedSum",
+			name:           "non-zero positive notSelectedSum",
 			periodIDs:      []string{"a", "b"},
 			notSelectedSum: 1,
 			want: Weights{
@@ -324,7 +324,7 @@ func Test_calculatePeriodWeights(t *testing.T) {
 			},
 		},
 		{
-			name:           "given periodIDs and non-zero negative notSelectedSum",
+			name:           "non-zero negative notSelectedSum",
 			periodIDs:      []string{"a", "b"},
 			notSelectedSum: -1,
 			want: Weights{
@@ -333,7 +333,7 @@ func Test_calculatePeriodWeights(t *testing.T) {
 			},
 		},
 		{
-			name:           "given periodIDs and non-zero preferredSum and notSelectedSum",
+			name:           "non-zero preferredSum and notSelectedSum",
 			periodIDs:      []string{"a", "b"},
 			notSelectedSum: -1,
 			preferredSum:   -2,

@@ -30,7 +30,7 @@ func (w Weights) sum() int {
 	return sum
 }
 
-func (w Weights) absMaxWeight() int {
+func (w Weights) maxWeight() int {
 	maxWeight := 0
 	for _, weight := range w {
 		absWeight := abs(weight)
@@ -43,8 +43,8 @@ func (w Weights) absMaxWeight() int {
 }
 
 func (w Weights) WeightsToLarge() bool {
-	sum := w.sum()
-	tooLarge := abs(sum) > WEIGHTS_SATURATION_LIMIT
+	sum := abs(w.sum())
+	tooLarge := sum > WEIGHTS_SATURATION_LIMIT
 	return tooLarge
 }
 
@@ -67,7 +67,7 @@ func Calculate(
 		notSelectedSum,
 		preferredSum,
 	)
-	maxPeriodWeight := periodWeights.absMaxWeight()
+	maxPeriodWeight := periodWeights.maxWeight()
 
 	selectedWeights := calculateSelectedWeights(
 		selections,
