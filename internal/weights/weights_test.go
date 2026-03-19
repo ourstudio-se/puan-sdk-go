@@ -225,56 +225,6 @@ func Test_calculateWeights(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func Test_calculateSelectionThreshold(t *testing.T) {
-	testCases := []struct {
-		name                string
-		notSelectedSum      int
-		preferredWeightsSum int
-		minPeriodWeight     int
-		expected            int
-	}{
-		{
-			name:                "all zeros",
-			notSelectedSum:      0,
-			preferredWeightsSum: 0,
-			minPeriodWeight:     0,
-			expected:            0,
-		},
-		{
-			name:                "all negative values",
-			notSelectedSum:      -10,
-			preferredWeightsSum: -5,
-			minPeriodWeight:     -3,
-			expected:            18,
-		},
-		{
-			name:                "all positive values",
-			notSelectedSum:      10,
-			preferredWeightsSum: 5,
-			minPeriodWeight:     3,
-			expected:            -18,
-		},
-		{
-			name:                "mixed values",
-			notSelectedSum:      -4,
-			preferredWeightsSum: -2,
-			minPeriodWeight:     0,
-			expected:            6,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			actual := calculateSelectionThreshold(
-				tc.notSelectedSum,
-				tc.preferredWeightsSum,
-				tc.minPeriodWeight,
-			)
-			assert.Equal(t, tc.expected, actual)
-		})
-	}
-}
-
 func Test_abs(t *testing.T) {
 	theories := []struct {
 		input    int
@@ -322,5 +272,84 @@ func Test_Weights_maxWeight(t *testing.T) {
 	for _, theory := range theories {
 		actual := theory.weights.maxWeight()
 		assert.Equal(t, theory.expected, actual)
+	}
+}
+
+func Test_absSum(t *testing.T) {
+	theories := []struct {
+		terms    []int
+		expected int
+	}{
+		{terms: []int{}, expected: 0},
+		{terms: []int{0, 0, 0}, expected: 0},
+		{terms: []int{-1, -2, -3}, expected: 6},
+		{terms: []int{1, 2, 3}, expected: 6},
+		{terms: []int{-1, 2, -3}, expected: 6},
+	}
+
+	for _, theory := range theories {
+		actual := absSum(theory.terms...)
+		assert.Equal(t, theory.expected, actual)
+	}
+}
+
+func Test_calculatePeriodWeights(t *testing.T) {
+	theories := []struct {
+		name           string
+		periodIDs      []string
+		notSelectedSum int
+		preferredSum   int
+		want           Weights
+	}{
+		{
+			name:      "no periodIDs should return empty Weights",
+			periodIDs: []string{},
+			want:      Weights{},
+		},
+		{
+			name:      "zero notSelectedSum and preferredSum",
+			periodIDs: []string{"a", "b"},
+			want: Weights{
+				"a": 0,
+				"b": -1,
+			},
+		},
+		{
+			name:           "non-zero positive notSelectedSum",
+			periodIDs:      []string{"a", "b"},
+			notSelectedSum: 1,
+			want: Weights{
+				"a": 0,
+				"b": -2,
+			},
+		},
+		{
+			name:           "non-zero negative notSelectedSum",
+			periodIDs:      []string{"a", "b"},
+			notSelectedSum: -1,
+			want: Weights{
+				"a": 0,
+				"b": -2,
+			},
+		},
+		{
+			name:           "non-zero preferredSum and notSelectedSum",
+			periodIDs:      []string{"a", "b"},
+			notSelectedSum: -1,
+			preferredSum:   -2,
+			want: Weights{
+				"a": 0,
+				"b": -4,
+			},
+		},
+	}
+	for _, tt := range theories {
+		t.Run(tt.name, func(t *testing.T) {
+			got := calculatePeriodWeights(tt.periodIDs, tt.notSelectedSum, tt.preferredSum)
+			assert.Equal(t,
+				tt.want,
+				got,
+			)
+		})
 	}
 }

@@ -34,6 +34,7 @@ linters:
       excludes:
         - G505
         - G401
+        - G704
   exclusions:
     generated: lax
     presets:

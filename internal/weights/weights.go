@@ -8,21 +8,8 @@ import (
 
 const NOT_SELECTED_WEIGHT = -2
 
-// weights on periods are [0, -12, -24, ..., -12(n-1)]
-// where n is the number of periods
-// periods are assumed to be ordered by start time
-//
-// This constant can be tweaked to change the weight of periods
-const PERIOD_WEIGHT_MULTIPLIER = NOT_SELECTED_WEIGHT * 6
-
-// WEIGHT_SATURATION_LIMIT is set to 2^55.
-// The limit is set lower than 2^63 to allow for some headroom
-// and enable early detection before reaching the overflow limit.
-// Note: Weights for selected variables increase exponentially with the number of selections.
-// The highest weight is calculated as 2^(n-1) * (c + 1),
-// where n is the number of selections and c is a constant
-// derived from the sum of none selected primitives, preferred, and period weights.
-const WEIGHT_SATURATION_LIMIT = 36028797018963968
+// WEIGHTS_SATURATION_LIMIT is set to 2^32.
+const WEIGHTS_SATURATION_LIMIT = 4294967296
 
 type Weights map[string]int
 
@@ -55,8 +42,11 @@ func (w Weights) maxWeight() int {
 	return maxWeight
 }
 
-func (w Weights) ContainsTooLargeWeight() bool {
-	tooLarge := w.maxWeight() > WEIGHT_SATURATION_LIMIT
+func (w Weights) WeightsTooLarge() bool {
+	// sum is used for making sure that the external solver
+	// can compare different 'objectives' without overflowing.
+	sum := abs(w.sum())
+	tooLarge := sum > WEIGHTS_SATURATION_LIMIT
 	return tooLarge
 }
 
@@ -67,20 +57,25 @@ func Calculate(
 	periodIDs []string,
 ) Weights {
 	notSelectedIDs := utils.Without(selectableIDs, selections.ids())
+
 	notSelectedWeights := calculatedNotSelectedWeights(notSelectedIDs)
 	notSelectedSum := notSelectedWeights.sum()
 
 	preferredWeights := calculatePreferredWeights(preferredIDs, notSelectedSum)
-	sumOfPreferredWeights := preferredWeights.sum()
+	preferredSum := preferredWeights.sum()
 
-	periodWeights := calculatePeriodWeights(periodIDs)
-	minPeriodWeight := calculateMinPeriodWeight(periodIDs)
+	periodWeights := calculatePeriodWeights(
+		periodIDs,
+		notSelectedSum,
+		preferredSum,
+	)
+	maxPeriodWeight := periodWeights.maxWeight()
 
 	selectedWeights := calculateSelectedWeights(
 		selections,
 		notSelectedSum,
-		sumOfPreferredWeights,
-		minPeriodWeight,
+		preferredSum,
+		maxPeriodWeight,
 	)
 
 	weights := notSelectedWeights.
@@ -120,40 +115,40 @@ func calculatePreferredWeights(
 
 func calculatePeriodWeights(
 	periodIDs []string,
+	notSelectedSum int,
+	preferredWeightsSum int,
 ) Weights {
 	periodWeights := make(Weights)
+
+	threshold := -absSum(notSelectedSum, preferredWeightsSum)
+
+	periodWeightSum := threshold
 	for i, periodID := range periodIDs {
-		periodWeights[periodID] = i * PERIOD_WEIGHT_MULTIPLIER
+		if i == 0 {
+			periodWeights[periodID] = 0
+
+			continue
+		}
+
+		weight := periodWeightSum - 1
+		periodWeights[periodID] = weight
+		periodWeightSum += weight
 	}
 
 	return periodWeights
-}
-
-func calculateMinPeriodWeight(
-	periodIDs []string,
-) int {
-	if len(periodIDs) == 0 {
-		return 0
-	}
-
-	return (len(periodIDs) - 1) * PERIOD_WEIGHT_MULTIPLIER
 }
 
 func calculateSelectedWeights(
 	selections Selections,
 	notSelectedSum,
 	preferredWeightsSum int,
-	minPeriodWeight int,
+	maxPeriodWeight int,
 ) Weights {
 	selectedWeights := make(Weights)
 
-	selectionThreshold := calculateSelectionThreshold(
-		notSelectedSum,
-		preferredWeightsSum,
-		minPeriodWeight,
-	)
+	threshold := absSum(notSelectedSum, preferredWeightsSum, maxPeriodWeight)
 
-	selectionWeightSum := selectionThreshold
+	selectionWeightSum := threshold
 	for _, selection := range selections {
 		weight := selectionWeightSum + 1
 		if selection.action == ADD {
@@ -168,18 +163,19 @@ func calculateSelectedWeights(
 	return selectedWeights
 }
 
-func calculateSelectionThreshold(
-	notSelectedSum,
-	preferredWeightsSum,
-	minPeriodWeight int,
-) int {
-	return -(notSelectedSum + preferredWeightsSum + minPeriodWeight)
-}
-
 func abs(x int) int {
 	if x < 0 {
 		return -x
 	}
 
 	return x
+}
+
+func absSum(terms ...int) int {
+	sum := 0
+	for _, term := range terms {
+		sum += abs(term)
+	}
+
+	return sum
 }
