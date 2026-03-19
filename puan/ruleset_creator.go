@@ -60,10 +60,7 @@ func (c *RulesetCreator) SetEquivalent(variableOne, variableTwo string) (string,
 }
 
 func (c *RulesetCreator) Prefer(ids ...string) error {
-	dedupedIDs := utils.Dedupe(ids)
-	unpreferredIDs := utils.Without(dedupedIDs, c.preferredVariables)
-
-	negatedIDs, err := c.negatePreferreds(unpreferredIDs)
+	negatedIDs, err := c.negatePreferreds(ids)
 	if err != nil {
 		return err
 	}
@@ -212,6 +209,7 @@ func (c *RulesetCreator) Create() (Ruleset, error) {
 	dependentVariables := c.findDependantVariables()
 	independentVariables := utils.Without(c.model.PrimitiveVariables(), dependentVariables)
 	selectableVariables := utils.Without(c.model.PrimitiveVariables(), periodVariables.ids())
+	preferredVariables := utils.Dedupe(c.preferredVariables)
 
 	// Sort dependentVariables and constraints to ensure
 	// consistent order in the polyhedron,
@@ -235,7 +233,7 @@ func (c *RulesetCreator) Create() (Ruleset, error) {
 		selectableVariables,
 		sortedDependentVariables,
 		independentVariables,
-		c.preferredVariables,
+		preferredVariables,
 		periodVariables,
 	)
 }
