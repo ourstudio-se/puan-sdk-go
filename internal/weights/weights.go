@@ -42,7 +42,7 @@ func (w Weights) maxWeight() int {
 	return maxWeight
 }
 
-func (w Weights) WeightsToLarge() bool {
+func (w Weights) WeightsTooLarge() bool {
 	sum := abs(w.sum())
 	tooLarge := sum > WEIGHTS_SATURATION_LIMIT
 	return tooLarge

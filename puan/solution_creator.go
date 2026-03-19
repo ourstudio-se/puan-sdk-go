@@ -70,7 +70,7 @@ func (c *SolutionCreator) findDependentSolution(
 		return SolutionEnvelope{}, err
 	}
 
-	tooLarge := query.weights.WeightsToLarge()
+	tooLarge := query.weights.WeightsTooLarge()
 
 	solution, err := c.Solve(query)
 	if err != nil {
