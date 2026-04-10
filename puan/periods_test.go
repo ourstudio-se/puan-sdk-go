@@ -91,6 +91,30 @@ func Test_Period_overlaps(t *testing.T) {
 			},
 			expected: false,
 		},
+		{
+			name: "a contains b",
+			a: Period{
+				from: newTestTime("2024-01-01T00:00:00Z"),
+				to:   newTestTime("2024-01-20T00:00:00Z"),
+			},
+			b: Period{
+				from: newTestTime("2024-01-10T00:00:00Z"),
+				to:   newTestTime("2024-01-15T00:00:00Z"),
+			},
+			expected: true,
+		},
+		{
+			name: "b contains a",
+			a: Period{
+				from: newTestTime("2024-01-10T00:00:00Z"),
+				to:   newTestTime("2024-01-15T00:00:00Z"),
+			},
+			b: Period{
+				from: newTestTime("2024-01-01T00:00:00Z"),
+				to:   newTestTime("2024-01-20T00:00:00Z"),
+			},
+			expected: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -816,7 +840,12 @@ func Test_passed_givenBeforeTimestamp_shouldReturnNoVariables(t *testing.T) {
 func newTestTime(value string) time.Time {
 	t, err := time.Parse(time.RFC3339, value)
 	if err != nil {
+		t, err = time.Parse(time.DateOnly, value)
+	}
+
+	if err != nil {
 		panic(err)
 	}
+
 	return t
 }

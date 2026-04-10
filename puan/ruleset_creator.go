@@ -349,26 +349,35 @@ func (c *RulesetCreator) createPeriodConstraints(
 func (c *RulesetCreator) createForbiddenPeriodConstraints(
 	periodVariables TimeBoundVariables,
 ) error {
-	var forbiddenPeriodIDs []string
-	for _, periodVariable := range periodVariables {
-		for _, forbiddenPeriod := range c.forbiddenPeriods {
-			if forbiddenPeriod.contains(periodVariable.period) {
-				forbiddenPeriodIDs = append(forbiddenPeriodIDs, periodVariable.variable)
-				break
-			}
-		}
-	}
+	forbidden := c.findForbiddenPeriods(periodVariables)
 
-	if len(forbiddenPeriodIDs) == 0 {
+	if len(forbidden) == 0 {
 		return nil
 	}
 
-	constraintID, err := c.SetNot(forbiddenPeriodIDs...)
+	constraintID, err := c.SetNot(forbidden.ids()...)
 	if err != nil {
 		return err
 	}
 
 	return c.Assume(constraintID)
+}
+
+func (c *RulesetCreator) findForbiddenPeriods(
+	periodVariables TimeBoundVariables,
+) TimeBoundVariables {
+	return utils.Filter(periodVariables, c.isForbiddenPeriod)
+}
+
+func (c *RulesetCreator) isForbiddenPeriod(
+	periodVariable TimeBoundVariable,
+) bool {
+	for _, forbiddenPeriod := range c.forbiddenPeriods {
+		if forbiddenPeriod.contains(periodVariable.period) {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *RulesetCreator) createPreferredsManyInPeriods(periodVariables TimeBoundVariables) error {
