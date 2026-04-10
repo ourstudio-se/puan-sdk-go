@@ -52,8 +52,8 @@ func (c *RulesetCreator) SetOr(variables ...string) (string, error) {
 	return c.model.SetOr(variables...)
 }
 
-func (c *RulesetCreator) SetNot(variable ...string) (string, error) {
-	return c.model.SetNot(variable...)
+func (c *RulesetCreator) SetNot(variables ...string) (string, error) {
+	return c.model.SetNot(variables...)
 }
 
 func (c *RulesetCreator) SetImply(condition, consequence string) (string, error) {
@@ -310,7 +310,9 @@ func (c *RulesetCreator) periods() []Period {
 	return periods
 }
 
-func (c *RulesetCreator) createPeriodConstraints(periodVariables TimeBoundVariables) error {
+func (c *RulesetCreator) createPeriodConstraints(
+	periodVariables TimeBoundVariables,
+) error {
 	if c.timeDisabled() {
 		return nil
 	}
@@ -330,6 +332,10 @@ func (c *RulesetCreator) createPeriodConstraints(periodVariables TimeBoundVariab
 		constraintIDs = append(constraintIDs, constraintID)
 	}
 
+	if err := c.createForbiddenPeriodConstraints(periodVariables); err != nil {
+		return err
+	}
+
 	// Choose exactly one period
 	exactlyOnePeriod, err := c.setSingleOrXOR(periodVariables.ids()...)
 	if err != nil {
@@ -337,19 +343,32 @@ func (c *RulesetCreator) createPeriodConstraints(periodVariables TimeBoundVariab
 	}
 	constraintIDs = append(constraintIDs, exactlyOnePeriod)
 
-	for _, forbiddenPeriod := range c.forbiddenPeriods {
-		for _, periodVariable := range periodVariables {
+	return c.Assume(constraintIDs...)
+}
+
+func (c *RulesetCreator) createForbiddenPeriodConstraints(
+	periodVariables TimeBoundVariables,
+) error {
+	var forbiddenPeriodIDs []string
+	for _, periodVariable := range periodVariables {
+		for _, forbiddenPeriod := range c.forbiddenPeriods {
 			if forbiddenPeriod.contains(periodVariable.period) {
-				constraintID, err := c.SetNot(periodVariable.variable)
-				if err != nil {
-					return err
-				}
-				constraintIDs = append(constraintIDs, constraintID)
+				forbiddenPeriodIDs = append(forbiddenPeriodIDs, periodVariable.variable)
+				break
 			}
 		}
 	}
 
-	return c.Assume(constraintIDs...)
+	if len(forbiddenPeriodIDs) == 0 {
+		return nil
+	}
+
+	constraintID, err := c.SetNot(forbiddenPeriodIDs...)
+	if err != nil {
+		return err
+	}
+
+	return c.Assume(constraintID)
 }
 
 func (c *RulesetCreator) createPreferredsManyInPeriods(periodVariables TimeBoundVariables) error {
