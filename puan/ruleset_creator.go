@@ -207,6 +207,25 @@ func (c *RulesetCreator) ForbidPeriod(
 		return err
 	}
 
+	if !c.period.contains(period) {
+		return errors.Errorf(
+			"%w: period %v is outside of enabled period %v",
+			puanerror.InvalidArgument,
+			period,
+			*c.period,
+		)
+	}
+
+	for _, existingForbiddenPeriod := range c.forbiddenPeriods {
+		if existingForbiddenPeriod.overlaps(period) {
+			return errors.Errorf(
+				"period %v overlaps with existing forbidden period %v",
+				period,
+				existingForbiddenPeriod,
+			)
+		}
+	}
+
 	c.forbiddenPeriods = append(c.forbiddenPeriods, period)
 
 	return nil
