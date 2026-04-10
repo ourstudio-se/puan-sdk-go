@@ -18,6 +18,7 @@ type RulesetCreator struct {
 	assumedVariables   []string
 
 	period                      *Period
+	forbiddenPeriods            []Period
 	timeBoundAssumedVariables   TimeBoundVariables
 	timeBoundPreferredVariables TimeBoundVariables
 }
@@ -198,6 +199,19 @@ func (c *RulesetCreator) EnableTime(
 	return nil
 }
 
+func (c *RulesetCreator) ForbidPeriod(
+	from, to time.Time,
+) error {
+	period, err := NewPeriod(from, to)
+	if err != nil {
+		return err
+	}
+
+	c.forbiddenPeriods = append(c.forbiddenPeriods, period)
+
+	return nil
+}
+
 func (c *RulesetCreator) Create() (Ruleset, error) {
 	periodVariables, err := c.newPeriodVariables()
 	if err != nil {
@@ -290,6 +304,7 @@ func (c *RulesetCreator) timeDisabled() bool {
 func (c *RulesetCreator) periods() []Period {
 	periods := []Period{}
 	periods = append(periods, *c.period)
+	periods = append(periods, c.forbiddenPeriods...)
 	periods = append(periods, c.timeBoundAssumedVariables.periods()...)
 	periods = append(periods, c.timeBoundPreferredVariables.periods()...)
 	return periods
@@ -321,6 +336,18 @@ func (c *RulesetCreator) createPeriodConstraints(periodVariables TimeBoundVariab
 		return err
 	}
 	constraintIDs = append(constraintIDs, exactlyOnePeriod)
+
+	for _, forbiddenPeriod := range c.forbiddenPeriods {
+		for _, periodVariable := range periodVariables {
+			if forbiddenPeriod.contains(periodVariable.period) {
+				constraintID, err := c.SetNot(periodVariable.variable)
+				if err != nil {
+					return err
+				}
+				constraintIDs = append(constraintIDs, constraintID)
+			}
+		}
+	}
 
 	return c.Assume(constraintIDs...)
 }

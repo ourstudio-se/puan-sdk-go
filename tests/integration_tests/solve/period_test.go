@@ -500,34 +500,67 @@ func Test_givenXORWithManyPreferredInFirstPeriod_selectNonPreferredItem_shouldCh
 	asserter.assertInactive(t, "period_1")
 }
 
-type solutionAsserter struct {
-	puan.Solution
+func Test_forbiddenPeriod_givenFromInForbiddenPeriod_shouldChoosePeriodAfterForbiddenPeriod(
+	t *testing.T,
+) {
+	minute0 := time.Now().Truncate(time.Minute)
+	minute15 := minute0.Add(15 * time.Minute)
+	minute30 := minute0.Add(30 * time.Minute)
+	minute45 := minute0.Add(45 * time.Minute)
+	minute60 := minute0.Add(1 * time.Hour)
+
+	creator := puan.NewRulesetCreator()
+
+	_ = creator.EnableTime(minute0, minute60)
+
+	_ = creator.ForbidPeriod(
+		minute15,
+		minute45,
+	)
+
+	ruleset, _ := creator.Create()
+
+	envelope, _ := solutionCreator.Create(
+		nil,
+		ruleset,
+		&minute30,
+	)
+	solution := envelope.Solution()
+
+	solverPeriod, _ := ruleset.FindPeriodInSolution(solution)
+
+	assert.Equal(t, minute45, solverPeriod.From())
+	assert.Equal(t, minute60, solverPeriod.To())
 }
 
-func newSolutionAsserter(solution puan.Solution) solutionAsserter {
-	return solutionAsserter{solution}
-}
+func Test_forbiddenPeriod_givenFromBeforeForbiddenPeriod_shouldChoosePeriodThatEndsAtForbiddenPeriod(
+	t *testing.T,
+) {
+	minute0 := time.Now().Truncate(time.Minute)
+	minute15 := minute0.Add(15 * time.Minute)
+	minute45 := minute0.Add(45 * time.Minute)
+	minute60 := minute0.Add(1 * time.Hour)
 
-func (s solutionAsserter) assertActive(t *testing.T, variables ...string) {
-	solution := s.Extract(variables...)
-	for _, variable := range variables {
-		value, ok := solution[variable]
-		if !ok {
-			assert.Failf(t, "variable %s not found in solution", variable)
-		}
+	creator := puan.NewRulesetCreator()
 
-		assert.Equal(t, 1, value, "expected %s to be active", variable)
-	}
-}
+	_ = creator.EnableTime(minute0, minute60)
 
-func (s solutionAsserter) assertInactive(t *testing.T, variables ...string) {
-	solution := s.Extract(variables...)
-	for _, variable := range variables {
-		value, ok := solution[variable]
-		if !ok {
-			assert.Failf(t, "variable %s not found in solution", variable)
-		}
+	_ = creator.ForbidPeriod(
+		minute15,
+		minute45,
+	)
 
-		assert.Equal(t, 0, value, "expected %s to be inactive", variable)
-	}
+	ruleset, _ := creator.Create()
+
+	envelope, _ := solutionCreator.Create(
+		nil,
+		ruleset,
+		nil,
+	)
+	solution := envelope.Solution()
+
+	solverPeriod, _ := ruleset.FindPeriodInSolution(solution)
+
+	assert.Equal(t, minute0, solverPeriod.From())
+	assert.Equal(t, minute15, solverPeriod.To())
 }
