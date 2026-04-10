@@ -391,3 +391,114 @@ func Test_AddPrimitives_givenPrimitiveWithoutPeriodPrefix_shouldReturnNoError(t 
 	err := creator.AddPrimitives(fake.New[string]())
 	assert.NoError(t, err)
 }
+
+func Test_RulesetCreator_newPeriodVariables_givenValidPeriods_shouldReturnPeriodVariables(
+	t *testing.T,
+) {
+	periods := []Period{
+		{
+			from: newTestTime("2024-01-01"),
+			to:   newTestTime("2024-01-05"),
+		},
+		{
+			from: newTestTime("2024-01-05"),
+			to:   newTestTime("2024-01-10"),
+		},
+		{
+			from: newTestTime("2024-01-10"),
+			to:   newTestTime("2024-01-15"),
+		},
+	}
+
+	creator := RulesetCreator{}
+	periodVariables, err := creator.newPeriodVariables(periods)
+
+	assert.NoError(t, err)
+	want := TimeBoundVariables{
+		{
+			variable: "period_0",
+			period:   periods[0],
+		},
+		{
+			variable: "period_1",
+			period:   periods[1],
+		},
+		{
+			variable: "period_2",
+			period:   periods[2],
+		},
+	}
+	assert.Equal(t, want, periodVariables)
+}
+
+func Test_RulesetCreator_newPeriodVariables_givenInvalidPeriods_shouldReturnError(t *testing.T) {
+	type testCase struct {
+		name    string
+		periods []Period
+	}
+
+	cases := []testCase{
+		{
+			name: "given gaps",
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-05"),
+				},
+				{
+					from: newTestTime("2024-01-10"),
+					to:   newTestTime("2024-01-15"),
+				},
+			},
+		},
+		{
+			name: "given overlaps",
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-10"),
+				},
+				{
+					from: newTestTime("2024-01-05"),
+					to:   newTestTime("2024-01-15"),
+				},
+			},
+		},
+		{
+			name: "given duplicates",
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-10"),
+				},
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-10"),
+				},
+			},
+		},
+		{
+			name: "not sorted",
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-05"),
+					to:   newTestTime("2024-01-10"),
+				},
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-05"),
+				},
+			},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			creator := RulesetCreator{}
+
+			_, err := creator.newPeriodVariables(tt.periods)
+
+			assert.Error(t, err)
+		})
+	}
+}

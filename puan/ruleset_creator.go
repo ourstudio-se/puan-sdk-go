@@ -213,7 +213,7 @@ func (c *RulesetCreator) ForbidPeriod(
 }
 
 func (c *RulesetCreator) Create() (Ruleset, error) {
-	periodVariables, err := c.newPeriodVariables()
+	periodVariables, err := c.createPeriodVariables()
 	if err != nil {
 		return Ruleset{}, err
 	}
@@ -272,7 +272,7 @@ func (c *RulesetCreator) findDependantVariables() []string {
 	return utils.Union(constraintVariables, assumedVariables)
 }
 
-func (c *RulesetCreator) newPeriodVariables() (TimeBoundVariables, error) {
+func (c *RulesetCreator) createPeriodVariables() (TimeBoundVariables, error) {
 	if c.timeDisabled() {
 		return nil, nil
 	}
@@ -281,17 +281,14 @@ func (c *RulesetCreator) newPeriodVariables() (TimeBoundVariables, error) {
 		c.periods(),
 	)
 
-	// Create variable for each period
-	periodVariables := make(TimeBoundVariables, len(nonOverlappingPeriods))
-	for i, period := range nonOverlappingPeriods {
-		period := TimeBoundVariable{
-			variable: fmt.Sprintf("period_%d", i),
-			period:   period,
-		}
-		periodVariables[i] = period
-		if err := c.model.AddPrimitives(period.variable); err != nil {
-			return nil, err
-		}
+	periodVariables, err := c.newPeriodVariables(nonOverlappingPeriods)
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.model.AddPrimitives(periodVariables.ids()...)
+	if err != nil {
+		return nil, err
 	}
 
 	return periodVariables, nil
@@ -299,6 +296,32 @@ func (c *RulesetCreator) newPeriodVariables() (TimeBoundVariables, error) {
 
 func (c *RulesetCreator) timeDisabled() bool {
 	return c.period == nil
+}
+
+func (c *RulesetCreator) newPeriodVariables(
+	periods []Period,
+) (TimeBoundVariables, error) {
+	for i := range len(periods) - 1 {
+		notTouching := !periods[i].to.Equal(periods[i+1].from)
+		if notTouching {
+			return nil, errors.Errorf(
+				"periods %v and %v are not touching",
+				periods[i],
+				periods[i+1],
+			)
+		}
+	}
+
+	periodVariables := make(TimeBoundVariables, len(periods))
+	for i, period := range periods {
+		periodVariable := TimeBoundVariable{
+			variable: fmt.Sprintf("period_%d", i),
+			period:   period,
+		}
+		periodVariables[i] = periodVariable
+	}
+
+	return periodVariables, nil
 }
 
 func (c *RulesetCreator) periods() []Period {
