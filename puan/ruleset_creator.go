@@ -223,7 +223,7 @@ func (c *RulesetCreator) Create() (Ruleset, error) {
 		return Ruleset{}, err
 	}
 
-	err = c.createPreferredsManyInPeriods(periodVariables)
+	err = c.createPeriodPreferreds(periodVariables)
 	if err != nil {
 		return Ruleset{}, err
 	}
@@ -317,6 +317,24 @@ func (c *RulesetCreator) createPeriodConstraints(
 		return nil
 	}
 
+	if err := c.createForbiddenPeriodsConstraint(periodVariables); err != nil {
+		return err
+	}
+
+	if err := c.createTimeBoundAssumeConstraints(periodVariables); err != nil {
+		return err
+	}
+
+	if err := c.createExactlyOnePeriodConstraint(periodVariables); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *RulesetCreator) createTimeBoundAssumeConstraints(
+	periodVariables TimeBoundVariables,
+) error {
 	groupedByPeriods, err := groupByPeriods(periodVariables, c.timeBoundAssumedVariables)
 	if err != nil {
 		return err
@@ -332,21 +350,10 @@ func (c *RulesetCreator) createPeriodConstraints(
 		constraintIDs = append(constraintIDs, constraintID)
 	}
 
-	if err := c.createForbiddenPeriodConstraints(periodVariables); err != nil {
-		return err
-	}
-
-	// Choose exactly one period
-	exactlyOnePeriod, err := c.setSingleOrXOR(periodVariables.ids()...)
-	if err != nil {
-		return err
-	}
-	constraintIDs = append(constraintIDs, exactlyOnePeriod)
-
 	return c.Assume(constraintIDs...)
 }
 
-func (c *RulesetCreator) createForbiddenPeriodConstraints(
+func (c *RulesetCreator) createForbiddenPeriodsConstraint(
 	periodVariables TimeBoundVariables,
 ) error {
 	forbidden := c.findForbiddenPeriods(periodVariables)
@@ -380,7 +387,17 @@ func (c *RulesetCreator) isForbiddenPeriod(
 	return false
 }
 
-func (c *RulesetCreator) createPreferredsManyInPeriods(periodVariables TimeBoundVariables) error {
+func (c *RulesetCreator) createExactlyOnePeriodConstraint(
+	periodVariables TimeBoundVariables,
+) error {
+	exactlyOnePeriod, err := c.setSingleOrXOR(periodVariables.ids()...)
+	if err != nil {
+		return err
+	}
+	return c.Assume(exactlyOnePeriod)
+}
+
+func (c *RulesetCreator) createPeriodPreferreds(periodVariables TimeBoundVariables) error {
 	if c.timeDisabled() {
 		return nil
 	}
