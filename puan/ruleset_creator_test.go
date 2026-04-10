@@ -341,6 +341,45 @@ func Test_RulesetCreator_isForbiddenPeriod(t *testing.T) {
 	}
 }
 
+func Test_RulesetCreator_findForbiddenPeriods(t *testing.T) {
+	creator := NewRulesetCreator()
+	creator.forbiddenPeriods = []Period{
+		{
+			from: newTestTime("2024-01-01"),
+			to:   newTestTime("2024-01-10"),
+		},
+	}
+
+	forbiddenPeriod := TimeBoundVariable{
+		variable: fake.New[string](),
+		period: Period{
+			from: newTestTime("2024-01-02"),
+			to:   newTestTime("2024-01-05"),
+		},
+	}
+	allowedPeriod := TimeBoundVariable{
+		variable: fake.New[string](),
+		period: Period{
+			from: newTestTime("2024-01-10"),
+			to:   newTestTime("2024-01-12"),
+		},
+	}
+	periodVariables := TimeBoundVariables{
+		forbiddenPeriod,
+		allowedPeriod,
+	}
+
+	got := creator.findForbiddenPeriods(periodVariables)
+
+	assert.Equal(
+		t,
+		TimeBoundVariables{
+			forbiddenPeriod,
+		},
+		got,
+	)
+}
+
 func Test_AddPrimitives_givenPrimitiveWithPeriodPrefix_shouldReturnError(t *testing.T) {
 	creator := NewRulesetCreator()
 	err := creator.AddPrimitives("period_")
