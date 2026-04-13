@@ -326,21 +326,21 @@ func (c *RulesetCreator) timeDisabled() bool {
 }
 
 func (c *RulesetCreator) newPeriodVariables(
-	periods []Period,
+	orderedPeriods []Period,
 ) (TimeBoundVariables, error) {
-	for i := range len(periods) - 1 {
-		notTouching := !periods[i].to.Equal(periods[i+1].from)
+	for i := range len(orderedPeriods) - 1 {
+		notTouching := !orderedPeriods[i].to.Equal(orderedPeriods[i+1].from)
 		if notTouching {
 			return nil, errors.Errorf(
 				"periods %v and %v are not touching",
-				periods[i],
-				periods[i+1],
+				orderedPeriods[i],
+				orderedPeriods[i+1],
 			)
 		}
 	}
 
-	periodVariables := make(TimeBoundVariables, len(periods))
-	for i, period := range periods {
+	periodVariables := make(TimeBoundVariables, len(orderedPeriods))
+	for i, period := range orderedPeriods {
 		periodVariable := TimeBoundVariable{
 			variable: fmt.Sprintf("period_%d", i),
 			period:   period,
@@ -382,27 +382,6 @@ func (c *RulesetCreator) createPeriodConstraints(
 	return nil
 }
 
-func (c *RulesetCreator) createTimeBoundAssumeConstraints(
-	periodVariables TimeBoundVariables,
-) error {
-	groupedByPeriods, err := groupByPeriods(periodVariables, c.timeBoundAssumedVariables)
-	if err != nil {
-		return err
-	}
-
-	var constraintIDs []string
-	for serializedPeriodIDs, assumedIDs := range groupedByPeriods {
-		periodIDs := serializedPeriodIDs.ids()
-		constraintID, err := c.setTimeBoundConstraint(periodIDs, assumedIDs)
-		if err != nil {
-			return err
-		}
-		constraintIDs = append(constraintIDs, constraintID)
-	}
-
-	return c.Assume(constraintIDs...)
-}
-
 func (c *RulesetCreator) createForbiddenPeriodsConstraint(
 	periodVariables TimeBoundVariables,
 ) error {
@@ -435,6 +414,27 @@ func (c *RulesetCreator) isForbiddenPeriod(
 		}
 	}
 	return false
+}
+
+func (c *RulesetCreator) createTimeBoundAssumeConstraints(
+	periodVariables TimeBoundVariables,
+) error {
+	groupedByPeriods, err := groupByPeriods(periodVariables, c.timeBoundAssumedVariables)
+	if err != nil {
+		return err
+	}
+
+	var constraintIDs []string
+	for serializedPeriodIDs, assumedIDs := range groupedByPeriods {
+		periodIDs := serializedPeriodIDs.ids()
+		constraintID, err := c.setTimeBoundConstraint(periodIDs, assumedIDs)
+		if err != nil {
+			return err
+		}
+		constraintIDs = append(constraintIDs, constraintID)
+	}
+
+	return c.Assume(constraintIDs...)
 }
 
 func (c *RulesetCreator) createExactlyOnePeriodConstraint(

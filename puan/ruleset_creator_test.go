@@ -474,7 +474,8 @@ func Test_AddPrimitives_givenPrimitiveWithoutPeriodPrefix_shouldReturnNoError(t 
 	assert.NoError(t, err)
 }
 
-func Test_RulesetCreator_newPeriodVariables_givenValidPeriods_shouldReturnPeriodVariables(
+// nolint:lll
+func Test_RulesetCreator_newPeriodVariables_givenTouchingAndOrderedPeriods_shouldReturnPeriodVariables(
 	t *testing.T,
 ) {
 	periods := []Period{

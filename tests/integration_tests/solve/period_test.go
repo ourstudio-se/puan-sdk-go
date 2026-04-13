@@ -533,7 +533,7 @@ func Test_forbiddenPeriod_givenFromInForbiddenPeriod_shouldChoosePeriodAfterForb
 	assert.Equal(t, minute60, solverPeriod.To())
 }
 
-func Test_forbiddenPeriod_givenFromBeforeForbiddenPeriod_shouldChoosePeriodThatEndsAtForbiddenPeriod(
+func Test_forbiddenPeriod_givenFromBeforeForbiddenPeriod_shouldChoosePeriodThatEndsAtStartOfForbiddenPeriod(
 	t *testing.T,
 ) {
 	minute0 := time.Now().Truncate(time.Minute)
@@ -565,7 +565,7 @@ func Test_forbiddenPeriod_givenFromBeforeForbiddenPeriod_shouldChoosePeriodThatE
 	assert.Equal(t, minute15, solverPeriod.To())
 }
 
-// Time is enabled, from 0 - 60
+// Time is enabled: 0 - 60
 // Requires exactly one color: color1 or color2
 // color1 is preferred 0 - 30
 // color2 is preferred 30 - 60
@@ -615,7 +615,7 @@ func Test_forbiddenPeriod_withChangingDefaultColor(
 	asserter.assertActive(t, "color2")
 }
 
-// Time is enabled, from 0 - 60
+// Time is enabled: 0 - 60
 // ItemX is forbidden 0 - 30
 // 30 - 60 is forbidden
 //
@@ -656,4 +656,36 @@ func Test_forbiddenPeriod_givenSelectedItem_isOnlyAvailableInForbiddenPeriod(
 	asserter := newSolutionAsserter(solution)
 	asserter.assertInactive(t, "itemX")
 	asserter.assertActive(t, "period_0")
+}
+
+func Test_forbiddenPeriod_givenRequiredItemOnlyAvailableInForbiddenPeriod_noSolutionCanBeFound(
+	t *testing.T,
+) {
+	minute0 := time.Now().Truncate(time.Minute)
+	minute30 := minute0.Add(30 * time.Minute)
+	minute60 := minute0.Add(60 * time.Minute)
+
+	creator := puan.NewRulesetCreator()
+
+	_ = creator.EnableTime(minute0, minute60)
+
+	_ = creator.ForbidPeriod(
+		minute30,
+		minute60,
+	)
+
+	_ = creator.AddPrimitives("itemX")
+	notX, _ := creator.SetNot("itemX")
+	_ = creator.AssumeInPeriod(notX, minute0, minute30)
+	_ = creator.Assume("itemX")
+
+	ruleset, _ := creator.Create()
+
+	_, err := solutionCreator.Create(
+		nil,
+		ruleset,
+		nil,
+	)
+
+	assert.Error(t, err)
 }
