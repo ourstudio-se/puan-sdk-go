@@ -226,7 +226,8 @@ func (c *RulesetCreator) ForbidPeriod(
 	for _, existingForbiddenPeriod := range c.forbiddenPeriods {
 		if existingForbiddenPeriod.overlaps(period) {
 			return errors.Errorf(
-				"period %v overlaps with existing forbidden period %v",
+				"%w: period %v overlaps with existing forbidden period %v",
+				puanerror.InvalidArgument,
 				period,
 				existingForbiddenPeriod,
 			)

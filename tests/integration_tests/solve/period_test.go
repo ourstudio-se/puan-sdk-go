@@ -627,7 +627,7 @@ func Test_forbiddenPeriod_givenSelectedItem_isOnlyAvailableInForbiddenPeriod(
 ) {
 	minute0 := time.Now().Truncate(time.Minute)
 	minute30 := minute0.Add(30 * time.Minute)
-	minute60 := minute0.Add(60 * time.Hour)
+	minute60 := minute0.Add(60 * time.Minute)
 
 	creator := puan.NewRulesetCreator()
 
