@@ -18,6 +18,7 @@ type RulesetCreator struct {
 	assumedVariables   []string
 
 	period                      *Period
+	forbiddenPeriods            []Period
 	timeBoundAssumedVariables   TimeBoundVariables
 	timeBoundPreferredVariables TimeBoundVariables
 }
@@ -51,8 +52,8 @@ func (c *RulesetCreator) SetOr(variables ...string) (string, error) {
 	return c.model.SetOr(variables...)
 }
 
-func (c *RulesetCreator) SetNot(variable ...string) (string, error) {
-	return c.model.SetNot(variable...)
+func (c *RulesetCreator) SetNot(variables ...string) (string, error) {
+	return c.model.SetNot(variables...)
 }
 
 func (c *RulesetCreator) SetImply(condition, consequence string) (string, error) {
@@ -157,7 +158,7 @@ func (c *RulesetCreator) newTimeBoundVariable(
 	id string,
 	from, to time.Time,
 ) (TimeBoundVariable, error) {
-	if c.period == nil {
+	if c.timeDisabled() {
 		return TimeBoundVariable{}, errors.Errorf(
 			"%w: time support not enabled. Call EnableTime() first",
 			puanerror.InvalidOperation,
@@ -198,8 +199,48 @@ func (c *RulesetCreator) EnableTime(
 	return nil
 }
 
+func (c *RulesetCreator) ForbidPeriod(
+	from, to time.Time,
+) error {
+	if c.timeDisabled() {
+		return errors.Errorf(
+			"%w: time support not enabled. Call EnableTime() first",
+			puanerror.InvalidOperation,
+		)
+	}
+
+	period, err := NewPeriod(from, to)
+	if err != nil {
+		return err
+	}
+
+	if !c.period.contains(period) {
+		return errors.Errorf(
+			"%w: period %v is outside of enabled period %v",
+			puanerror.InvalidArgument,
+			period,
+			*c.period,
+		)
+	}
+
+	for _, existingForbiddenPeriod := range c.forbiddenPeriods {
+		if existingForbiddenPeriod.overlaps(period) {
+			return errors.Errorf(
+				"%w: period %v overlaps with existing forbidden period %v",
+				puanerror.InvalidArgument,
+				period,
+				existingForbiddenPeriod,
+			)
+		}
+	}
+
+	c.forbiddenPeriods = append(c.forbiddenPeriods, period)
+
+	return nil
+}
+
 func (c *RulesetCreator) Create() (Ruleset, error) {
-	periodVariables, err := c.newPeriodVariables()
+	periodVariables, err := c.createPeriodVariables()
 	if err != nil {
 		return Ruleset{}, err
 	}
@@ -209,7 +250,7 @@ func (c *RulesetCreator) Create() (Ruleset, error) {
 		return Ruleset{}, err
 	}
 
-	err = c.createPreferredsManyInPeriods(periodVariables)
+	err = c.createPeriodPreferreds(periodVariables)
 	if err != nil {
 		return Ruleset{}, err
 	}
@@ -258,7 +299,7 @@ func (c *RulesetCreator) findDependantVariables() []string {
 	return utils.Union(constraintVariables, assumedVariables)
 }
 
-func (c *RulesetCreator) newPeriodVariables() (TimeBoundVariables, error) {
+func (c *RulesetCreator) createPeriodVariables() (TimeBoundVariables, error) {
 	if c.timeDisabled() {
 		return nil, nil
 	}
@@ -267,17 +308,14 @@ func (c *RulesetCreator) newPeriodVariables() (TimeBoundVariables, error) {
 		c.periods(),
 	)
 
-	// Create variable for each period
-	periodVariables := make(TimeBoundVariables, len(nonOverlappingPeriods))
-	for i, period := range nonOverlappingPeriods {
-		period := TimeBoundVariable{
-			variable: fmt.Sprintf("period_%d", i),
-			period:   period,
-		}
-		periodVariables[i] = period
-		if err := c.model.AddPrimitives(period.variable); err != nil {
-			return nil, err
-		}
+	periodVariables, err := c.newPeriodVariables(nonOverlappingPeriods)
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.model.AddPrimitives(periodVariables.ids()...)
+	if err != nil {
+		return nil, err
 	}
 
 	return periodVariables, nil
@@ -287,19 +325,104 @@ func (c *RulesetCreator) timeDisabled() bool {
 	return c.period == nil
 }
 
+func (c *RulesetCreator) newPeriodVariables(
+	orderedPeriods []Period,
+) (TimeBoundVariables, error) {
+	for i := range len(orderedPeriods) - 1 {
+		notTouching := !orderedPeriods[i].to.Equal(orderedPeriods[i+1].from)
+		if notTouching {
+			return nil, errors.Errorf(
+				"periods %v and %v are not touching",
+				orderedPeriods[i],
+				orderedPeriods[i+1],
+			)
+		}
+	}
+
+	periodVariables := make(TimeBoundVariables, len(orderedPeriods))
+	for i, period := range orderedPeriods {
+		periodVariable := TimeBoundVariable{
+			variable: fmt.Sprintf("period_%d", i),
+			period:   period,
+		}
+		periodVariables[i] = periodVariable
+	}
+
+	return periodVariables, nil
+}
+
 func (c *RulesetCreator) periods() []Period {
 	periods := []Period{}
 	periods = append(periods, *c.period)
+	periods = append(periods, c.forbiddenPeriods...)
 	periods = append(periods, c.timeBoundAssumedVariables.periods()...)
 	periods = append(periods, c.timeBoundPreferredVariables.periods()...)
 	return periods
 }
 
-func (c *RulesetCreator) createPeriodConstraints(periodVariables TimeBoundVariables) error {
+func (c *RulesetCreator) createPeriodConstraints(
+	periodVariables TimeBoundVariables,
+) error {
 	if c.timeDisabled() {
 		return nil
 	}
 
+	if err := c.createForbiddenPeriodsConstraint(periodVariables); err != nil {
+		return err
+	}
+
+	if err := c.createTimeBoundAssumeConstraints(periodVariables); err != nil {
+		return err
+	}
+
+	if err := c.createExactlyOnePeriodConstraint(periodVariables); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *RulesetCreator) createForbiddenPeriodsConstraint(
+	periodVariables TimeBoundVariables,
+) error {
+	forbidden := c.findForbiddenPeriods(periodVariables)
+
+	if len(forbidden) == 0 {
+		return nil
+	}
+
+	constraintID, err := c.SetNot(forbidden.ids()...)
+	if err != nil {
+		return err
+	}
+
+	return c.Assume(constraintID)
+}
+
+func (c *RulesetCreator) findForbiddenPeriods(
+	periodVariables TimeBoundVariables,
+) TimeBoundVariables {
+	return utils.Filter(periodVariables, c.isForbiddenPeriod)
+}
+
+// A `periodVariable` is assumed to be either contained
+// in a forbidden period, or completely outside of it.
+// We don't expect any period variables to have partial
+// overlap with a forbidden period.
+func (c *RulesetCreator) isForbiddenPeriod(
+	periodVariable TimeBoundVariable,
+) bool {
+	for _, forbiddenPeriod := range c.forbiddenPeriods {
+		if forbiddenPeriod.contains(periodVariable.period) {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *RulesetCreator) createTimeBoundAssumeConstraints(
+	periodVariables TimeBoundVariables,
+) error {
 	groupedByPeriods, err := groupByPeriods(periodVariables, c.timeBoundAssumedVariables)
 	if err != nil {
 		return err
@@ -315,17 +438,20 @@ func (c *RulesetCreator) createPeriodConstraints(periodVariables TimeBoundVariab
 		constraintIDs = append(constraintIDs, constraintID)
 	}
 
-	// Choose exactly one period
+	return c.Assume(constraintIDs...)
+}
+
+func (c *RulesetCreator) createExactlyOnePeriodConstraint(
+	periodVariables TimeBoundVariables,
+) error {
 	exactlyOnePeriod, err := c.setSingleOrXOR(periodVariables.ids()...)
 	if err != nil {
 		return err
 	}
-	constraintIDs = append(constraintIDs, exactlyOnePeriod)
-
-	return c.Assume(constraintIDs...)
+	return c.Assume(exactlyOnePeriod)
 }
 
-func (c *RulesetCreator) createPreferredsManyInPeriods(periodVariables TimeBoundVariables) error {
+func (c *RulesetCreator) createPeriodPreferreds(periodVariables TimeBoundVariables) error {
 	if c.timeDisabled() {
 		return nil
 	}

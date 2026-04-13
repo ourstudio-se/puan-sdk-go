@@ -500,34 +500,192 @@ func Test_givenXORWithManyPreferredInFirstPeriod_selectNonPreferredItem_shouldCh
 	asserter.assertInactive(t, "period_1")
 }
 
-type solutionAsserter struct {
-	puan.Solution
+func Test_forbiddenPeriod_givenFromInForbiddenPeriod_shouldChoosePeriodAfterForbiddenPeriod(
+	t *testing.T,
+) {
+	minute0 := time.Now().Truncate(time.Minute)
+	minute15 := minute0.Add(15 * time.Minute)
+	minute30 := minute0.Add(30 * time.Minute)
+	minute45 := minute0.Add(45 * time.Minute)
+	minute60 := minute0.Add(1 * time.Hour)
+
+	creator := puan.NewRulesetCreator()
+
+	_ = creator.EnableTime(minute0, minute60)
+
+	_ = creator.ForbidPeriod(
+		minute15,
+		minute45,
+	)
+
+	ruleset, _ := creator.Create()
+
+	envelope, _ := solutionCreator.Create(
+		nil,
+		ruleset,
+		&minute30,
+	)
+	solution := envelope.Solution()
+
+	solverPeriod, _ := ruleset.FindPeriodInSolution(solution)
+
+	assert.Equal(t, minute45, solverPeriod.From())
+	assert.Equal(t, minute60, solverPeriod.To())
 }
 
-func newSolutionAsserter(solution puan.Solution) solutionAsserter {
-	return solutionAsserter{solution}
+func Test_forbiddenPeriod_givenFromBeforeForbiddenPeriod_shouldChoosePeriodThatEndsAtStartOfForbiddenPeriod(
+	t *testing.T,
+) {
+	minute0 := time.Now().Truncate(time.Minute)
+	minute15 := minute0.Add(15 * time.Minute)
+	minute45 := minute0.Add(45 * time.Minute)
+	minute60 := minute0.Add(1 * time.Hour)
+
+	creator := puan.NewRulesetCreator()
+
+	_ = creator.EnableTime(minute0, minute60)
+
+	_ = creator.ForbidPeriod(
+		minute15,
+		minute45,
+	)
+
+	ruleset, _ := creator.Create()
+
+	envelope, _ := solutionCreator.Create(
+		nil,
+		ruleset,
+		nil,
+	)
+	solution := envelope.Solution()
+
+	solverPeriod, _ := ruleset.FindPeriodInSolution(solution)
+
+	assert.Equal(t, minute0, solverPeriod.From())
+	assert.Equal(t, minute15, solverPeriod.To())
 }
 
-func (s solutionAsserter) assertActive(t *testing.T, variables ...string) {
-	solution := s.Extract(variables...)
-	for _, variable := range variables {
-		value, ok := solution[variable]
-		if !ok {
-			assert.Failf(t, "variable %s not found in solution", variable)
-		}
+// Time is enabled: 0 - 60
+// Requires exactly one color: color1 or color2
+// color1 is preferred 0 - 30
+// color2 is preferred 30 - 60
+// 15 - 45 is forbidden
+//
+// Find a solution from 15
+// Since 15 - 45 is forbidden, the solver should choose 45
+// Since the solver chooses 45, color2 should be active
+func Test_forbiddenPeriod_withChangingDefaultColor(
+	t *testing.T,
+) {
+	minute0 := time.Now().Truncate(time.Minute)
+	minute15 := minute0.Add(15 * time.Minute)
+	minute30 := minute0.Add(30 * time.Minute)
+	minute45 := minute0.Add(45 * time.Minute)
+	minute60 := minute0.Add(1 * time.Hour)
 
-		assert.Equal(t, 1, value, "expected %s to be active", variable)
-	}
+	creator := puan.NewRulesetCreator()
+
+	_ = creator.EnableTime(minute0, minute60)
+
+	_ = creator.ForbidPeriod(
+		minute15,
+		minute45,
+	)
+
+	_ = creator.AddPrimitives("color1", "color2")
+	singleColor, _ := creator.SetXor("color1", "color2")
+	_ = creator.Assume(singleColor)
+
+	preferColor1, _ := creator.SetImply(singleColor, "color1")
+	_ = creator.PreferInPeriod(preferColor1, minute0, minute30)
+	preferColor2, _ := creator.SetImply(singleColor, "color2")
+	_ = creator.PreferInPeriod(preferColor2, minute30, minute60)
+
+	ruleset, _ := creator.Create()
+
+	envelope, _ := solutionCreator.Create(
+		nil,
+		ruleset,
+		&minute15,
+	)
+	solution := envelope.Solution()
+
+	asserter := newSolutionAsserter(solution)
+	asserter.assertInactive(t, "color1")
+	asserter.assertActive(t, "color2")
 }
 
-func (s solutionAsserter) assertInactive(t *testing.T, variables ...string) {
-	solution := s.Extract(variables...)
-	for _, variable := range variables {
-		value, ok := solution[variable]
-		if !ok {
-			assert.Failf(t, "variable %s not found in solution", variable)
-		}
+// Time is enabled: 0 - 60
+// ItemX is forbidden 0 - 30
+// 30 - 60 is forbidden
+//
+// Find a solution with itemX selected
+// Since the time when itemX is available is forbidden,
+// itemX is not selected and the solver chooses the earliest period.
+func Test_forbiddenPeriod_givenSelectedItem_isOnlyAvailableInForbiddenPeriod(
+	t *testing.T,
+) {
+	minute0 := time.Now().Truncate(time.Minute)
+	minute30 := minute0.Add(30 * time.Minute)
+	minute60 := minute0.Add(60 * time.Minute)
 
-		assert.Equal(t, 0, value, "expected %s to be inactive", variable)
-	}
+	creator := puan.NewRulesetCreator()
+
+	_ = creator.EnableTime(minute0, minute60)
+
+	_ = creator.ForbidPeriod(
+		minute30,
+		minute60,
+	)
+
+	_ = creator.AddPrimitives("itemX")
+	notX, _ := creator.SetNot("itemX")
+	_ = creator.AssumeInPeriod(notX, minute0, minute30)
+
+	ruleset, _ := creator.Create()
+
+	envelope, _ := solutionCreator.Create(
+		puan.Selections{
+			puan.NewSelectionBuilder("itemX").Build(),
+		},
+		ruleset,
+		nil,
+	)
+	solution := envelope.Solution()
+
+	asserter := newSolutionAsserter(solution)
+	asserter.assertInactive(t, "itemX")
+	asserter.assertActive(t, "period_0")
+}
+
+func Test_forbiddenPeriod_givenRequiredItemOnlyAvailableInForbiddenPeriod_noSolutionCanBeFound(
+	t *testing.T,
+) {
+	minute0 := time.Now().Truncate(time.Minute)
+	minute30 := minute0.Add(30 * time.Minute)
+	minute60 := minute0.Add(60 * time.Minute)
+
+	creator := puan.NewRulesetCreator()
+
+	_ = creator.EnableTime(minute0, minute60)
+
+	_ = creator.ForbidPeriod(
+		minute30,
+		minute60,
+	)
+
+	_ = creator.AddPrimitives("itemX")
+	notX, _ := creator.SetNot("itemX")
+	_ = creator.AssumeInPeriod(notX, minute0, minute30)
+	_ = creator.Assume("itemX")
+
+	ruleset, _ := creator.Create()
+
+	_, err := solutionCreator.Create(
+		nil,
+		ruleset,
+		nil,
+	)
+
+	assert.Error(t, err)
 }

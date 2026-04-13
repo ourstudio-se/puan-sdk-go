@@ -176,6 +176,88 @@ func Test_RulesetCreator_AssumeInPeriod_givenDifferentPeriod_shouldAddTimeBoundV
 	assert.Contains(t, creator.timeBoundAssumedVariables.ids(), "itemX")
 }
 
+func Test_RulesetCreator_ForbidPeriod_givenValidPeriod_shouldAddPeriod(t *testing.T) {
+	creator := RulesetCreator{
+		period: &Period{
+			from: newTestTime("2024-01-01"),
+			to:   newTestTime("2024-01-31"),
+		},
+	}
+
+	forbiddenFrom := newTestTime("2024-01-10")
+	forbiddenTo := newTestTime("2024-01-15")
+
+	err := creator.ForbidPeriod(forbiddenFrom, forbiddenTo)
+
+	assert.NoError(t, err)
+	assert.Equal(t, []Period{
+		{
+			from: forbiddenFrom,
+			to:   forbiddenTo,
+		},
+	}, creator.forbiddenPeriods)
+}
+
+func Test_RulesetCreator_ForbidPeriod_givenErrorCases_shouldReturnError(t *testing.T) {
+	type testCase struct {
+		name             string
+		from             time.Time
+		to               time.Time
+		forbiddenPeriods []Period
+	}
+
+	cases := []testCase{
+		{
+			name: "from after to",
+			from: newTestTime("2024-01-10"),
+			to:   newTestTime("2024-01-05"),
+		},
+		{
+			name: "outside of enabled period",
+			from: newTestTime("2023-12-20"),
+			to:   newTestTime("2023-12-25"),
+		},
+		{
+			name: "overlaps with existing forbidden period",
+			from: newTestTime("2024-01-14"),
+			to:   newTestTime("2024-01-20"),
+			forbiddenPeriods: []Period{
+				{
+					from: newTestTime("2024-01-10"),
+					to:   newTestTime("2024-01-15"),
+				},
+			},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			creator := RulesetCreator{
+				period: &Period{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-31"),
+				},
+				forbiddenPeriods: tt.forbiddenPeriods,
+			}
+
+			err := creator.ForbidPeriod(tt.from, tt.to)
+
+			assert.Error(t, err)
+		})
+	}
+}
+
+func Test_RulesetCreator_ForbidPeriod_givenTimeNotEnabled_shouldReturnError(
+	t *testing.T,
+) {
+	creator := NewRulesetCreator()
+	err := creator.ForbidPeriod(
+		fake.New[time.Time](),
+		fake.New[time.Time](),
+	)
+	assert.ErrorIs(t, err, puanerror.InvalidOperation)
+}
+
 func Test_RulesetCreator_setSingleOrOR_givenNoIDs_shouldReturnError(t *testing.T) {
 	creator := NewRulesetCreator()
 	_, err := creator.setSingleOrOR([]string{}...)
@@ -224,6 +306,162 @@ func Test_RulesetCreator_setSingleOrAND_givenDuplicatedIDs_shouldReturnID(t *tes
 	assert.Equal(t, code, got)
 }
 
+func Test_RulesetCreator_isForbiddenPeriod(t *testing.T) {
+	tests := []struct {
+		name             string
+		forbiddenPeriods []Period
+		periodVariable   TimeBoundVariable
+		want             bool
+	}{
+		{
+			name:             "no forbidden periods, is not forbidden",
+			forbiddenPeriods: nil,
+			periodVariable: TimeBoundVariable{
+				period: Period{
+					from: newTestTime("2024-01-10"),
+					to:   newTestTime("2024-01-12"),
+				},
+			},
+			want: false,
+		},
+		{
+			name: "period is fully inside forbidden period, is forbidden",
+			forbiddenPeriods: []Period{
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-31"),
+				},
+			},
+			periodVariable: TimeBoundVariable{
+				period: Period{
+					from: newTestTime("2024-01-10"),
+					to:   newTestTime("2024-01-12"),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "partial overlap, is not forbidden",
+			forbiddenPeriods: []Period{
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-10"),
+				},
+			},
+			periodVariable: TimeBoundVariable{
+				period: Period{
+					from: newTestTime("2024-01-09"),
+					to:   newTestTime("2024-01-12"),
+				},
+			},
+			want: false,
+		},
+		{
+			name: "none overlap, is not forbidden",
+			forbiddenPeriods: []Period{
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-10"),
+				},
+				{
+					from: newTestTime("2024-01-20"),
+					to:   newTestTime("2024-01-30"),
+				},
+			},
+			periodVariable: TimeBoundVariable{
+				period: Period{
+					from: newTestTime("2024-01-12"),
+					to:   newTestTime("2024-01-18"),
+				},
+			},
+			want: false,
+		},
+		{
+			name: "period touching 1 edge, is forbidden",
+			forbiddenPeriods: []Period{
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-10"),
+				},
+			},
+			periodVariable: TimeBoundVariable{
+				period: Period{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-05"),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "period touching both edges, is forbidden",
+			forbiddenPeriods: []Period{
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-10"),
+				},
+			},
+			periodVariable: TimeBoundVariable{
+				period: Period{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-10"),
+				},
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			creator := RulesetCreator{
+				forbiddenPeriods: tt.forbiddenPeriods,
+			}
+
+			got := creator.isForbiddenPeriod(tt.periodVariable)
+
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_RulesetCreator_findForbiddenPeriods(t *testing.T) {
+	creator := NewRulesetCreator()
+	creator.forbiddenPeriods = []Period{
+		{
+			from: newTestTime("2024-01-01"),
+			to:   newTestTime("2024-01-10"),
+		},
+	}
+
+	forbiddenPeriod := TimeBoundVariable{
+		variable: fake.New[string](),
+		period: Period{
+			from: newTestTime("2024-01-02"),
+			to:   newTestTime("2024-01-05"),
+		},
+	}
+	allowedPeriod := TimeBoundVariable{
+		variable: fake.New[string](),
+		period: Period{
+			from: newTestTime("2024-01-10"),
+			to:   newTestTime("2024-01-12"),
+		},
+	}
+	periodVariables := TimeBoundVariables{
+		forbiddenPeriod,
+		allowedPeriod,
+	}
+
+	got := creator.findForbiddenPeriods(periodVariables)
+
+	assert.Equal(
+		t,
+		TimeBoundVariables{
+			forbiddenPeriod,
+		},
+		got,
+	)
+}
+
 func Test_AddPrimitives_givenPrimitiveWithPeriodPrefix_shouldReturnError(t *testing.T) {
 	creator := NewRulesetCreator()
 	err := creator.AddPrimitives("period_")
@@ -234,4 +472,116 @@ func Test_AddPrimitives_givenPrimitiveWithoutPeriodPrefix_shouldReturnNoError(t 
 	creator := NewRulesetCreator()
 	err := creator.AddPrimitives(fake.New[string]())
 	assert.NoError(t, err)
+}
+
+// nolint:lll
+func Test_RulesetCreator_newPeriodVariables_givenTouchingAndOrderedPeriods_shouldReturnPeriodVariables(
+	t *testing.T,
+) {
+	periods := []Period{
+		{
+			from: newTestTime("2024-01-01"),
+			to:   newTestTime("2024-01-05"),
+		},
+		{
+			from: newTestTime("2024-01-05"),
+			to:   newTestTime("2024-01-10"),
+		},
+		{
+			from: newTestTime("2024-01-10"),
+			to:   newTestTime("2024-01-15"),
+		},
+	}
+
+	creator := RulesetCreator{}
+	periodVariables, err := creator.newPeriodVariables(periods)
+
+	assert.NoError(t, err)
+	want := TimeBoundVariables{
+		{
+			variable: "period_0",
+			period:   periods[0],
+		},
+		{
+			variable: "period_1",
+			period:   periods[1],
+		},
+		{
+			variable: "period_2",
+			period:   periods[2],
+		},
+	}
+	assert.Equal(t, want, periodVariables)
+}
+
+func Test_RulesetCreator_newPeriodVariables_givenInvalidPeriods_shouldReturnError(t *testing.T) {
+	type testCase struct {
+		name    string
+		periods []Period
+	}
+
+	cases := []testCase{
+		{
+			name: "given gaps",
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-05"),
+				},
+				{
+					from: newTestTime("2024-01-10"),
+					to:   newTestTime("2024-01-15"),
+				},
+			},
+		},
+		{
+			name: "given overlaps",
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-10"),
+				},
+				{
+					from: newTestTime("2024-01-05"),
+					to:   newTestTime("2024-01-15"),
+				},
+			},
+		},
+		{
+			name: "given duplicates",
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-10"),
+				},
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-10"),
+				},
+			},
+		},
+		{
+			name: "not sorted",
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-05"),
+					to:   newTestTime("2024-01-10"),
+				},
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-05"),
+				},
+			},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			creator := RulesetCreator{}
+
+			_, err := creator.newPeriodVariables(tt.periods)
+
+			assert.Error(t, err)
+		})
+	}
 }
