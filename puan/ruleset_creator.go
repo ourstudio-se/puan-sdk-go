@@ -158,7 +158,7 @@ func (c *RulesetCreator) newTimeBoundVariable(
 	id string,
 	from, to time.Time,
 ) (TimeBoundVariable, error) {
-	if c.period == nil {
+	if c.timeDisabled() {
 		return TimeBoundVariable{}, errors.Errorf(
 			"%w: time support not enabled. Call EnableTime() first",
 			puanerror.InvalidOperation,
@@ -202,6 +202,13 @@ func (c *RulesetCreator) EnableTime(
 func (c *RulesetCreator) ForbidPeriod(
 	from, to time.Time,
 ) error {
+	if c.timeDisabled() {
+		return errors.Errorf(
+			"%w: time support not enabled. Call EnableTime() first",
+			puanerror.InvalidOperation,
+		)
+	}
+
 	period, err := NewPeriod(from, to)
 	if err != nil {
 		return err

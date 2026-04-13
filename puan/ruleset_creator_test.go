@@ -247,6 +247,17 @@ func Test_RulesetCreator_ForbidPeriod_givenErrorCases_shouldReturnError(t *testi
 	}
 }
 
+func Test_RulesetCreator_ForbidPeriod_givenTimeNotEnabled_shouldReturnError(
+	t *testing.T,
+) {
+	creator := NewRulesetCreator()
+	err := creator.ForbidPeriod(
+		fake.New[time.Time](),
+		fake.New[time.Time](),
+	)
+	assert.ErrorIs(t, err, puanerror.InvalidOperation)
+}
+
 func Test_RulesetCreator_setSingleOrOR_givenNoIDs_shouldReturnError(t *testing.T) {
 	creator := NewRulesetCreator()
 	_, err := creator.setSingleOrOR([]string{}...)
