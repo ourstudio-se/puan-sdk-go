@@ -405,6 +405,10 @@ func (c *RulesetCreator) findForbiddenPeriods(
 	return utils.Filter(periodVariables, c.isForbiddenPeriod)
 }
 
+// A `periodVariable` is assumed to be either contained
+// in a forbidden period, or completely outside of it.
+// We don't expect any period variables to have partial
+// overlap with a forbidden period.
 func (c *RulesetCreator) isForbiddenPeriod(
 	periodVariable TimeBoundVariable,
 ) bool {
