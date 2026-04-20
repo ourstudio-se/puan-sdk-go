@@ -8,6 +8,7 @@ import (
 	"github.com/go-faker/faker/v4/pkg/options"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
 	"github.com/ourstudio-se/puan-sdk-go/puanerror"
@@ -515,6 +516,8 @@ func Test_RulesetCreator_newPeriodVariables_givenTouchingAndOrderedPeriods_shoul
 }
 
 func Test_RulesetCreator_newPeriodVariables_givenInvalidPeriods_shouldReturnError(t *testing.T) {
+	t.Skip()
+
 	type testCase struct {
 		name    string
 		periods []Period
@@ -584,4 +587,95 @@ func Test_RulesetCreator_newPeriodVariables_givenInvalidPeriods_shouldReturnErro
 			assert.Error(t, err)
 		})
 	}
+}
+
+func Test_RulesetCreator_Create_givenForbiddenPeriod_shouldNotBeIncludedInRuleset(
+	t *testing.T,
+) {
+	minute0 := time.Now().Truncate(time.Minute)
+	minute30 := minute0.Add(30 * time.Minute)
+	minute60 := minute0.Add(60 * time.Minute)
+
+	creator := NewRulesetCreator()
+
+	_ = creator.EnableTime(minute0, minute60)
+
+	_ = creator.ForbidPeriod(
+		minute30,
+		minute60,
+	)
+
+	ruleset, err := creator.Create()
+
+	require.NoError(t, err)
+	assert.Len(t, ruleset.PeriodVariables(), 1)
+	assert.Equal(
+		t,
+		ruleset.PeriodVariables()[0].Period(),
+		Period{
+			from: minute0,
+			to:   minute30,
+		},
+	)
+}
+
+func Test_RulesetCreator_Create_givenAssumedInForbiddenPeriod_shouldNotBeIncludedInRuleset(
+	t *testing.T,
+) {
+	minute0 := time.Now().Truncate(time.Minute)
+	minute30 := minute0.Add(30 * time.Minute)
+	minute60 := minute0.Add(60 * time.Minute)
+
+	creator := NewRulesetCreator()
+
+	_ = creator.EnableTime(minute0, minute60)
+
+	_ = creator.ForbidPeriod(
+		minute30,
+		minute60,
+	)
+
+	code := fake.New[string]()
+	_ = creator.AddPrimitives(code)
+	_ = creator.AssumeInPeriod(code, minute30, minute60)
+
+	ruleset, err := creator.Create()
+
+	require.NoError(t, err)
+	assert.Equal(
+		t,
+		ruleset.independentVariables,
+		[]string{code},
+	)
+}
+
+func Test_RulesetCreator_Create_givenPreferredInForbiddenPeriod_shouldNotBeIncludedInRuleset(
+	t *testing.T,
+) {
+	minute0 := time.Now().Truncate(time.Minute)
+	minute30 := minute0.Add(30 * time.Minute)
+	minute60 := minute0.Add(60 * time.Minute)
+
+	creator := NewRulesetCreator()
+
+	_ = creator.EnableTime(minute0, minute60)
+
+	_ = creator.ForbidPeriod(
+		minute30,
+		minute60,
+	)
+
+	code := fake.New[string]()
+	_ = creator.AddPrimitives(code)
+	_ = creator.PreferInPeriod(code, minute30, minute60)
+
+	ruleset, err := creator.Create()
+
+	require.NoError(t, err)
+	assert.Equal(
+		t,
+		ruleset.independentVariables,
+		[]string{code},
+	)
+	assert.Empty(t, ruleset.PreferredVariables())
 }

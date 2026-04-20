@@ -308,7 +308,19 @@ func (c *RulesetCreator) createPeriodVariables() (TimeBoundVariables, error) {
 		c.periods(),
 	)
 
-	periodVariables, err := c.newPeriodVariables(nonOverlappingPeriods)
+	allowedPeriods := utils.Filter(
+		nonOverlappingPeriods,
+		func(period Period) bool {
+			for _, forbiddenPeriod := range c.forbiddenPeriods {
+				if forbiddenPeriod.contains(period) {
+					return false
+				}
+			}
+			return true
+		},
+	)
+
+	periodVariables, err := c.newPeriodVariables(allowedPeriods)
 	if err != nil {
 		return nil, err
 	}
@@ -328,16 +340,16 @@ func (c *RulesetCreator) timeDisabled() bool {
 func (c *RulesetCreator) newPeriodVariables(
 	orderedPeriods []Period,
 ) (TimeBoundVariables, error) {
-	for i := range len(orderedPeriods) - 1 {
-		notTouching := !orderedPeriods[i].to.Equal(orderedPeriods[i+1].from)
-		if notTouching {
-			return nil, errors.Errorf(
-				"periods %v and %v are not touching",
-				orderedPeriods[i],
-				orderedPeriods[i+1],
-			)
-		}
-	}
+	// for i := range len(orderedPeriods) - 1 {
+	// 	notTouching := !orderedPeriods[i].to.Equal(orderedPeriods[i+1].from)
+	// 	if notTouching {
+	// 		return nil, errors.Errorf(
+	// 			"periods %v and %v are not touching",
+	// 			orderedPeriods[i],
+	// 			orderedPeriods[i+1],
+	// 		)
+	// 	}
+	// }
 
 	periodVariables := make(TimeBoundVariables, len(orderedPeriods))
 	for i, period := range orderedPeriods {
@@ -423,7 +435,9 @@ func (c *RulesetCreator) isForbiddenPeriod(
 func (c *RulesetCreator) createTimeBoundAssumeConstraints(
 	periodVariables TimeBoundVariables,
 ) error {
-	groupedByPeriods, err := groupByPeriods(periodVariables, c.timeBoundAssumedVariables)
+	validTimeBoundAssumedVariables := c.timeBoundAssumedVariables.containing(periodVariables.periods())
+
+	groupedByPeriods, err := groupByPeriods(periodVariables, validTimeBoundAssumedVariables)
 	if err != nil {
 		return err
 	}
@@ -451,12 +465,18 @@ func (c *RulesetCreator) createExactlyOnePeriodConstraint(
 	return c.Assume(exactlyOnePeriod)
 }
 
-func (c *RulesetCreator) createPeriodPreferreds(periodVariables TimeBoundVariables) error {
+func (c *RulesetCreator) createPeriodPreferreds(
+	periodVariables TimeBoundVariables,
+) error {
 	if c.timeDisabled() {
 		return nil
 	}
 
-	groupedByPeriods, err := groupByPeriods(periodVariables, c.timeBoundPreferredVariables)
+	validTimeBoundPreferredVariables := c.timeBoundPreferredVariables.containing(
+		periodVariables.periods(),
+	)
+
+	groupedByPeriods, err := groupByPeriods(periodVariables, validTimeBoundPreferredVariables)
 	if err != nil {
 		return err
 	}

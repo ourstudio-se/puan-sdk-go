@@ -11,10 +11,12 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
-type Period struct {
-	from time.Time
-	to   time.Time
-}
+type (
+	Period struct {
+		from time.Time
+		to   time.Time
+	}
+)
 
 func NewPeriod(from, to time.Time) (Period, error) {
 	if !to.After(from) {
@@ -98,6 +100,20 @@ func (p TimeBoundVariables) passed(timestamp time.Time) TimeBoundVariables {
 		hasPassed := !periodVariable.period.to.After(timestamp)
 		return hasPassed
 	})
+}
+
+func (variables TimeBoundVariables) containing(periods []Period) TimeBoundVariables {
+	return utils.Filter(
+		variables,
+		func(variable TimeBoundVariable) bool {
+			for _, period := range periods {
+				if variable.period.contains(period) {
+					return true
+				}
+			}
+			return false
+		},
+	)
 }
 
 // find all periods without caps or overlaps, sorted by start time
