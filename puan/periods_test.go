@@ -837,6 +837,156 @@ func Test_passed_givenBeforeTimestamp_shouldReturnNoVariables(t *testing.T) {
 	assert.Empty(t, actual)
 }
 
+func Test_TimeBoundVariables_containing(t *testing.T) {
+	tests := []struct {
+		name      string
+		variables TimeBoundVariables
+		periods   []Period
+		want      TimeBoundVariables
+	}{
+		{
+			name:      "empty variables returns empty",
+			variables: TimeBoundVariables{},
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-10"),
+					to:   newTestTime("2024-01-20"),
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "empty periods filters out all variables",
+			variables: TimeBoundVariables{
+				NewTimeBoundVariable("a", Period{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-31"),
+				}),
+			},
+			periods: []Period{},
+			want:    nil,
+		},
+		{
+			name: "keeps variable when its period contains a filter period",
+			variables: TimeBoundVariables{
+				NewTimeBoundVariable("x", Period{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-31"),
+				}),
+				NewTimeBoundVariable("y", Period{
+					from: newTestTime("2024-01-10"),
+					to:   newTestTime("2024-01-20"),
+				}),
+			},
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-10"),
+					to:   newTestTime("2024-01-20"),
+				},
+			},
+			want: TimeBoundVariables{
+				NewTimeBoundVariable("x", Period{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-31"),
+				}),
+				NewTimeBoundVariable("y", Period{
+					from: newTestTime("2024-01-10"),
+					to:   newTestTime("2024-01-20"),
+				}),
+			},
+		},
+		{
+			name: "excludes variable when no filter period is fully contained",
+			variables: TimeBoundVariables{
+				NewTimeBoundVariable("short", Period{
+					from: newTestTime("2024-01-10"),
+					to:   newTestTime("2024-01-20"),
+				}),
+			},
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-05"),
+					to:   newTestTime("2024-02-05"),
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "matches when any filter period is contained",
+			variables: TimeBoundVariables{
+				NewTimeBoundVariable("only-second-matches", Period{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-31"),
+				}),
+			},
+			periods: []Period{
+				{
+					from: newTestTime("2024-02-01"),
+					to:   newTestTime("2024-02-28"),
+				},
+				{
+					from: newTestTime("2024-01-10"),
+					to:   newTestTime("2024-01-20"),
+				},
+			},
+			want: TimeBoundVariables{
+				NewTimeBoundVariable("only-second-matches", Period{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-31"),
+				}),
+			},
+		},
+		{
+			name: "excludes when none of several filter periods are contained",
+			variables: TimeBoundVariables{
+				NewTimeBoundVariable("a", Period{
+					from: newTestTime("2024-01-10"),
+					to:   newTestTime("2024-01-20"),
+				}),
+			},
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-10"),
+				},
+				{
+					from: newTestTime("2024-02-01"),
+					to:   newTestTime("2024-02-28"),
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "boundary containment is included",
+			variables: TimeBoundVariables{
+				NewTimeBoundVariable("edge", Period{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-31"),
+				}),
+			},
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-31"),
+				},
+			},
+			want: TimeBoundVariables{
+				NewTimeBoundVariable("edge", Period{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-31"),
+				}),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.variables.containing(tt.periods)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func newTestTime(value string) time.Time {
 	t, err := time.Parse(time.RFC3339, value)
 	if err != nil {

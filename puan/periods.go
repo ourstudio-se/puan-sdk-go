@@ -79,6 +79,15 @@ func (t TimeBoundVariable) Variable() string {
 	return t.variable
 }
 
+func (t TimeBoundVariable) containsAny(periods []Period) bool {
+	for _, period := range periods {
+		if t.period.contains(period) {
+			return true
+		}
+	}
+	return false
+}
+
 func (p TimeBoundVariables) periods() []Period {
 	periods := make([]Period, len(p))
 	for i, periodVariable := range p {
@@ -106,12 +115,7 @@ func (variables TimeBoundVariables) containing(periods []Period) TimeBoundVariab
 	return utils.Filter(
 		variables,
 		func(variable TimeBoundVariable) bool {
-			for _, period := range periods {
-				if variable.period.contains(period) {
-					return true
-				}
-			}
-			return false
+			return variable.containsAny(periods)
 		},
 	)
 }

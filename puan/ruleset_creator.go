@@ -340,16 +340,18 @@ func (c *RulesetCreator) timeDisabled() bool {
 func (c *RulesetCreator) newPeriodVariables(
 	orderedPeriods []Period,
 ) (TimeBoundVariables, error) {
-	// for i := range len(orderedPeriods) - 1 {
-	// 	notTouching := !orderedPeriods[i].to.Equal(orderedPeriods[i+1].from)
-	// 	if notTouching {
-	// 		return nil, errors.Errorf(
-	// 			"periods %v and %v are not touching",
-	// 			orderedPeriods[i],
-	// 			orderedPeriods[i+1],
-	// 		)
-	// 	}
-	// }
+	for i := range len(orderedPeriods) - 1 {
+		previous := orderedPeriods[i]
+		current := orderedPeriods[i+1]
+		invalidOrder := current.from.Before(previous.to)
+		if invalidOrder {
+			return nil, errors.Errorf(
+				"periods %v and %v does not have expected order or overlap",
+				orderedPeriods[i],
+				orderedPeriods[i+1],
+			)
+		}
+	}
 
 	periodVariables := make(TimeBoundVariables, len(orderedPeriods))
 	for i, period := range orderedPeriods {

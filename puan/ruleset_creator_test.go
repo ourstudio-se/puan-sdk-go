@@ -476,17 +476,13 @@ func Test_AddPrimitives_givenPrimitiveWithoutPeriodPrefix_shouldReturnNoError(t 
 }
 
 // nolint:lll
-func Test_RulesetCreator_newPeriodVariables_givenTouchingAndOrderedPeriods_shouldReturnPeriodVariables(
+func Test_RulesetCreator_newPeriodVariables_givenOrderedPeriods_shouldReturnPeriodVariables(
 	t *testing.T,
 ) {
 	periods := []Period{
 		{
 			from: newTestTime("2024-01-01"),
 			to:   newTestTime("2024-01-05"),
-		},
-		{
-			from: newTestTime("2024-01-05"),
-			to:   newTestTime("2024-01-10"),
 		},
 		{
 			from: newTestTime("2024-01-10"),
@@ -507,36 +503,17 @@ func Test_RulesetCreator_newPeriodVariables_givenTouchingAndOrderedPeriods_shoul
 			variable: "period_1",
 			period:   periods[1],
 		},
-		{
-			variable: "period_2",
-			period:   periods[2],
-		},
 	}
 	assert.Equal(t, want, periodVariables)
 }
 
 func Test_RulesetCreator_newPeriodVariables_givenInvalidPeriods_shouldReturnError(t *testing.T) {
-	t.Skip()
-
 	type testCase struct {
 		name    string
 		periods []Period
 	}
 
 	cases := []testCase{
-		{
-			name: "given gaps",
-			periods: []Period{
-				{
-					from: newTestTime("2024-01-01"),
-					to:   newTestTime("2024-01-05"),
-				},
-				{
-					from: newTestTime("2024-01-10"),
-					to:   newTestTime("2024-01-15"),
-				},
-			},
-		},
 		{
 			name: "given overlaps",
 			periods: []Period{
