@@ -71,17 +71,17 @@ func NewTimeBoundVariable(variable string, period Period) TimeBoundVariable {
 	}
 }
 
-func (t TimeBoundVariable) Period() Period {
-	return t.period
+func (variable TimeBoundVariable) Period() Period {
+	return variable.period
 }
 
-func (t TimeBoundVariable) Variable() string {
-	return t.variable
+func (variable TimeBoundVariable) Variable() string {
+	return variable.variable
 }
 
-func (t TimeBoundVariable) containsAny(periods []Period) bool {
+func (variable TimeBoundVariable) containsAny(periods []Period) bool {
 	for _, period := range periods {
-		if t.period.contains(period) {
+		if variable.period.contains(period) {
 			return true
 		}
 	}
@@ -129,7 +129,7 @@ func (variables TimeBoundVariables) containing(periods []Period) TimeBoundVariab
 // .........|------|.......
 // Output:
 // |---|--|-|----|-|--|---|
-func calculateCompletePeriods(
+func calculatePartitionedPeriods(
 	periods []Period,
 ) []Period {
 	if len(periods) == 0 {
@@ -173,6 +173,23 @@ func toPeriods(edges []time.Time) []Period {
 		}
 	}
 	return periods
+}
+
+func filterOutForbiddenPeriods(
+	periods []Period,
+	forbiddenPeriods []Period,
+) []Period {
+	return utils.Filter(
+		periods,
+		func(period Period) bool {
+			for _, forbiddenPeriod := range forbiddenPeriods {
+				if forbiddenPeriod.contains(period) {
+					return false
+				}
+			}
+			return true
+		},
+	)
 }
 
 // '|' separated list of variable ids

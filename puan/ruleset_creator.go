@@ -304,23 +304,9 @@ func (c *RulesetCreator) createPeriodVariables() (TimeBoundVariables, error) {
 		return nil, nil
 	}
 
-	nonOverlappingPeriods := calculateCompletePeriods(
-		c.periods(),
-	)
+	partitionedPeriods := c.calculateAllowedPartitionedPeriods()
 
-	allowedPeriods := utils.Filter(
-		nonOverlappingPeriods,
-		func(period Period) bool {
-			for _, forbiddenPeriod := range c.forbiddenPeriods {
-				if forbiddenPeriod.contains(period) {
-					return false
-				}
-			}
-			return true
-		},
-	)
-
-	periodVariables, err := c.newPeriodVariables(allowedPeriods)
+	periodVariables, err := c.newPeriodVariables(partitionedPeriods)
 	if err != nil {
 		return nil, err
 	}
@@ -331,6 +317,19 @@ func (c *RulesetCreator) createPeriodVariables() (TimeBoundVariables, error) {
 	}
 
 	return periodVariables, nil
+}
+
+func (c *RulesetCreator) calculateAllowedPartitionedPeriods() []Period {
+	periods := c.periods()
+
+	partitionedPeriods := calculatePartitionedPeriods(periods)
+
+	allowedPartitionedPeriods := filterOutForbiddenPeriods(
+		partitionedPeriods,
+		c.forbiddenPeriods,
+	)
+
+	return allowedPartitionedPeriods
 }
 
 func (c *RulesetCreator) timeDisabled() bool {
@@ -381,10 +380,6 @@ func (c *RulesetCreator) createPeriodConstraints(
 		return nil
 	}
 
-	if err := c.createForbiddenPeriodsConstraint(periodVariables); err != nil {
-		return err
-	}
-
 	if err := c.createTimeBoundAssumeConstraints(periodVariables); err != nil {
 		return err
 	}
@@ -394,44 +389,6 @@ func (c *RulesetCreator) createPeriodConstraints(
 	}
 
 	return nil
-}
-
-func (c *RulesetCreator) createForbiddenPeriodsConstraint(
-	periodVariables TimeBoundVariables,
-) error {
-	forbidden := c.findForbiddenPeriods(periodVariables)
-
-	if len(forbidden) == 0 {
-		return nil
-	}
-
-	constraintID, err := c.SetNot(forbidden.ids()...)
-	if err != nil {
-		return err
-	}
-
-	return c.Assume(constraintID)
-}
-
-func (c *RulesetCreator) findForbiddenPeriods(
-	periodVariables TimeBoundVariables,
-) TimeBoundVariables {
-	return utils.Filter(periodVariables, c.isForbiddenPeriod)
-}
-
-// A `periodVariable` is assumed to be either contained
-// in a forbidden period, or completely outside of it.
-// We don't expect any period variables to have partial
-// overlap with a forbidden period.
-func (c *RulesetCreator) isForbiddenPeriod(
-	periodVariable TimeBoundVariable,
-) bool {
-	for _, forbiddenPeriod := range c.forbiddenPeriods {
-		if forbiddenPeriod.contains(periodVariable.period) {
-			return true
-		}
-	}
-	return false
 }
 
 func (c *RulesetCreator) createTimeBoundAssumeConstraints(

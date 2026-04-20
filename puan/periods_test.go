@@ -250,7 +250,96 @@ func Test_Period_contains(t *testing.T) {
 	}
 }
 
-func Test_calculateCompletePeriods(t *testing.T) {
+func Test_filterOutForbiddenPeriods(t *testing.T) {
+	tests := []struct {
+		name             string
+		periods          []Period
+		forbiddenPeriods []Period
+		want             []Period
+	}{
+		{
+			name:    "empty periods, returns nil",
+			periods: nil,
+			forbiddenPeriods: []Period{
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-31"),
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "no forbidden periods, returns all",
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-15"),
+				},
+				{
+					from: newTestTime("2024-01-15"),
+					to:   newTestTime("2024-01-31"),
+				},
+			},
+			forbiddenPeriods: nil,
+			want: []Period{
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-15"),
+				},
+				{
+					from: newTestTime("2024-01-15"),
+					to:   newTestTime("2024-01-31"),
+				},
+			},
+		},
+		{
+			name: "given fully contained period, is removed",
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-10"),
+					to:   newTestTime("2024-01-20"),
+				},
+			},
+			forbiddenPeriods: []Period{
+				{
+					from: newTestTime("2024-01-01"),
+					to:   newTestTime("2024-01-31"),
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "given overlapping period, is kept",
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-15"),
+					to:   newTestTime("2024-01-28"),
+				},
+			},
+			forbiddenPeriods: []Period{
+				{
+					from: newTestTime("2024-01-10"),
+					to:   newTestTime("2024-01-20"),
+				},
+			},
+			want: []Period{
+				{
+					from: newTestTime("2024-01-15"),
+					to:   newTestTime("2024-01-28"),
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := filterOutForbiddenPeriods(tt.periods, tt.forbiddenPeriods)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_calculatePartitionedPeriods(t *testing.T) {
 	tests := []struct {
 		name     string
 		periods  []Period
@@ -404,7 +493,7 @@ func Test_calculateCompletePeriods(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := calculateCompletePeriods(tt.periods)
+			actual := calculatePartitionedPeriods(tt.periods)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
@@ -835,6 +924,60 @@ func Test_passed_givenBeforeTimestamp_shouldReturnNoVariables(t *testing.T) {
 
 	actual := variables.passed(timestamp)
 	assert.Empty(t, actual)
+}
+
+func Test_TimeBoundVariable_containsAny(t *testing.T) {
+	tests := []struct {
+		name     string
+		variable TimeBoundVariable
+		periods  []Period
+		want     bool
+	}{
+		{
+			name: "Empty periods, returns false",
+			variable: NewTimeBoundVariable("a", Period{
+				from: newTestTime("2024-01-01"),
+				to:   newTestTime("2024-01-31"),
+			}),
+			periods: []Period{},
+			want:    false,
+		},
+		{
+			name: "Variable period fully contains a filter period, returns true",
+			variable: NewTimeBoundVariable("a", Period{
+				from: newTestTime("2024-01-01"),
+				to:   newTestTime("2024-01-31"),
+			}),
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-10"),
+					to:   newTestTime("2024-01-20"),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "No period is fully contained, returns false",
+			variable: NewTimeBoundVariable("a", Period{
+				from: newTestTime("2024-01-10"),
+				to:   newTestTime("2024-01-20"),
+			}),
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-05"),
+					to:   newTestTime("2024-02-05"),
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.variable.containsAny(tt.periods)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }
 
 func Test_TimeBoundVariables_containing(t *testing.T) {
