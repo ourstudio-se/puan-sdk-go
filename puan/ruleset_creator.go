@@ -394,9 +394,9 @@ func (c *RulesetCreator) createPeriodConstraints(
 func (c *RulesetCreator) createTimeBoundAssumeConstraints(
 	periodVariables TimeBoundVariables,
 ) error {
-	validTimeBoundAssumedVariables := c.timeBoundAssumedVariables.containing(periodVariables.periods())
+	assumedVariables := c.getTimeBoundAssumedVariablesInPeriods(periodVariables.periods())
 
-	groupedByPeriods, err := groupByPeriods(periodVariables, validTimeBoundAssumedVariables)
+	groupedByPeriods, err := groupByPeriods(periodVariables, assumedVariables)
 	if err != nil {
 		return err
 	}
@@ -412,6 +412,14 @@ func (c *RulesetCreator) createTimeBoundAssumeConstraints(
 	}
 
 	return c.Assume(constraintIDs...)
+}
+
+func (c *RulesetCreator) getTimeBoundAssumedVariablesInPeriods(
+	periods []Period,
+) TimeBoundVariables {
+	return c.timeBoundAssumedVariables.containing(
+		periods,
+	)
 }
 
 func (c *RulesetCreator) createExactlyOnePeriodConstraint(
@@ -431,11 +439,11 @@ func (c *RulesetCreator) createPeriodPreferreds(
 		return nil
 	}
 
-	validTimeBoundPreferredVariables := c.timeBoundPreferredVariables.containing(
+	preferredVariables := c.getTimeBoundPreferredVariablesInPeriods(
 		periodVariables.periods(),
 	)
 
-	groupedByPeriods, err := groupByPeriods(periodVariables, validTimeBoundPreferredVariables)
+	groupedByPeriods, err := groupByPeriods(periodVariables, preferredVariables)
 	if err != nil {
 		return err
 	}
@@ -456,14 +464,22 @@ func (c *RulesetCreator) createPeriodPreferreds(
 	return nil
 }
 
-func (c *RulesetCreator) createPreferredsInPeriod(periodID string, preferredIDs ...string) error {
+func (c *RulesetCreator) getTimeBoundPreferredVariablesInPeriods(
+	periods []Period,
+) TimeBoundVariables {
+	return c.timeBoundPreferredVariables.containing(
+		periods,
+	)
+}
+
+func (c *RulesetCreator) createPreferredsInPeriod(periodsID string, preferredIDs ...string) error {
 	for _, preferredID := range preferredIDs {
 		negatedID, err := c.SetNot(preferredID)
 		if err != nil {
 			return err
 		}
 
-		id, err := c.SetAnd(periodID, negatedID)
+		id, err := c.SetAnd(periodsID, negatedID)
 		if err != nil {
 			return err
 		}
