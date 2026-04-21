@@ -309,7 +309,7 @@ func Test_filterOutForbiddenPeriods(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "given overlapping period, is kept",
+			name: "given overlapping period, is removed",
 			periods: []Period{
 				{
 					from: newTestTime("2024-01-15"),
@@ -322,10 +322,26 @@ func Test_filterOutForbiddenPeriods(t *testing.T) {
 					to:   newTestTime("2024-01-20"),
 				},
 			},
+			want: nil,
+		},
+		{
+			name: "given touching period, is kept",
+			periods: []Period{
+				{
+					from: newTestTime("2024-01-15"),
+					to:   newTestTime("2024-01-20"),
+				},
+			},
+			forbiddenPeriods: []Period{
+				{
+					from: newTestTime("2024-01-20"),
+					to:   newTestTime("2024-01-25"),
+				},
+			},
 			want: []Period{
 				{
 					from: newTestTime("2024-01-15"),
-					to:   newTestTime("2024-01-28"),
+					to:   newTestTime("2024-01-20"),
 				},
 			},
 		},

@@ -16,6 +16,7 @@ type (
 		from time.Time
 		to   time.Time
 	}
+	ManyPeriods []Period
 )
 
 func NewPeriod(from, to time.Time) (Period, error) {
@@ -57,6 +58,15 @@ func (p Period) isEqual(other Period) bool {
 	equalFrom := p.from.Equal(other.from)
 	equalTo := p.to.Equal(other.to)
 	return equalFrom && equalTo
+}
+
+func (p ManyPeriods) overlaps(other Period) bool {
+	for _, period := range p {
+		if period.overlaps(other) {
+			return true
+		}
+	}
+	return false
 }
 
 type TimeBoundVariables []TimeBoundVariable
@@ -179,17 +189,13 @@ func toPeriods(edges []time.Time) []Period {
 
 func filterOutForbiddenPeriods(
 	periods []Period,
-	forbiddenPeriods []Period,
+	forbiddenPeriods ManyPeriods,
 ) []Period {
 	return utils.Filter(
 		periods,
 		func(period Period) bool {
-			for _, forbiddenPeriod := range forbiddenPeriods {
-				if forbiddenPeriod.contains(period) {
-					return false
-				}
-			}
-			return true
+			dontOverlap := !forbiddenPeriods.overlaps(period)
+			return dontOverlap
 		},
 	)
 }
