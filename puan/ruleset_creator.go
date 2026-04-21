@@ -214,9 +214,28 @@ func (c *RulesetCreator) ForbidPeriod(
 		return err
 	}
 
+	if err := c.validateForbiddenPeriod(period); err != nil {
+		return err
+	}
+
+	c.forbiddenPeriods = append(c.forbiddenPeriods, period)
+
+	return nil
+}
+
+func (c *RulesetCreator) validateForbiddenPeriod(period Period) error {
 	if !c.period.contains(period) {
 		return errors.Errorf(
 			"%w: period %v is outside of enabled period %v",
+			puanerror.InvalidArgument,
+			period,
+			*c.period,
+		)
+	}
+
+	if c.period.isEqual(period) {
+		return errors.Errorf(
+			"%w: period %v is the same as enabled period %v",
 			puanerror.InvalidArgument,
 			period,
 			*c.period,
@@ -233,8 +252,6 @@ func (c *RulesetCreator) ForbidPeriod(
 			)
 		}
 	}
-
-	c.forbiddenPeriods = append(c.forbiddenPeriods, period)
 
 	return nil
 }
@@ -345,9 +362,9 @@ func (c *RulesetCreator) newPeriodVariables(
 		invalidOrder := current.from.Before(previous.to)
 		if invalidOrder {
 			return nil, errors.Errorf(
-				"periods %v and %v does not have expected order or overlap",
-				orderedPeriods[i],
-				orderedPeriods[i+1],
+				"period %v must be after %v",
+				current,
+				previous,
 			)
 		}
 	}
@@ -472,14 +489,14 @@ func (c *RulesetCreator) getTimeBoundPreferredVariablesInPeriods(
 	)
 }
 
-func (c *RulesetCreator) createPreferredsInPeriod(periodsID string, preferredIDs ...string) error {
+func (c *RulesetCreator) createPreferredsInPeriod(periodID string, preferredIDs ...string) error {
 	for _, preferredID := range preferredIDs {
 		negatedID, err := c.SetNot(preferredID)
 		if err != nil {
 			return err
 		}
 
-		id, err := c.SetAnd(periodsID, negatedID)
+		id, err := c.SetAnd(periodID, negatedID)
 		if err != nil {
 			return err
 		}

@@ -199,7 +199,9 @@ func Test_RulesetCreator_ForbidPeriod_givenValidPeriod_shouldAddPeriod(t *testin
 	}, creator.forbiddenPeriods)
 }
 
-func Test_RulesetCreator_ForbidPeriod_givenErrorCases_shouldReturnError(t *testing.T) {
+func Test_RulesetCreator_validateForbiddenPeriod_givenErrorCases_shouldReturnError(
+	t *testing.T,
+) {
 	type testCase struct {
 		name             string
 		from             time.Time
@@ -208,11 +210,6 @@ func Test_RulesetCreator_ForbidPeriod_givenErrorCases_shouldReturnError(t *testi
 	}
 
 	cases := []testCase{
-		{
-			name: "from after to",
-			from: newTestTime("2024-01-10"),
-			to:   newTestTime("2024-01-05"),
-		},
 		{
 			name: "outside of enabled period",
 			from: newTestTime("2023-12-20"),
@@ -229,6 +226,11 @@ func Test_RulesetCreator_ForbidPeriod_givenErrorCases_shouldReturnError(t *testi
 				},
 			},
 		},
+		{
+			name: "same as enabled period",
+			from: newTestTime("2024-01-01"),
+			to:   newTestTime("2024-01-31"),
+		},
 	}
 
 	for _, tt := range cases {
@@ -241,7 +243,11 @@ func Test_RulesetCreator_ForbidPeriod_givenErrorCases_shouldReturnError(t *testi
 				forbiddenPeriods: tt.forbiddenPeriods,
 			}
 
-			err := creator.ForbidPeriod(tt.from, tt.to)
+			period := Period{
+				from: tt.from,
+				to:   tt.to,
+			}
+			err := creator.validateForbiddenPeriod(period)
 
 			assert.Error(t, err)
 		})
@@ -257,6 +263,23 @@ func Test_RulesetCreator_ForbidPeriod_givenTimeNotEnabled_shouldReturnError(
 		fake.New[time.Time](),
 	)
 	assert.ErrorIs(t, err, puanerror.InvalidOperation)
+}
+
+func Test_RulesetCreator_ForbidPeriod_givenFromAfterTo_shouldReturnError(
+	t *testing.T,
+) {
+	creator := RulesetCreator{
+		period: &Period{
+			from: newTestTime("2024-01-01"),
+			to:   newTestTime("2024-01-31"),
+		},
+	}
+	from := newTestTime("2024-01-10")
+	to := newTestTime("2024-01-05")
+
+	err := creator.ForbidPeriod(from, to)
+
+	assert.ErrorIs(t, err, puanerror.InvalidArgument)
 }
 
 func Test_RulesetCreator_calculateAllowedPartitionedPeriods(

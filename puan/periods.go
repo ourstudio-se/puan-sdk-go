@@ -54,7 +54,9 @@ func (p Period) contains(other Period) bool {
 }
 
 func (p Period) isEqual(other Period) bool {
-	return p == other
+	equalFrom := p.from.Equal(other.from)
+	equalTo := p.to.Equal(other.to)
+	return equalFrom && equalTo
 }
 
 type TimeBoundVariables []TimeBoundVariable
@@ -120,7 +122,7 @@ func (variables TimeBoundVariables) containing(periods []Period) TimeBoundVariab
 	)
 }
 
-// find all periods without caps or overlaps, sorted by start time
+// find all periods without gaps or overlaps, sorted by start time
 // Input:
 // |----------------------|
 // |---|...................
