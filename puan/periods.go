@@ -11,10 +11,13 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
-type Period struct {
-	from time.Time
-	to   time.Time
-}
+type (
+	Period struct {
+		from time.Time
+		to   time.Time
+	}
+	ManyPeriods []Period
+)
 
 func NewPeriod(from, to time.Time) (Period, error) {
 	if !to.After(from) {
@@ -52,7 +55,18 @@ func (p Period) contains(other Period) bool {
 }
 
 func (p Period) isEqual(other Period) bool {
-	return p == other
+	equalFrom := p.from.Equal(other.from)
+	equalTo := p.to.Equal(other.to)
+	return equalFrom && equalTo
+}
+
+func (p ManyPeriods) overlaps(other Period) bool {
+	for _, period := range p {
+		if period.overlaps(other) {
+			return true
+		}
+	}
+	return false
 }
 
 type TimeBoundVariables []TimeBoundVariable
@@ -69,12 +83,21 @@ func NewTimeBoundVariable(variable string, period Period) TimeBoundVariable {
 	}
 }
 
-func (t TimeBoundVariable) Period() Period {
-	return t.period
+func (variable TimeBoundVariable) Period() Period {
+	return variable.period
 }
 
-func (t TimeBoundVariable) Variable() string {
-	return t.variable
+func (variable TimeBoundVariable) Variable() string {
+	return variable.variable
+}
+
+func (variable TimeBoundVariable) containsAny(periods []Period) bool {
+	for _, period := range periods {
+		if variable.period.contains(period) {
+			return true
+		}
+	}
+	return false
 }
 
 func (p TimeBoundVariables) periods() []Period {
@@ -100,7 +123,16 @@ func (p TimeBoundVariables) passed(timestamp time.Time) TimeBoundVariables {
 	})
 }
 
-// find all periods without caps or overlaps, sorted by start time
+func (variables TimeBoundVariables) containing(periods []Period) TimeBoundVariables {
+	return utils.Filter(
+		variables,
+		func(variable TimeBoundVariable) bool {
+			return variable.containsAny(periods)
+		},
+	)
+}
+
+// find all periods without gaps or overlaps, sorted by start time
 // Input:
 // |----------------------|
 // |---|...................
@@ -109,7 +141,7 @@ func (p TimeBoundVariables) passed(timestamp time.Time) TimeBoundVariables {
 // .........|------|.......
 // Output:
 // |---|--|-|----|-|--|---|
-func calculateCompletePeriods(
+func calculatePartitionedPeriods(
 	periods []Period,
 ) []Period {
 	if len(periods) == 0 {
@@ -153,6 +185,19 @@ func toPeriods(edges []time.Time) []Period {
 		}
 	}
 	return periods
+}
+
+func filterOutForbiddenPeriods(
+	periods []Period,
+	forbiddenPeriods ManyPeriods,
+) []Period {
+	return utils.Filter(
+		periods,
+		func(period Period) bool {
+			dontOverlap := !forbiddenPeriods.overlaps(period)
+			return dontOverlap
+		},
+	)
 }
 
 // '|' separated list of variable ids

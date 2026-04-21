@@ -8,6 +8,7 @@ import (
 	"github.com/go-faker/faker/v4/pkg/options"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
 	"github.com/ourstudio-se/puan-sdk-go/puanerror"
@@ -198,7 +199,9 @@ func Test_RulesetCreator_ForbidPeriod_givenValidPeriod_shouldAddPeriod(t *testin
 	}, creator.forbiddenPeriods)
 }
 
-func Test_RulesetCreator_ForbidPeriod_givenErrorCases_shouldReturnError(t *testing.T) {
+func Test_RulesetCreator_validateForbiddenPeriod_givenErrorCases_shouldReturnError(
+	t *testing.T,
+) {
 	type testCase struct {
 		name             string
 		from             time.Time
@@ -207,11 +210,6 @@ func Test_RulesetCreator_ForbidPeriod_givenErrorCases_shouldReturnError(t *testi
 	}
 
 	cases := []testCase{
-		{
-			name: "from after to",
-			from: newTestTime("2024-01-10"),
-			to:   newTestTime("2024-01-05"),
-		},
 		{
 			name: "outside of enabled period",
 			from: newTestTime("2023-12-20"),
@@ -228,6 +226,11 @@ func Test_RulesetCreator_ForbidPeriod_givenErrorCases_shouldReturnError(t *testi
 				},
 			},
 		},
+		{
+			name: "same as enabled period",
+			from: newTestTime("2024-01-01"),
+			to:   newTestTime("2024-01-31"),
+		},
 	}
 
 	for _, tt := range cases {
@@ -240,7 +243,11 @@ func Test_RulesetCreator_ForbidPeriod_givenErrorCases_shouldReturnError(t *testi
 				forbiddenPeriods: tt.forbiddenPeriods,
 			}
 
-			err := creator.ForbidPeriod(tt.from, tt.to)
+			period := Period{
+				from: tt.from,
+				to:   tt.to,
+			}
+			err := creator.validateForbiddenPeriod(period)
 
 			assert.Error(t, err)
 		})
@@ -256,6 +263,59 @@ func Test_RulesetCreator_ForbidPeriod_givenTimeNotEnabled_shouldReturnError(
 		fake.New[time.Time](),
 	)
 	assert.ErrorIs(t, err, puanerror.InvalidOperation)
+}
+
+func Test_RulesetCreator_ForbidPeriod_givenFromAfterTo_shouldReturnError(
+	t *testing.T,
+) {
+	creator := RulesetCreator{
+		period: &Period{
+			from: newTestTime("2024-01-01"),
+			to:   newTestTime("2024-01-31"),
+		},
+	}
+	from := newTestTime("2024-01-10")
+	to := newTestTime("2024-01-05")
+
+	err := creator.ForbidPeriod(from, to)
+
+	assert.ErrorIs(t, err, puanerror.InvalidArgument)
+}
+
+func Test_RulesetCreator_calculateAllowedPartitionedPeriods(
+	t *testing.T,
+) {
+	allowed := Period{
+		from: newTestTime("2024-01-01"),
+		to:   newTestTime("2024-01-31"),
+	}
+	forbidden := Period{
+		from: newTestTime("2024-01-10"),
+		to:   newTestTime("2024-01-20"),
+	}
+	creator := NewRulesetCreator()
+	_ = creator.EnableTime(
+		allowed.From(),
+		allowed.To(),
+	)
+	_ = creator.ForbidPeriod(
+		forbidden.From(),
+		forbidden.To(),
+	)
+
+	got := creator.calculateAllowedPartitionedPeriods()
+
+	want := []Period{
+		{
+			from: allowed.From(),
+			to:   forbidden.From(),
+		},
+		{
+			from: forbidden.To(),
+			to:   allowed.To(),
+		},
+	}
+	assert.Equal(t, want, got)
 }
 
 func Test_RulesetCreator_setSingleOrOR_givenNoIDs_shouldReturnError(t *testing.T) {
@@ -306,162 +366,6 @@ func Test_RulesetCreator_setSingleOrAND_givenDuplicatedIDs_shouldReturnID(t *tes
 	assert.Equal(t, code, got)
 }
 
-func Test_RulesetCreator_isForbiddenPeriod(t *testing.T) {
-	tests := []struct {
-		name             string
-		forbiddenPeriods []Period
-		periodVariable   TimeBoundVariable
-		want             bool
-	}{
-		{
-			name:             "no forbidden periods, is not forbidden",
-			forbiddenPeriods: nil,
-			periodVariable: TimeBoundVariable{
-				period: Period{
-					from: newTestTime("2024-01-10"),
-					to:   newTestTime("2024-01-12"),
-				},
-			},
-			want: false,
-		},
-		{
-			name: "period is fully inside forbidden period, is forbidden",
-			forbiddenPeriods: []Period{
-				{
-					from: newTestTime("2024-01-01"),
-					to:   newTestTime("2024-01-31"),
-				},
-			},
-			periodVariable: TimeBoundVariable{
-				period: Period{
-					from: newTestTime("2024-01-10"),
-					to:   newTestTime("2024-01-12"),
-				},
-			},
-			want: true,
-		},
-		{
-			name: "partial overlap, is not forbidden",
-			forbiddenPeriods: []Period{
-				{
-					from: newTestTime("2024-01-01"),
-					to:   newTestTime("2024-01-10"),
-				},
-			},
-			periodVariable: TimeBoundVariable{
-				period: Period{
-					from: newTestTime("2024-01-09"),
-					to:   newTestTime("2024-01-12"),
-				},
-			},
-			want: false,
-		},
-		{
-			name: "none overlap, is not forbidden",
-			forbiddenPeriods: []Period{
-				{
-					from: newTestTime("2024-01-01"),
-					to:   newTestTime("2024-01-10"),
-				},
-				{
-					from: newTestTime("2024-01-20"),
-					to:   newTestTime("2024-01-30"),
-				},
-			},
-			periodVariable: TimeBoundVariable{
-				period: Period{
-					from: newTestTime("2024-01-12"),
-					to:   newTestTime("2024-01-18"),
-				},
-			},
-			want: false,
-		},
-		{
-			name: "period touching 1 edge, is forbidden",
-			forbiddenPeriods: []Period{
-				{
-					from: newTestTime("2024-01-01"),
-					to:   newTestTime("2024-01-10"),
-				},
-			},
-			periodVariable: TimeBoundVariable{
-				period: Period{
-					from: newTestTime("2024-01-01"),
-					to:   newTestTime("2024-01-05"),
-				},
-			},
-			want: true,
-		},
-		{
-			name: "period touching both edges, is forbidden",
-			forbiddenPeriods: []Period{
-				{
-					from: newTestTime("2024-01-01"),
-					to:   newTestTime("2024-01-10"),
-				},
-			},
-			periodVariable: TimeBoundVariable{
-				period: Period{
-					from: newTestTime("2024-01-01"),
-					to:   newTestTime("2024-01-10"),
-				},
-			},
-			want: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			creator := RulesetCreator{
-				forbiddenPeriods: tt.forbiddenPeriods,
-			}
-
-			got := creator.isForbiddenPeriod(tt.periodVariable)
-
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-
-func Test_RulesetCreator_findForbiddenPeriods(t *testing.T) {
-	creator := NewRulesetCreator()
-	creator.forbiddenPeriods = []Period{
-		{
-			from: newTestTime("2024-01-01"),
-			to:   newTestTime("2024-01-10"),
-		},
-	}
-
-	forbiddenPeriod := TimeBoundVariable{
-		variable: fake.New[string](),
-		period: Period{
-			from: newTestTime("2024-01-02"),
-			to:   newTestTime("2024-01-05"),
-		},
-	}
-	allowedPeriod := TimeBoundVariable{
-		variable: fake.New[string](),
-		period: Period{
-			from: newTestTime("2024-01-10"),
-			to:   newTestTime("2024-01-12"),
-		},
-	}
-	periodVariables := TimeBoundVariables{
-		forbiddenPeriod,
-		allowedPeriod,
-	}
-
-	got := creator.findForbiddenPeriods(periodVariables)
-
-	assert.Equal(
-		t,
-		TimeBoundVariables{
-			forbiddenPeriod,
-		},
-		got,
-	)
-}
-
 func Test_AddPrimitives_givenPrimitiveWithPeriodPrefix_shouldReturnError(t *testing.T) {
 	creator := NewRulesetCreator()
 	err := creator.AddPrimitives("period_")
@@ -475,17 +379,13 @@ func Test_AddPrimitives_givenPrimitiveWithoutPeriodPrefix_shouldReturnNoError(t 
 }
 
 // nolint:lll
-func Test_RulesetCreator_newPeriodVariables_givenTouchingAndOrderedPeriods_shouldReturnPeriodVariables(
+func Test_RulesetCreator_newPeriodVariables_givenOrderedPeriods_shouldReturnPeriodVariables(
 	t *testing.T,
 ) {
 	periods := []Period{
 		{
 			from: newTestTime("2024-01-01"),
 			to:   newTestTime("2024-01-05"),
-		},
-		{
-			from: newTestTime("2024-01-05"),
-			to:   newTestTime("2024-01-10"),
 		},
 		{
 			from: newTestTime("2024-01-10"),
@@ -506,10 +406,6 @@ func Test_RulesetCreator_newPeriodVariables_givenTouchingAndOrderedPeriods_shoul
 			variable: "period_1",
 			period:   periods[1],
 		},
-		{
-			variable: "period_2",
-			period:   periods[2],
-		},
 	}
 	assert.Equal(t, want, periodVariables)
 }
@@ -521,19 +417,6 @@ func Test_RulesetCreator_newPeriodVariables_givenInvalidPeriods_shouldReturnErro
 	}
 
 	cases := []testCase{
-		{
-			name: "given gaps",
-			periods: []Period{
-				{
-					from: newTestTime("2024-01-01"),
-					to:   newTestTime("2024-01-05"),
-				},
-				{
-					from: newTestTime("2024-01-10"),
-					to:   newTestTime("2024-01-15"),
-				},
-			},
-		},
 		{
 			name: "given overlaps",
 			periods: []Period{
@@ -584,4 +467,95 @@ func Test_RulesetCreator_newPeriodVariables_givenInvalidPeriods_shouldReturnErro
 			assert.Error(t, err)
 		})
 	}
+}
+
+func Test_RulesetCreator_Create_givenForbiddenPeriod_shouldNotBeIncludedInRuleset(
+	t *testing.T,
+) {
+	minute0 := time.Now().Truncate(time.Minute)
+	minute30 := minute0.Add(30 * time.Minute)
+	minute60 := minute0.Add(60 * time.Minute)
+
+	creator := NewRulesetCreator()
+
+	_ = creator.EnableTime(minute0, minute60)
+
+	_ = creator.ForbidPeriod(
+		minute30,
+		minute60,
+	)
+
+	ruleset, err := creator.Create()
+
+	require.NoError(t, err)
+	assert.Len(t, ruleset.PeriodVariables(), 1)
+	assert.Equal(
+		t,
+		ruleset.PeriodVariables()[0].Period(),
+		Period{
+			from: minute0,
+			to:   minute30,
+		},
+	)
+}
+
+func Test_RulesetCreator_Create_givenAssumedInForbiddenPeriod_shouldNotBeIncludedInRuleset(
+	t *testing.T,
+) {
+	minute0 := time.Now().Truncate(time.Minute)
+	minute30 := minute0.Add(30 * time.Minute)
+	minute60 := minute0.Add(60 * time.Minute)
+
+	creator := NewRulesetCreator()
+
+	_ = creator.EnableTime(minute0, minute60)
+
+	_ = creator.ForbidPeriod(
+		minute30,
+		minute60,
+	)
+
+	code := fake.New[string]()
+	_ = creator.AddPrimitives(code)
+	_ = creator.AssumeInPeriod(code, minute30, minute60)
+
+	ruleset, err := creator.Create()
+
+	require.NoError(t, err)
+	assert.Equal(
+		t,
+		ruleset.independentVariables,
+		[]string{code},
+	)
+}
+
+func Test_RulesetCreator_Create_givenPreferredInForbiddenPeriod_shouldNotBeIncludedInRuleset(
+	t *testing.T,
+) {
+	minute0 := time.Now().Truncate(time.Minute)
+	minute30 := minute0.Add(30 * time.Minute)
+	minute60 := minute0.Add(60 * time.Minute)
+
+	creator := NewRulesetCreator()
+
+	_ = creator.EnableTime(minute0, minute60)
+
+	_ = creator.ForbidPeriod(
+		minute30,
+		minute60,
+	)
+
+	code := fake.New[string]()
+	_ = creator.AddPrimitives(code)
+	_ = creator.PreferInPeriod(code, minute30, minute60)
+
+	ruleset, err := creator.Create()
+
+	require.NoError(t, err)
+	assert.Equal(
+		t,
+		ruleset.independentVariables,
+		[]string{code},
+	)
+	assert.Empty(t, ruleset.PreferredVariables())
 }
