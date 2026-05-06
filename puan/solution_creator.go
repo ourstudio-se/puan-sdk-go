@@ -98,23 +98,23 @@ func (c *SolutionCreator) calculateMultiSolveSolution(
 	ruleset Ruleset,
 	from *time.Time,
 ) (SolutionEnvelope, error) {
-	earlierSelections, laterSelections := selections.split()
+	remainingSelections, prioritisedSelections := selections.split()
 
-	solutionFromLaterSelections, err := c.calculateSolveSolution(laterSelections, ruleset, from)
+	prioritisedSolution, err := c.calculateSolveSolution(prioritisedSelections, ruleset, from)
 	if err != nil {
 		return SolutionEnvelope{}, err
 	}
 
-	updatedRuleset, err := c.newRulesetWithAssumedSolution(
+	rulesetWithPrioritisedSolution, err := c.newRulesetWithAssumedSolution(
 		ruleset,
-		laterSelections,
-		solutionFromLaterSelections.Solution(),
+		prioritisedSelections,
+		prioritisedSolution.Solution(),
 	)
 	if err != nil {
 		return SolutionEnvelope{}, err
 	}
 
-	return c.calculateSolveSolution(earlierSelections, updatedRuleset, from)
+	return c.calculateSolveSolution(remainingSelections, rulesetWithPrioritisedSolution, from)
 }
 
 func (c *SolutionCreator) newRulesetWithAssumedSolution(
