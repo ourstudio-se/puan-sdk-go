@@ -11,30 +11,12 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
+// TODO: adjust test when weights to large is removed
 func Test_WeightsTooLarge_givenSelectionsAtSaturation_weightsShouldBeTooLarge(t *testing.T) {
 	ruleset, primitives := rulesetWithPrimitivesForSaturationTests()
 
 	selections := puan.Selections{}
-	for _, primitive := range primitives[:14] {
-		selections = append(
-			selections,
-			puan.NewSelectionBuilder(primitive).Build(),
-		)
-	}
-
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
-	weightsTooLarge := envelope.WeightsTooLarge()
-	assert.True(
-		t,
-		weightsTooLarge,
-	)
-}
-
-func Test_WeightsTooLarge_givenSelectionsBelowSaturation_weightsShouldNotBeTooLarge(t *testing.T) {
-	ruleset, primitives := rulesetWithPrimitivesForSaturationTests()
-
-	selections := puan.Selections{}
-	for _, primitive := range primitives[:13] {
+	for _, primitive := range primitives[:70] {
 		selections = append(
 			selections,
 			puan.NewSelectionBuilder(primitive).Build(),
@@ -57,8 +39,8 @@ func rulesetWithPrimitivesForSaturationTests() (puan.Ruleset, []string) {
 
 	primitives := fake.New[[]string](
 		func(oo *options.Options) {
-			oo.RandomMinSliceSize = 50
-			oo.RandomMaxSliceSize = 50
+			oo.RandomMinSliceSize = 100
+			oo.RandomMaxSliceSize = 100
 		},
 	)
 	_ = creator.AddPrimitives(primitives...)

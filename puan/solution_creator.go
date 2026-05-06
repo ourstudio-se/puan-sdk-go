@@ -45,8 +45,10 @@ func (c *SolutionCreator) Create(
 		from,
 	)
 	if err != nil {
+		err = updateSolveError(err, ruleset, from)
 		return SolutionEnvelope{}, err
 	}
+
 	dependentSolution := envelope.Solution()
 	weightsTooLarge := envelope.WeightsTooLarge()
 
@@ -72,18 +74,56 @@ func (c *SolutionCreator) findDependentSolution(
 
 	tooLarge := query.weights.WeightsTooLarge()
 
+	if tooLarge {
+		earlierSelections, laterSelections := selections.split()
+
+		laterSolution, err := c.findDependentSolution(laterSelections, ruleset, from)
+		if err != nil {
+			return SolutionEnvelope{}, err
+		}
+
+		updatedRuleset, err := c.updateRulesetWithSolution(
+			ruleset,
+			laterSelections,
+			laterSolution.Solution(),
+		)
+		if err != nil {
+			return SolutionEnvelope{}, err
+		}
+
+		return c.findDependentSolution(earlierSelections, updatedRuleset, from)
+	}
+
 	solution, err := c.Solve(query)
 	if err != nil {
-		err = updateSolveError(err, ruleset, from)
 		return SolutionEnvelope{}, err
 	}
 
 	primitiveSolution := ruleset.RemoveSupportVariables(solution)
 
 	return SolutionEnvelope{
-		solution:        primitiveSolution,
-		weightsTooLarge: tooLarge,
+		solution: primitiveSolution,
 	}, nil
+}
+
+func (c *SolutionCreator) updateRulesetWithSolution(
+	ruleset Ruleset,
+	selections Selections,
+	solution Solution,
+) (Ruleset, error) {
+	newRuleset := ruleset.copy()
+
+	for _, selection := range selections {
+		isSelected := solution.isSelected(selection.id)
+		if isSelected {
+			err := newRuleset.assume(selection.id)
+			if err != nil {
+				return Ruleset{}, err
+			}
+		}
+	}
+
+	return newRuleset, nil
 }
 
 func findIndependentSolution(independentVariables []string, selections Selections) Solution {

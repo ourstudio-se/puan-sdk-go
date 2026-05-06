@@ -3,6 +3,9 @@ package puan
 import (
 	"reflect"
 	"testing"
+
+	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_Solution_Extract_validCases(t *testing.T) {
@@ -66,6 +69,49 @@ func Test_Solution_Extract_validCases(t *testing.T) {
 			if !reflect.DeepEqual(extracted, tt.expected) {
 				t.Errorf("Expected %v, but got %v", tt.expected, extracted)
 			}
+		})
+	}
+}
+
+func Test_Solution_isSelected(t *testing.T) {
+	variableID := fake.New[string]()
+	tests := []struct {
+		name     string
+		solution Solution
+		want     bool
+	}{
+		{
+			name: "Given 1, is selected",
+			solution: Solution{
+				variableID: 1,
+			},
+			want: true,
+		},
+		{
+			name: "Given 0, is not selected",
+			solution: Solution{
+				variableID: 0,
+			},
+			want: false,
+		},
+		{
+			name:     "Given missing, is not selected",
+			solution: Solution{},
+			want:     false,
+		},
+		{
+			name: "Given 2, is not selected",
+			solution: Solution{
+				variableID: 2,
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.solution.isSelected(variableID)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
