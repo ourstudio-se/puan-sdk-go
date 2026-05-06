@@ -1,10 +1,5 @@
 package puan
 
-type SolutionEnvelope struct {
-	solution        Solution
-	weightsTooLarge bool
-}
-
 // Map of variable IDs and 0 or 1, representing whether the variable is selected or not
 type Solution map[string]int
 
@@ -29,6 +24,11 @@ func (s Solution) merge(other Solution) Solution {
 
 func (s Solution) isSelected(variableID string) bool {
 	return s[variableID] == 1
+}
+
+type SolutionEnvelope struct {
+	solution        Solution
+	weightsTooLarge bool
 }
 
 func (se SolutionEnvelope) Solution() Solution {

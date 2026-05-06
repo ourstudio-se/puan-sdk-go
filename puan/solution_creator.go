@@ -39,7 +39,7 @@ func (c *SolutionCreator) Create(
 	dependantSelections, independentSelections :=
 		categorizeSelections(selections, ruleset.independentVariables)
 
-	envelope, err := c.findDependentSolution(
+	envelope, err := c.calculateSolveSolution(
 		dependantSelections,
 		ruleset,
 		from,
@@ -52,7 +52,10 @@ func (c *SolutionCreator) Create(
 	dependentSolution := envelope.Solution()
 	weightsTooLarge := envelope.WeightsTooLarge()
 
-	independentSolution := findIndependentSolution(ruleset.independentVariables, independentSelections)
+	independentSolution := calculateIndependentSolution(
+		ruleset.independentVariables,
+		independentSelections,
+	)
 
 	solution := dependentSolution.merge(independentSolution)
 
@@ -62,7 +65,7 @@ func (c *SolutionCreator) Create(
 	}, nil
 }
 
-func (c *SolutionCreator) findDependentSolution(
+func (c *SolutionCreator) calculateSolveSolution(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
@@ -75,23 +78,7 @@ func (c *SolutionCreator) findDependentSolution(
 	tooLarge := query.weights.WeightsTooLarge()
 
 	if tooLarge {
-		earlierSelections, laterSelections := selections.split()
-
-		laterSolution, err := c.findDependentSolution(laterSelections, ruleset, from)
-		if err != nil {
-			return SolutionEnvelope{}, err
-		}
-
-		updatedRuleset, err := c.updateRulesetWithSolution(
-			ruleset,
-			laterSelections,
-			laterSolution.Solution(),
-		)
-		if err != nil {
-			return SolutionEnvelope{}, err
-		}
-
-		return c.findDependentSolution(earlierSelections, updatedRuleset, from)
+		return c.calculateMultiSolveSolution(selections, ruleset, from)
 	}
 
 	solution, err := c.Solve(query)
@@ -106,27 +93,65 @@ func (c *SolutionCreator) findDependentSolution(
 	}, nil
 }
 
-func (c *SolutionCreator) updateRulesetWithSolution(
+func (c *SolutionCreator) calculateMultiSolveSolution(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+) (SolutionEnvelope, error) {
+	earlierSelections, laterSelections := selections.split()
+
+	solutionFromLaterSelections, err := c.calculateSolveSolution(laterSelections, ruleset, from)
+	if err != nil {
+		return SolutionEnvelope{}, err
+	}
+
+	updatedRuleset, err := c.newRulesetWithAssumedSolution(
+		ruleset,
+		laterSelections,
+		solutionFromLaterSelections.Solution(),
+	)
+	if err != nil {
+		return SolutionEnvelope{}, err
+	}
+
+	return c.calculateSolveSolution(earlierSelections, updatedRuleset, from)
+}
+
+func (c *SolutionCreator) newRulesetWithAssumedSolution(
 	ruleset Ruleset,
 	selections Selections,
 	solution Solution,
 ) (Ruleset, error) {
 	newRuleset := ruleset.copy()
 
-	for _, selection := range selections {
-		isSelected := solution.isSelected(selection.id)
-		if isSelected {
-			err := newRuleset.assume(selection.id)
-			if err != nil {
-				return Ruleset{}, err
-			}
+	selectedIDs := c.getSelectedIDs(selections, solution)
+
+	for _, id := range selectedIDs {
+		err := newRuleset.assume(id)
+		if err != nil {
+			return Ruleset{}, err
 		}
 	}
 
 	return newRuleset, nil
 }
 
-func findIndependentSolution(independentVariables []string, selections Selections) Solution {
+func (c *SolutionCreator) getSelectedIDs(
+	selections Selections,
+	solution Solution,
+) []string {
+	var selectedIDs []string
+	for _, id := range selections.ids() {
+		isSelected := solution.isSelected(id)
+		if isSelected {
+			selectedIDs = append(selectedIDs, id)
+		}
+	}
+
+	return selectedIDs
+}
+
+func calculateIndependentSolution(independentVariables []string, selections Selections) Solution {
 	solution := make(Solution, len(independentVariables))
 	for _, variable := range independentVariables {
 		solution[variable] = independentSolutionValue(variable, selections)
