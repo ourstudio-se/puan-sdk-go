@@ -3,6 +3,8 @@ package weights
 import (
 	"maps"
 
+	"github.com/go-errors/errors"
+
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
 
@@ -30,6 +32,20 @@ func (w Weights) sum() int {
 	return sum
 }
 
+func (w Weights) absSum() (int, error) {
+	sum := 0
+	for _, weight := range w {
+		absWeight := abs(weight)
+		newSum := sum + absWeight
+		if newSum < sum {
+			return 0, errors.New("weights sum overflow")
+		}
+		sum = newSum
+	}
+
+	return sum, nil
+}
+
 func (w Weights) maxWeight() int {
 	maxWeight := 0
 	for _, weight := range w {
@@ -42,11 +58,14 @@ func (w Weights) maxWeight() int {
 	return maxWeight
 }
 
+// sum is used for making sure that the external solver
+// can compare different 'objectives' without overflowing.
 func (w Weights) WeightsTooLarge() bool {
-	// sum is used for making sure that the external solver
-	// can compare different 'objectives' without overflowing.
-	sum := abs(w.sum())
-	tooLarge := sum > WEIGHTS_SATURATION_LIMIT
+	absSum, err := w.absSum()
+	if err != nil {
+		return true
+	}
+	tooLarge := absSum > WEIGHTS_SATURATION_LIMIT
 	return tooLarge
 }
 
