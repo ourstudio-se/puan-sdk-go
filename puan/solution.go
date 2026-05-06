@@ -27,14 +27,9 @@ func (s Solution) isSelected(variableID string) bool {
 }
 
 type SolutionEnvelope struct {
-	solution        Solution
-	weightsTooLarge bool
+	solution Solution
 }
 
 func (se SolutionEnvelope) Solution() Solution {
 	return se.solution
-}
-
-func (se SolutionEnvelope) WeightsTooLarge() bool {
-	return se.weightsTooLarge
 }

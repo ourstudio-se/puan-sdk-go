@@ -50,7 +50,6 @@ func (c *SolutionCreator) Create(
 	}
 
 	dependentSolution := envelope.Solution()
-	weightsTooLarge := envelope.WeightsTooLarge()
 
 	independentSolution := calculateIndependentSolution(
 		ruleset.independentVariables,
@@ -60,8 +59,7 @@ func (c *SolutionCreator) Create(
 	solution := dependentSolution.merge(independentSolution)
 
 	return SolutionEnvelope{
-		solution:        solution,
-		weightsTooLarge: weightsTooLarge,
+		solution: solution,
 	}, nil
 }
 
