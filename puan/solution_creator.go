@@ -91,6 +91,14 @@ func (c *SolutionCreator) calculateSolveSolution(
 	}, nil
 }
 
+// When weights are very large, we need to solve many times sequentially
+//
+// 1. Split selections into prioritised and remaining
+// 2. Solve with prioritised selections
+// 3. Create new ruleset, assuming the prioritised solution
+// 4. Solve with remaining selections using the new ruleset
+//
+// this can happen many times recursively until all selections are solved
 func (c *SolutionCreator) calculateMultiSolveSolution(
 	selections Selections,
 	ruleset Ruleset,
