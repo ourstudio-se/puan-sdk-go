@@ -34,6 +34,20 @@ func (s Selections) ids() []string {
 	return ids
 }
 
+// split into two contiguous slices, preserving order
+func (s Selections) split() (Selections, Selections) {
+	n := len(s)
+	switch n {
+	case 0:
+		return nil, nil
+	case 1:
+		return s, nil
+	default:
+		mid := (n + 1) / 2
+		return s[:mid], s[mid:]
+	}
+}
+
 func (s Selection) IsComposite() bool {
 	return len(s.subSelectionIDs) > 0
 }

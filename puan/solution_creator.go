@@ -39,28 +39,31 @@ func (c *SolutionCreator) Create(
 	dependantSelections, independentSelections :=
 		categorizeSelections(selections, ruleset.independentVariables)
 
-	envelope, err := c.findDependentSolution(
+	envelope, err := c.calculateSolveSolution(
 		dependantSelections,
 		ruleset,
 		from,
 	)
 	if err != nil {
+		err = updateSolveError(err, ruleset, from)
 		return SolutionEnvelope{}, err
 	}
-	dependentSolution := envelope.Solution()
-	weightsTooLarge := envelope.WeightsTooLarge()
 
-	independentSolution := findIndependentSolution(ruleset.independentVariables, independentSelections)
+	dependentSolution := envelope.Solution()
+
+	independentSolution := calculateIndependentSolution(
+		ruleset.independentVariables,
+		independentSelections,
+	)
 
 	solution := dependentSolution.merge(independentSolution)
 
 	return SolutionEnvelope{
-		solution:        solution,
-		weightsTooLarge: weightsTooLarge,
+		solution: solution,
 	}, nil
 }
 
-func (c *SolutionCreator) findDependentSolution(
+func (c *SolutionCreator) calculateSolveSolution(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
@@ -72,21 +75,85 @@ func (c *SolutionCreator) findDependentSolution(
 
 	tooLarge := query.weights.WeightsTooLarge()
 
+	if tooLarge {
+		return c.calculateMultiSolveSolution(selections, ruleset, from)
+	}
+
 	solution, err := c.Solve(query)
 	if err != nil {
-		err = updateSolveError(err, ruleset, from)
 		return SolutionEnvelope{}, err
 	}
 
 	primitiveSolution := ruleset.RemoveSupportVariables(solution)
 
 	return SolutionEnvelope{
-		solution:        primitiveSolution,
-		weightsTooLarge: tooLarge,
+		solution: primitiveSolution,
 	}, nil
 }
 
-func findIndependentSolution(independentVariables []string, selections Selections) Solution {
+// When weights are very large, we need to solve many times sequentially
+//
+// 1. Split selections into prioritised and remaining
+// 2. Solve with prioritised selections
+// 3. Create new ruleset, assuming the prioritised solution
+// 4. Solve with remaining selections using the new ruleset
+//
+// this can happen many times recursively until all selections are solved
+func (c *SolutionCreator) calculateMultiSolveSolution(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+) (SolutionEnvelope, error) {
+	if len(selections) < 2 {
+		return SolutionEnvelope{},
+			errors.New("at least 2 selections are required for multi-solve")
+	}
+
+	remainingSelections, prioritisedSelections := selections.split()
+
+	prioritisedSolution, err := c.calculateSolveSolution(prioritisedSelections, ruleset, from)
+	if err != nil {
+		return SolutionEnvelope{}, err
+	}
+
+	rulesetWithPrioritisedSolution, err := c.newRulesetWithAssumedSolution(
+		ruleset,
+		prioritisedSelections,
+		prioritisedSolution.Solution(),
+	)
+	if err != nil {
+		return SolutionEnvelope{}, err
+	}
+
+	return c.calculateSolveSolution(remainingSelections, rulesetWithPrioritisedSolution, from)
+}
+
+func (c *SolutionCreator) newRulesetWithAssumedSolution(
+	ruleset Ruleset,
+	selections Selections,
+	solution Solution,
+) (Ruleset, error) {
+	newRuleset := ruleset.copy()
+
+	for _, selection := range selections {
+		isSelected := solution.isSelected(selection.id)
+		if isSelected {
+			err := newRuleset.assume(selection.id)
+			if err != nil {
+				return Ruleset{}, err
+			}
+		} else {
+			err := newRuleset.assumeNot(selection.id)
+			if err != nil {
+				return Ruleset{}, err
+			}
+		}
+	}
+
+	return newRuleset, nil
+}
+
+func calculateIndependentSolution(independentVariables []string, selections Selections) Solution {
 	solution := make(Solution, len(independentVariables))
 	for _, variable := range independentVariables {
 		solution[variable] = independentSolutionValue(variable, selections)
@@ -169,12 +236,15 @@ func newQuery(selections Selections, ruleset Ruleset, from *time.Time) (*Query, 
 		specification.ruleset.independentVariables,
 	)
 
-	weights := weights.Calculate(
+	weights, err := weights.Calculate(
 		dependentSelectableVariables,
 		specification.selections,
 		specification.ruleset.preferredVariables,
 		specification.ruleset.periodVariables.ids(),
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	query := NewQuery(
 		specification.ruleset.polyhedron,

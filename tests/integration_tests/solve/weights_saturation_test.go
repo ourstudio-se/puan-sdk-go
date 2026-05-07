@@ -5,17 +5,31 @@ import (
 	"time"
 
 	"github.com/go-faker/faker/v4/pkg/options"
-	"github.com/stretchr/testify/assert"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
 	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
-func Test_WeightsTooLarge_givenSelectionsAtSaturation_weightsShouldBeTooLarge(t *testing.T) {
-	ruleset, primitives := rulesetWithPrimitivesForSaturationTests()
+// Ruleset with a lot of primitives (103). All of them are dependent.
+// We make 71 selections.
+// The first selection (least prioritised) should be selected as none
+// of the other selections are in conflict with it.
+func Test_givenVeryManySelections_earliestSelectionShouldBeSelected(t *testing.T) {
+	creator, primitives := rulesetCreatorForSaturationTest()
+
+	_ = creator.AddPrimitives("a", "b", "c")
+	aImpliesB, _ := creator.SetImply("a", "b")
+	aXorC, _ := creator.SetXor("a", "c")
+	_ = creator.Assume(aImpliesB, aXorC)
+
+	ruleset, _ := creator.Create()
 
 	selections := puan.Selections{}
-	for _, primitive := range primitives[:14] {
+	selections = append(
+		selections,
+		puan.NewSelectionBuilder("a").Build(),
+	)
+	for _, primitive := range primitives[:70] {
 		selections = append(
 			selections,
 			puan.NewSelectionBuilder(primitive).Build(),
@@ -23,33 +37,20 @@ func Test_WeightsTooLarge_givenSelectionsAtSaturation_weightsShouldBeTooLarge(t 
 	}
 
 	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
-	weightsTooLarge := envelope.WeightsTooLarge()
-	assert.True(
+
+	asserter := newSolutionAsserter(envelope.Solution())
+	asserter.assertActive(
 		t,
-		weightsTooLarge,
+		"a",
+		"b",
+	)
+	asserter.assertInactive(
+		t,
+		"c",
 	)
 }
 
-func Test_WeightsTooLarge_givenSelectionsBelowSaturation_weightsShouldNotBeTooLarge(t *testing.T) {
-	ruleset, primitives := rulesetWithPrimitivesForSaturationTests()
-
-	selections := puan.Selections{}
-	for _, primitive := range primitives[:13] {
-		selections = append(
-			selections,
-			puan.NewSelectionBuilder(primitive).Build(),
-		)
-	}
-
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
-	weightsTooLarge := envelope.WeightsTooLarge()
-	assert.False(
-		t,
-		weightsTooLarge,
-	)
-}
-
-func rulesetWithPrimitivesForSaturationTests() (puan.Ruleset, []string) {
+func rulesetCreatorForSaturationTest() (*puan.RulesetCreator, []string) {
 	creator := puan.NewRulesetCreator()
 	from := time.Now()
 	end := from.Add(1 * time.Hour)
@@ -57,8 +58,8 @@ func rulesetWithPrimitivesForSaturationTests() (puan.Ruleset, []string) {
 
 	primitives := fake.New[[]string](
 		func(oo *options.Options) {
-			oo.RandomMinSliceSize = 50
-			oo.RandomMaxSliceSize = 50
+			oo.RandomMinSliceSize = 100
+			oo.RandomMaxSliceSize = 100
 		},
 	)
 	_ = creator.AddPrimitives(primitives...)
@@ -83,7 +84,5 @@ func rulesetWithPrimitivesForSaturationTests() (puan.Ruleset, []string) {
 		preferFrom = preferEnd
 	}
 
-	ruleset, _ := creator.Create()
-
-	return ruleset, primitives
+	return creator, primitives
 }

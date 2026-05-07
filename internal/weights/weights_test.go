@@ -1,6 +1,7 @@
 package weights
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -109,11 +110,12 @@ func Test_calculateSelectedWeights_oneSelected_shouldReturnWeights(t *testing.T)
 	notSelectedSum := -2
 	preferredWeightsSum := -1
 
-	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum, 0)
+	actual, err := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum, 0)
+
+	assert.NoError(t, err)
 	expected := Weights{
 		"a": 4,
 	}
-
 	assert.Equal(t, expected, actual)
 }
 
@@ -131,12 +133,13 @@ func Test_calculateSelectedWeights_twoSelected_shouldReturnWeights(t *testing.T)
 	notSelectedSum := -4
 	preferredWeightsSum := -2
 
-	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum, 0)
+	actual, err := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum, 0)
+
+	assert.NoError(t, err)
 	expected := Weights{
 		"a": 7,
 		"b": 14,
 	}
-
 	assert.Equal(t, expected, actual)
 }
 
@@ -154,12 +157,13 @@ func Test_calculateSelectedWeights_twoSelected_withRemoveAction(t *testing.T) {
 	notSelectedSum := -4
 	preferredWeightsSum := -2
 
-	actual := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum, 0)
+	actual, err := calculateSelectedWeights(selections, notSelectedSum, preferredWeightsSum, 0)
+
+	assert.NoError(t, err)
 	expected := Weights{
 		"a": 7,
 		"b": -14,
 	}
-
 	assert.Equal(t, expected, actual)
 }
 
@@ -167,10 +171,10 @@ func Test_calculateSelectedWeights_noSelection_shouldReturnEmptyWeights(t *testi
 	notSelectedSum := -1
 	preferredWeightsSum := -1
 
-	actual := calculateSelectedWeights(nil, notSelectedSum, preferredWeightsSum, 0)
-	expected := Weights{}
+	actual, err := calculateSelectedWeights(nil, notSelectedSum, preferredWeightsSum, 0)
 
-	assert.Equal(t, expected, actual)
+	assert.NoError(t, err)
+	assert.Equal(t, Weights{}, actual)
 }
 
 func Test_calculateSelectedWeights_givenSelectionsPreferredWeightsAndPeriodWeight(
@@ -190,17 +194,18 @@ func Test_calculateSelectedWeights_givenSelectionsPreferredWeightsAndPeriodWeigh
 	preferredWeightsSum := -2
 	minPeriodWeight := -8
 
-	actual := calculateSelectedWeights(
+	actual, err := calculateSelectedWeights(
 		selections,
 		notSelectedSum,
 		preferredWeightsSum,
 		minPeriodWeight,
 	)
+
+	assert.NoError(t, err)
 	expected := Weights{
 		"a": 15,
 		"b": 30,
 	}
-
 	assert.Equal(t, expected, actual)
 }
 
@@ -214,14 +219,15 @@ func Test_calculateWeights(t *testing.T) {
 		},
 	}
 
-	actual := Calculate(primitives, selections, preferredIDs, nil)
+	actual, err := Calculate(primitives, selections, preferredIDs, nil)
+
+	assert.NoError(t, err)
 	expected := Weights{
 		"a": 8,
 		"b": -2,
 		"c": -2,
 		"e": -3,
 	}
-
 	assert.Equal(t, expected, actual)
 }
 
@@ -275,22 +281,47 @@ func Test_Weights_maxWeight(t *testing.T) {
 	}
 }
 
-func Test_absSum(t *testing.T) {
+func Test_absSum_givenAllowedWeightsSize(t *testing.T) {
 	theories := []struct {
 		terms    []int
 		expected int
 	}{
-		{terms: []int{}, expected: 0},
-		{terms: []int{0, 0, 0}, expected: 0},
-		{terms: []int{-1, -2, -3}, expected: 6},
-		{terms: []int{1, 2, 3}, expected: 6},
-		{terms: []int{-1, 2, -3}, expected: 6},
+		{
+			terms:    []int{},
+			expected: 0,
+		},
+		{
+			terms:    []int{0, 0, 0},
+			expected: 0,
+		},
+		{
+			terms:    []int{-1, -2, -3},
+			expected: 6,
+		},
+		{
+			terms:    []int{1, 2, 3},
+			expected: 6,
+		},
+		{
+			terms:    []int{-1, 2, -3},
+			expected: 6,
+		},
 	}
 
 	for _, theory := range theories {
-		actual := absSum(theory.terms...)
+		actual, err := absSum(theory.terms...)
+
+		assert.NoError(t, err)
 		assert.Equal(t, theory.expected, actual)
 	}
+}
+
+func Test_absSum_givenTooLargeWeights_shouldReturnError(t *testing.T) {
+	terms := []int{math.MaxInt, 1}
+
+	_, err := absSum(terms...)
+
+	assert.Error(t, err)
 }
 
 func Test_calculatePeriodWeights(t *testing.T) {
@@ -345,11 +376,14 @@ func Test_calculatePeriodWeights(t *testing.T) {
 	}
 	for _, tt := range theories {
 		t.Run(tt.name, func(t *testing.T) {
-			got := calculatePeriodWeights(tt.periodIDs, tt.notSelectedSum, tt.preferredSum)
-			assert.Equal(t,
-				tt.want,
-				got,
+			got, err := calculatePeriodWeights(
+				tt.periodIDs,
+				tt.notSelectedSum,
+				tt.preferredSum,
 			)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

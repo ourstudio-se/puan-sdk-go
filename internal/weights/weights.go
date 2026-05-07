@@ -3,6 +3,8 @@ package weights
 import (
 	"maps"
 
+	"github.com/go-errors/errors"
+
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
 
@@ -30,6 +32,14 @@ func (w Weights) sum() int {
 	return sum
 }
 
+func (w Weights) absSum() (int, error) {
+	var values []int
+	for _, weight := range w {
+		values = append(values, abs(weight))
+	}
+	return absSum(values...)
+}
+
 func (w Weights) maxWeight() int {
 	maxWeight := 0
 	for _, weight := range w {
@@ -42,11 +52,14 @@ func (w Weights) maxWeight() int {
 	return maxWeight
 }
 
+// Weights can become very large. This can cause integer oveflows
+// or problems for the external solver.
 func (w Weights) WeightsTooLarge() bool {
-	// sum is used for making sure that the external solver
-	// can compare different 'objectives' without overflowing.
-	sum := abs(w.sum())
-	tooLarge := sum > WEIGHTS_SATURATION_LIMIT
+	absSum, err := w.absSum()
+	if err != nil {
+		return true
+	}
+	tooLarge := absSum > WEIGHTS_SATURATION_LIMIT
 	return tooLarge
 }
 
@@ -55,7 +68,7 @@ func Calculate(
 	selections Selections,
 	preferredIDs []string,
 	periodIDs []string,
-) Weights {
+) (Weights, error) {
 	notSelectedIDs := utils.Without(selectableIDs, selections.ids())
 
 	notSelectedWeights := calculatedNotSelectedWeights(notSelectedIDs)
@@ -64,26 +77,33 @@ func Calculate(
 	preferredWeights := calculatePreferredWeights(preferredIDs, notSelectedSum)
 	preferredSum := preferredWeights.sum()
 
-	periodWeights := calculatePeriodWeights(
+	periodWeights, err := calculatePeriodWeights(
 		periodIDs,
 		notSelectedSum,
 		preferredSum,
 	)
+	if err != nil {
+		return Weights{}, err
+	}
+
 	maxPeriodWeight := periodWeights.maxWeight()
 
-	selectedWeights := calculateSelectedWeights(
+	selectedWeights, err := calculateSelectedWeights(
 		selections,
 		notSelectedSum,
 		preferredSum,
 		maxPeriodWeight,
 	)
+	if err != nil {
+		return Weights{}, err
+	}
 
 	weights := notSelectedWeights.
 		concat(selectedWeights).
 		concat(preferredWeights).
 		concat(periodWeights)
 
-	return weights
+	return weights, nil
 }
 
 func calculatedNotSelectedWeights(selectableIDs []string) Weights {
@@ -117,10 +137,14 @@ func calculatePeriodWeights(
 	periodIDs []string,
 	notSelectedSum int,
 	preferredWeightsSum int,
-) Weights {
+) (Weights, error) {
 	periodWeights := make(Weights)
 
-	threshold := -absSum(notSelectedSum, preferredWeightsSum)
+	threshold, err := absSum(notSelectedSum, preferredWeightsSum)
+	if err != nil {
+		return Weights{}, err
+	}
+	threshold = -threshold
 
 	periodWeightSum := threshold
 	for i, periodID := range periodIDs {
@@ -135,7 +159,7 @@ func calculatePeriodWeights(
 		periodWeightSum += weight
 	}
 
-	return periodWeights
+	return periodWeights, nil
 }
 
 func calculateSelectedWeights(
@@ -143,10 +167,13 @@ func calculateSelectedWeights(
 	notSelectedSum,
 	preferredWeightsSum int,
 	maxPeriodWeight int,
-) Weights {
+) (Weights, error) {
 	selectedWeights := make(Weights)
 
-	threshold := absSum(notSelectedSum, preferredWeightsSum, maxPeriodWeight)
+	threshold, err := absSum(notSelectedSum, preferredWeightsSum, maxPeriodWeight)
+	if err != nil {
+		return Weights{}, err
+	}
 
 	selectionWeightSum := threshold
 	for _, selection := range selections {
@@ -160,7 +187,7 @@ func calculateSelectedWeights(
 		selectionWeightSum += weight
 	}
 
-	return selectedWeights
+	return selectedWeights, nil
 }
 
 func abs(x int) int {
@@ -171,11 +198,16 @@ func abs(x int) int {
 	return x
 }
 
-func absSum(terms ...int) int {
+func absSum(terms ...int) (int, error) {
 	sum := 0
 	for _, term := range terms {
-		sum += abs(term)
+		absTerm := abs(term)
+		newSum := sum + absTerm
+		if newSum < sum {
+			return 0, errors.New("weights sum overflow")
+		}
+		sum = newSum
 	}
 
-	return sum
+	return sum, nil
 }

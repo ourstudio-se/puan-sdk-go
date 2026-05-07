@@ -369,3 +369,88 @@ func Test_Selections_ids(t *testing.T) {
 	ids := selections.ids()
 	assert.Equal(t, []string{"x", "y", "z", "w"}, ids)
 }
+
+func Test_Selections_split(t *testing.T) {
+	type theory struct {
+		name       string
+		selections Selections
+		wantFirst  Selections
+		wantSecond Selections
+	}
+
+	theories := []theory{
+		{
+			name:       "empty",
+			selections: Selections{},
+			wantFirst:  nil,
+			wantSecond: nil,
+		},
+		{
+			name: "single element — second is nil",
+			selections: Selections{
+				NewSelectionBuilder("a").Build(),
+			},
+			wantFirst: Selections{
+				NewSelectionBuilder("a").Build(),
+			},
+			wantSecond: nil,
+		},
+		{
+			name: "two elements — one element each",
+			selections: Selections{
+				NewSelectionBuilder("a").Build(),
+				NewSelectionBuilder("b").Build(),
+			},
+			wantFirst: Selections{
+				NewSelectionBuilder("a").Build(),
+			},
+			wantSecond: Selections{
+				NewSelectionBuilder("b").Build(),
+			},
+		},
+		{
+			name: "four elements - split evenly",
+			selections: Selections{
+				NewSelectionBuilder("a").Build(),
+				NewSelectionBuilder("b").Build(),
+				NewSelectionBuilder("c").Build(),
+				NewSelectionBuilder("d").Build(),
+			},
+			wantFirst: Selections{
+				NewSelectionBuilder("a").Build(),
+				NewSelectionBuilder("b").Build(),
+			},
+			wantSecond: Selections{
+				NewSelectionBuilder("c").Build(),
+				NewSelectionBuilder("d").Build(),
+			},
+		},
+		{
+			name: "five elements — first half is larger when odd",
+			selections: Selections{
+				NewSelectionBuilder("a").Build(),
+				NewSelectionBuilder("b").Build(),
+				NewSelectionBuilder("c").Build(),
+				NewSelectionBuilder("d").Build(),
+				NewSelectionBuilder("e").Build(),
+			},
+			wantFirst: Selections{
+				NewSelectionBuilder("a").Build(),
+				NewSelectionBuilder("b").Build(),
+				NewSelectionBuilder("c").Build(),
+			},
+			wantSecond: Selections{
+				NewSelectionBuilder("d").Build(),
+				NewSelectionBuilder("e").Build(),
+			},
+		},
+	}
+
+	for _, tt := range theories {
+		t.Run(tt.name, func(t *testing.T) {
+			first, second := tt.selections.split()
+			assert.Equal(t, tt.wantFirst, first)
+			assert.Equal(t, tt.wantSecond, second)
+		})
+	}
+}
