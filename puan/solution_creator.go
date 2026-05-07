@@ -96,6 +96,11 @@ func (c *SolutionCreator) calculateMultiSolveSolution(
 	ruleset Ruleset,
 	from *time.Time,
 ) (SolutionEnvelope, error) {
+	if len(selections) < 2 {
+		return SolutionEnvelope{},
+			errors.New("at least 2 selections are required for multi-solve")
+	}
+
 	remainingSelections, prioritisedSelections := selections.split()
 
 	prioritisedSolution, err := c.calculateSolveSolution(prioritisedSelections, ruleset, from)
@@ -122,31 +127,22 @@ func (c *SolutionCreator) newRulesetWithAssumedSolution(
 ) (Ruleset, error) {
 	newRuleset := ruleset.copy()
 
-	selectedIDs := c.getSelectedIDs(selections, solution)
-
-	for _, id := range selectedIDs {
-		err := newRuleset.assume(id)
-		if err != nil {
-			return Ruleset{}, err
+	for _, selection := range selections {
+		isSelected := solution.isSelected(selection.id)
+		if isSelected {
+			err := newRuleset.assume(selection.id)
+			if err != nil {
+				return Ruleset{}, err
+			}
+		} else {
+			err := newRuleset.assumeNot(selection.id)
+			if err != nil {
+				return Ruleset{}, err
+			}
 		}
 	}
 
 	return newRuleset, nil
-}
-
-func (c *SolutionCreator) getSelectedIDs(
-	selections Selections,
-	solution Solution,
-) []string {
-	var selectedIDs []string
-	for _, id := range selections.ids() {
-		isSelected := solution.isSelected(id)
-		if isSelected {
-			selectedIDs = append(selectedIDs, id)
-		}
-	}
-
-	return selectedIDs
 }
 
 func calculateIndependentSolution(independentVariables []string, selections Selections) Solution {

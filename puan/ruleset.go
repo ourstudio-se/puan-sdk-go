@@ -377,21 +377,25 @@ func (r *Ruleset) forbidPassedPeriods(from time.Time) error {
 		return nil
 	}
 
-	constraint, err := pldag.NewAtMostConstraint(passedPeriodIDs, 0)
-	if err != nil {
-		return err
-	}
-
-	if err = r.setConstraint(constraint); err != nil {
-		return err
-	}
-
-	return r.assume(constraint.ID())
+	return r.assumeNot(passedPeriodIDs...)
 }
 
 func (r *Ruleset) assume(id string) error {
 	constraint := pldag.NewAssumedConstraint(id)
 	return r.setAuxiliaryConstraint(constraint)
+}
+
+func (r *Ruleset) assumeNot(ids ...string) error {
+	notID, err := pldag.NewAtMostConstraint(ids, 0)
+	if err != nil {
+		return err
+	}
+
+	if err = r.setConstraint(notID); err != nil {
+		return err
+	}
+
+	return r.assume(notID.ID())
 }
 
 func (r *Ruleset) isValidFromTime(from *time.Time) bool {
