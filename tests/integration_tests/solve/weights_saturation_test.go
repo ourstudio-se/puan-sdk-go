@@ -12,7 +12,7 @@ import (
 
 // Ruleset with a lot of primitives (103). All of them are dependent.
 // We make 71 selections.
-// The first selection (least prioritised) should be selected as non
+// The first selection (least prioritised) should be selected as none
 // of the other selections are in conflict with it.
 func Test_givenVeryManySelections_earliestSelectionShouldBeSelected(t *testing.T) {
 	creator, primitives := rulesetCreatorForSaturationTest()

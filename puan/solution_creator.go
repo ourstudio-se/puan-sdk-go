@@ -228,12 +228,15 @@ func newQuery(selections Selections, ruleset Ruleset, from *time.Time) (*Query, 
 		specification.ruleset.independentVariables,
 	)
 
-	weights := weights.Calculate(
+	weights, err := weights.Calculate(
 		dependentSelectableVariables,
 		specification.selections,
 		specification.ruleset.preferredVariables,
 		specification.ruleset.periodVariables.ids(),
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	query := NewQuery(
 		specification.ruleset.polyhedron,
