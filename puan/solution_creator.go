@@ -12,6 +12,7 @@ import (
 
 type SolverClient interface {
 	Solve(query *Query) (Solution, error)
+	SolveWithManyWeights(query *MultiWeightQuery) ([]Solution, error)
 }
 
 type SolutionCreator struct {
@@ -39,7 +40,7 @@ func (c *SolutionCreator) Create(
 	dependantSelections, independentSelections :=
 		categorizeSelections(selections, ruleset.independentVariables)
 
-	envelope, err := c.calculateSolveSolution(
+	envelope, err := c.calculateDependentSolution(
 		dependantSelections,
 		ruleset,
 		from,
@@ -63,7 +64,7 @@ func (c *SolutionCreator) Create(
 	}, nil
 }
 
-func (c *SolutionCreator) calculateSolveSolution(
+func (c *SolutionCreator) calculateDependentSolution(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
@@ -76,7 +77,7 @@ func (c *SolutionCreator) calculateSolveSolution(
 	tooLarge := query.weights.WeightsTooLarge()
 
 	if tooLarge {
-		return c.calculateMultiSolveSolution(selections, ruleset, from)
+		return c.calculateSplitSolveSolution(selections, ruleset, from)
 	}
 
 	solution, err := c.Solve(query)
@@ -99,7 +100,7 @@ func (c *SolutionCreator) calculateSolveSolution(
 // 4. Solve with remaining selections using the new ruleset
 //
 // this can happen many times recursively until all selections are solved
-func (c *SolutionCreator) calculateMultiSolveSolution(
+func (c *SolutionCreator) calculateSplitSolveSolution(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
@@ -111,7 +112,7 @@ func (c *SolutionCreator) calculateMultiSolveSolution(
 
 	remainingSelections, prioritisedSelections := selections.split()
 
-	prioritisedSolution, err := c.calculateSolveSolution(prioritisedSelections, ruleset, from)
+	prioritisedSolution, err := c.calculateDependentSolution(prioritisedSelections, ruleset, from)
 	if err != nil {
 		return SolutionEnvelope{}, err
 	}
@@ -125,7 +126,7 @@ func (c *SolutionCreator) calculateMultiSolveSolution(
 		return SolutionEnvelope{}, err
 	}
 
-	return c.calculateSolveSolution(remainingSelections, rulesetWithPrioritisedSolution, from)
+	return c.calculateDependentSolution(remainingSelections, rulesetWithPrioritisedSolution, from)
 }
 
 func (c *SolutionCreator) newRulesetWithAssumedSolution(
@@ -273,4 +274,39 @@ func updateSolveError(
 	}
 
 	return err
+}
+
+func (c *SolutionCreator) CreateSolutionsBySelection(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+) (SolutionsBySelectionEnvelope, error) {
+	err := validateSelections(selections, ruleset)
+	if err != nil {
+		return SolutionsBySelectionEnvelope{}, err
+	}
+
+	dependantSelections, independentSelections :=
+		categorizeSelections(selections, ruleset.independentVariables)
+
+	envelope, err := c.calculateDependentSolution(
+		dependantSelections,
+		ruleset,
+		from,
+	)
+	if err != nil {
+		err = updateSolveError(err, ruleset, from)
+		return SolutionsBySelectionEnvelope{}, err
+	}
+
+	dependentSolution := envelope.Solution()
+
+	independentSolution := calculateIndependentSolution(
+		ruleset.independentVariables,
+		independentSelections,
+	)
+
+	_ = dependentSolution.merge(independentSolution)
+
+	return SolutionsBySelectionEnvelope{}, nil
 }
