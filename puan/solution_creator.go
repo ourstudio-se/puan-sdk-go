@@ -37,11 +37,13 @@ func (c *SolutionCreator) Create(
 		return SolutionEnvelope{}, err
 	}
 
-	dependantSelections, independentSelections :=
-		categorizeSelections(selections, ruleset.independentVariables)
+	preparedSelections := prepareSelectionsForQuery(selections)
 
-	envelope, err := c.calculateDependentSolution(
-		dependantSelections,
+	dependentSelections, independentSelections :=
+		categorizeSelections(preparedSelections, ruleset.independentVariables)
+
+	dependentSolution, err := c.calculateDependentSolution(
+		dependentSelections,
 		ruleset,
 		from,
 	)
@@ -49,8 +51,6 @@ func (c *SolutionCreator) Create(
 		err = updateSolveError(err, ruleset, from)
 		return SolutionEnvelope{}, err
 	}
-
-	dependentSolution := envelope.Solution()
 
 	independentSolution := calculateIndependentSolution(
 		ruleset.independentVariables,
@@ -68,10 +68,10 @@ func (c *SolutionCreator) calculateDependentSolution(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
-) (SolutionEnvelope, error) {
+) (Solution, error) {
 	query, err := newQuery(selections, ruleset, from)
 	if err != nil {
-		return SolutionEnvelope{}, err
+		return Solution{}, err
 	}
 
 	tooLarge := query.weights.WeightsTooLarge()
@@ -82,14 +82,12 @@ func (c *SolutionCreator) calculateDependentSolution(
 
 	solution, err := c.Solve(query)
 	if err != nil {
-		return SolutionEnvelope{}, err
+		return Solution{}, err
 	}
 
 	primitiveSolution := ruleset.RemoveSupportVariables(solution)
 
-	return SolutionEnvelope{
-		solution: primitiveSolution,
-	}, nil
+	return primitiveSolution, nil
 }
 
 // When weights are very large, we need to solve many times sequentially
@@ -104,9 +102,9 @@ func (c *SolutionCreator) calculateSplitSolveSolution(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
-) (SolutionEnvelope, error) {
+) (Solution, error) {
 	if len(selections) < 2 {
-		return SolutionEnvelope{},
+		return Solution{},
 			errors.New("at least 2 selections are required for multi-solve")
 	}
 
@@ -114,16 +112,16 @@ func (c *SolutionCreator) calculateSplitSolveSolution(
 
 	prioritisedSolution, err := c.calculateDependentSolution(prioritisedSelections, ruleset, from)
 	if err != nil {
-		return SolutionEnvelope{}, err
+		return Solution{}, err
 	}
 
 	rulesetWithPrioritisedSolution, err := c.newRulesetWithAssumedSolution(
 		ruleset,
 		prioritisedSelections,
-		prioritisedSolution.Solution(),
+		prioritisedSolution,
 	)
 	if err != nil {
-		return SolutionEnvelope{}, err
+		return Solution{}, err
 	}
 
 	return c.calculateDependentSolution(remainingSelections, rulesetWithPrioritisedSolution, from)
@@ -224,25 +222,12 @@ func categorizeSelections(
 }
 
 func newQuery(selections Selections, ruleset Ruleset, from *time.Time) (*Query, error) {
-	extendedSelections := selections.modifySelections()
-	impactingSelections := getImpactingSelections(extendedSelections)
-
-	specification, err := ruleset.newQuerySpecification(impactingSelections, from)
+	specification, err := newQuerySpecification(selections, ruleset, from)
 	if err != nil {
 		return nil, err
 	}
 
-	dependentSelectableVariables := utils.Without(
-		specification.ruleset.selectableVariables,
-		specification.ruleset.independentVariables,
-	)
-
-	weights, err := weights.Calculate(
-		dependentSelectableVariables,
-		specification.selections,
-		specification.ruleset.preferredVariables,
-		specification.ruleset.periodVariables.ids(),
-	)
+	weights, err := newWeights(specification, selections)
 	if err != nil {
 		return nil, err
 	}
@@ -254,6 +239,46 @@ func newQuery(selections Selections, ruleset Ruleset, from *time.Time) (*Query, 
 	)
 
 	return query, nil
+}
+
+func newQuerySpecification(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+) (*querySpecification, error) {
+	specification, err := ruleset.newQuerySpecification(selections, from)
+	if err != nil {
+		return nil, err
+	}
+
+	return specification, nil
+}
+
+func newWeights(
+	specification *querySpecification,
+	selections Selections,
+) (weights.Weights, error) {
+	dependentSelectableVariables := utils.Without(
+		specification.ruleset.selectableVariables,
+		specification.ruleset.independentVariables,
+	)
+
+	weightSelections, err := specification.ruleset.newWeightSelections(selections)
+	if err != nil {
+		return nil, err
+	}
+
+	weights, err := weights.Calculate(
+		dependentSelectableVariables,
+		weightSelections,
+		specification.ruleset.preferredVariables,
+		specification.ruleset.periodVariables.ids(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return weights, nil
 }
 
 func updateSolveError(
@@ -286,10 +311,12 @@ func (c *SolutionCreator) CreateSolutionsBySelection(
 		return SolutionsBySelectionEnvelope{}, err
 	}
 
-	dependantSelections, independentSelections :=
-		categorizeSelections(selections, ruleset.independentVariables)
+	preparedSelections := prepareSelectionsForQuery(selections)
 
-	envelope, err := c.calculateDependentSolution(
+	dependantSelections, independentSelections :=
+		categorizeSelections(preparedSelections, ruleset.independentVariables)
+
+	dependentSolutions, err := c.calculateDependentSolutionsBySelection(
 		dependantSelections,
 		ruleset,
 		from,
@@ -299,14 +326,106 @@ func (c *SolutionCreator) CreateSolutionsBySelection(
 		return SolutionsBySelectionEnvelope{}, err
 	}
 
-	dependentSolution := envelope.Solution()
-
-	independentSolution := calculateIndependentSolution(
-		ruleset.independentVariables,
+	independentSolutions, err := c.calculateIndependentSolutionsBySelection(
 		independentSelections,
+		ruleset,
+		from,
+	)
+	if err != nil {
+		err = updateSolveError(err, ruleset, from)
+		return SolutionsBySelectionEnvelope{}, err
+	}
+
+	var solutions []SolutionBySelection
+	solutions = append(solutions, dependentSolutions...)
+	solutions = append(solutions, independentSolutions...)
+
+	return SolutionsBySelectionEnvelope{
+		solutions: solutions,
+	}, nil
+}
+
+func (c *SolutionCreator) calculateDependentSolutionsBySelection(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+) ([]SolutionBySelection, error) {
+	query, err := newMultiWeightQuery(selections, ruleset, from)
+	if err != nil {
+		return nil, err
+	}
+
+	solutions, err := c.SolveWithManyWeights(query)
+	if err != nil {
+		return nil, err
+	}
+
+	solutionsBySelection := make([]SolutionBySelection, len(solutions))
+	for i, solution := range solutions {
+		primitiveSolution := ruleset.RemoveSupportVariables(solution)
+		solutionsBySelection[i] = SolutionBySelection{
+			selection: selections[i],
+			solution:  primitiveSolution,
+		}
+	}
+
+	return solutionsBySelection, nil
+}
+
+func newMultiWeightQuery(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+) (*MultiWeightQuery, error) {
+	specification, err := newQuerySpecification(selections, ruleset, from)
+	if err != nil {
+		return nil, err
+	}
+
+	weightGroups := make([]weights.Weights, len(selections))
+	for i, selection := range selections {
+		weights, err := newWeights(specification, Selections{selection})
+		if err != nil {
+			return nil, err
+		}
+		weightGroups[i] = weights
+	}
+
+	query := NewMultiWeightQuery(
+		specification.ruleset.polyhedron,
+		specification.ruleset.dependentVariables,
+		weightGroups,
 	)
 
-	_ = dependentSolution.merge(independentSolution)
+	return query, nil
+}
 
-	return SolutionsBySelectionEnvelope{}, nil
+func (c *SolutionCreator) calculateIndependentSolutionsBySelection(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+) ([]SolutionBySelection, error) {
+	query, err := newQuery(nil, ruleset, from)
+	if err != nil {
+		return nil, err
+	}
+
+	defaultSolution, err := c.Solve(query)
+	if err != nil {
+		return nil, err
+	}
+
+	primitiveDefaultSolution := ruleset.RemoveSupportVariables(defaultSolution)
+
+	solutionsBySelection := make([]SolutionBySelection, len(selections))
+	for i, selection := range selections {
+		solutionWithSelection := Solution{selection.id: 1}
+		defaultSolutionWithSelection := primitiveDefaultSolution.merge(solutionWithSelection)
+		solutionsBySelection[i] = SolutionBySelection{
+			selection: selection,
+			solution:  defaultSolutionWithSelection,
+		}
+	}
+
+	return solutionsBySelection, nil
 }

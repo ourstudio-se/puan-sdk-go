@@ -126,6 +126,15 @@ func (s Selection) makesRedundant(other Selection) bool {
 	return prioritisedIsNotComposite
 }
 
+func prepareSelectionsForQuery(
+	selectionsOrderedByOccurrence Selections,
+) Selections {
+	extendedSelections := selectionsOrderedByOccurrence.modifySelections()
+	impactingSelections := getImpactingSelections(extendedSelections)
+
+	return impactingSelections
+}
+
 func (s Selections) modifySelections() Selections {
 	modifiedSelections := Selections{}
 	for _, selection := range s {

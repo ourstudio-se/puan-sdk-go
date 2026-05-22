@@ -219,8 +219,7 @@ func (r *Ruleset) copy() Ruleset {
 }
 
 type querySpecification struct {
-	ruleset    Ruleset
-	selections weights.Selections
+	ruleset Ruleset
 }
 
 func (r *Ruleset) newQuerySpecification(
@@ -229,28 +228,41 @@ func (r *Ruleset) newQuerySpecification(
 ) (*querySpecification, error) {
 	ruleset := r.copy()
 
-	weightSelections, err := ruleset.newWeightSelections(selections)
-	if err != nil {
+	if err := ruleset.setCompositeSelectionConstraints(selections); err != nil {
 		return nil, err
 	}
 
 	if from != nil {
-		err = ruleset.forbidPassedPeriods(*from)
+		err := ruleset.forbidPassedPeriods(*from)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return &querySpecification{
-		ruleset:    ruleset,
-		selections: weightSelections,
+		ruleset: ruleset,
 	}, nil
+}
+
+func (r *Ruleset) setCompositeSelectionConstraints(
+	selections Selections,
+) error {
+	for _, selection := range selections {
+		if selection.IsComposite() {
+			ids := selection.ids()
+			_, err := r.setCompositeSelectionConstraint(ids)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (r *Ruleset) newWeightSelections(selections Selections) (weights.Selections, error) {
 	weightSelections := make(weights.Selections, len(selections))
 	for i, selection := range selections {
-		weightSelection, err := r.newWeighSelection(selection)
+		weightSelection, err := r.newWeightSelection(selection)
 		if err != nil {
 			return nil, err
 		}
@@ -261,7 +273,7 @@ func (r *Ruleset) newWeightSelections(selections Selections) (weights.Selections
 	return weightSelections, nil
 }
 
-func (r *Ruleset) newWeighSelection(selection Selection) (weights.Selection, error) {
+func (r *Ruleset) newWeightSelection(selection Selection) (weights.Selection, error) {
 	id, err := r.obtainQuerySelectionID(selection)
 	if err != nil {
 		return weights.Selection{}, err

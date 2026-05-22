@@ -30,6 +30,27 @@ type SolutionEnvelope struct {
 	solution Solution
 }
 
-func (se SolutionEnvelope) Solution() Solution {
-	return se.solution
+func (e SolutionEnvelope) Solution() Solution {
+	return e.solution
+}
+
+type SolutionsBySelectionEnvelope struct {
+	solutions []SolutionBySelection
+}
+
+func (e SolutionsBySelectionEnvelope) Solutions() []SolutionBySelection {
+	return e.solutions
+}
+
+type SolutionBySelection struct {
+	selection Selection
+	solution  Solution
+}
+
+func (s SolutionBySelection) Selection() Selection {
+	return s.selection
+}
+
+func (s SolutionBySelection) Solution() Solution {
+	return s.solution
 }
