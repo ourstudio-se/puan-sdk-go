@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
@@ -62,14 +63,66 @@ func Test_RuleSet_copy_givenChangeToOriginal_shouldNotChangeCopy(t *testing.T) {
 	assert.NotEqual(t, original.polyhedron, ccopy.polyhedron)
 }
 
-func Test_RuleSet_obtainSelectionID_givenStandaloneSelection_shouldReturnSelectionID(t *testing.T) {
+func Test_RuleSet_getWeightSelectionID_givenStandaloneSelection_shouldReturnSelectionID(
+	t *testing.T,
+) {
 	want := uuid.New().String()
 	selection := NewSelectionBuilder(want).Build()
 
 	ruleset := Ruleset{}
-	got, err := ruleset.obtainQuerySelectionID(selection)
+	got, err := ruleset.getWeightSelectionID(selection)
 
 	assert.NoError(t, err)
+	assert.Equal(t, want, got)
+}
+
+// nolint:lll
+func Test_RuleSet_getWeightSelectionID_givenCompositeSelection_andRulesetNotPrepared_shouldReturnError(
+	t *testing.T,
+) {
+	primaryID := uuid.New().String()
+	subID := uuid.New().String()
+	selection := NewSelectionBuilder(primaryID).
+		WithSubSelectionID(subID).
+		Build()
+
+	ruleset := Ruleset{}
+
+	_, err := ruleset.getWeightSelectionID(selection)
+
+	assert.Error(t, err)
+}
+
+// nolint:lll
+func Test_RuleSet_getWeightSelectionID_givenCompositeSelection_andRulesetPrepared_shouldReturnConstraintID(
+	t *testing.T,
+) {
+	primaryID := uuid.New().String()
+	subID := uuid.New().String()
+	selection := NewSelectionBuilder(primaryID).
+		WithSubSelectionID(subID).
+		Build()
+
+	creator := NewRulesetCreator()
+	err := creator.AddPrimitives(primaryID, subID)
+	require.NoError(t, err)
+
+	or, err := creator.SetOr(primaryID, subID)
+	require.NoError(t, err)
+
+	err = creator.Assume(or)
+	require.NoError(t, err)
+
+	ruleset, err := creator.Create()
+	require.NoError(t, err)
+
+	err = ruleset.setCompositeSelectionConstraint(selection.IDs())
+	require.NoError(t, err)
+
+	got, err := ruleset.getWeightSelectionID(selection)
+
+	assert.NoError(t, err)
+	want := ruleset.dependentVariables[3]
 	assert.Equal(t, want, got)
 }
 
@@ -91,10 +144,9 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintDoesNotExist_sh
 
 	selection := NewSelectionBuilder(primaryID).WithSubSelectionID(subID).Build()
 
-	id, err := ruleset.setCompositeSelectionConstraint(selection.IDs())
+	err := ruleset.setCompositeSelectionConstraint(selection.IDs())
 
 	assert.NoError(t, err)
-	assert.Equal(t, id, ruleset.dependentVariables[4])
 	assert.Len(t, ruleset.dependentVariables, 5)
 	assert.Len(t, ruleset.polyhedron.B(), 6)
 	assert.Len(t, ruleset.polyhedron.A(), 6)
@@ -117,7 +169,7 @@ func Test_RuleSet_setCompositeSelectionConstraint_givenConstraintExists_shouldNo
 
 	selection := NewSelectionBuilder(primaryID).WithSubSelectionID(subID).Build()
 
-	_, err := ruleset.setCompositeSelectionConstraint(selection.IDs())
+	err := ruleset.setCompositeSelectionConstraint(selection.IDs())
 
 	assert.NoError(t, err)
 	assert.Equal(t, wantVariables, ruleset.dependentVariables)

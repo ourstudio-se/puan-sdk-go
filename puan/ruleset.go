@@ -238,14 +238,15 @@ func (r *Ruleset) prepareForQuery(
 	return ruleset, nil
 }
 
+// Add constraints for composite selections to get a single ID.
+// This is needed to set weights
 func (r *Ruleset) setCompositeSelectionConstraints(
 	selections Selections,
 ) error {
 	for _, selection := range selections {
 		if selection.IsComposite() {
 			ids := selection.IDs()
-			_, err := r.setCompositeSelectionConstraint(ids)
-			if err != nil {
+			if err := r.setCompositeSelectionConstraint(ids); err != nil {
 				return err
 			}
 		}
@@ -268,7 +269,7 @@ func (r *Ruleset) newWeightSelections(selections Selections) (weights.Selections
 }
 
 func (r *Ruleset) newWeightSelection(selection Selection) (weights.Selection, error) {
-	id, err := r.obtainQuerySelectionID(selection)
+	id, err := r.getWeightSelectionID(selection)
 	if err != nil {
 		return weights.Selection{}, err
 	}
@@ -281,26 +282,39 @@ func (r *Ruleset) newWeightSelection(selection Selection) (weights.Selection, er
 	return weightSelection, nil
 }
 
-func (r *Ruleset) obtainQuerySelectionID(selection Selection) (string, error) {
+func (r *Ruleset) getWeightSelectionID(selection Selection) (string, error) {
 	if selection.IsComposite() {
-		return r.setCompositeSelectionConstraint(selection.IDs())
+		constraint, err := newCompositeSelectionConstraint(selection.IDs())
+		if err != nil {
+			return "", err
+		}
+
+		missing := !r.constraintExists(constraint)
+		if missing {
+			return "", errors.Errorf(
+				"Weight selection ID not found for: %v. Is the ruleset prepared for the selection?",
+				selection.IDs(),
+			)
+		}
+
+		return constraint.ID(), nil
 	}
 
 	return selection.id, nil
 }
 
-func (r *Ruleset) setCompositeSelectionConstraint(ids []string) (string, error) {
+func (r *Ruleset) setCompositeSelectionConstraint(ids []string) error {
 	constraint, err := newCompositeSelectionConstraint(ids)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	err = r.setConstraintIfNotExist(constraint)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return constraint.ID(), nil
+	return nil
 }
 
 func newCompositeSelectionConstraint(ids []string) (pldag.Constraint, error) {
