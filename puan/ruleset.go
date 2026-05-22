@@ -249,7 +249,7 @@ func (r *Ruleset) setCompositeSelectionConstraints(
 ) error {
 	for _, selection := range selections {
 		if selection.IsComposite() {
-			ids := selection.ids()
+			ids := selection.IDs()
 			_, err := r.setCompositeSelectionConstraint(ids)
 			if err != nil {
 				return err
@@ -289,7 +289,7 @@ func (r *Ruleset) newWeightSelection(selection Selection) (weights.Selection, er
 
 func (r *Ruleset) obtainQuerySelectionID(selection Selection) (string, error) {
 	if selection.IsComposite() {
-		return r.setCompositeSelectionConstraint(selection.ids())
+		return r.setCompositeSelectionConstraint(selection.IDs())
 	}
 
 	return selection.id, nil

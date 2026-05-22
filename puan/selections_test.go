@@ -332,12 +332,12 @@ func Test_makesRedundant(t *testing.T) {
 	}
 }
 
-func Test_Selection_ids(t *testing.T) {
+func Test_Selection_IDs(t *testing.T) {
 	selection := NewSelectionBuilder("x").
 		WithSubSelectionID("y").
 		WithSubSelectionID("z").
 		Build()
-	assert.Equal(t, []string{"x", "y", "z"}, selection.ids())
+	assert.Equal(t, []string{"x", "y", "z"}, selection.IDs())
 }
 
 func Test_Selections_extendWithPrimaryPrimitiveSelections(t *testing.T) {

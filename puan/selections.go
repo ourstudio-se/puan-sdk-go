@@ -23,7 +23,7 @@ func (s Selections) ids() []string {
 	var ids []string
 	seen := make(map[string]bool, len(s))
 	for _, selection := range s {
-		for _, id := range selection.ids() {
+		for _, id := range selection.IDs() {
 			if !seen[id] {
 				seen[id] = true
 				ids = append(ids, id)
@@ -64,7 +64,7 @@ func (s Selection) ID() string {
 	return s.id
 }
 
-func (s Selection) ids() []string {
+func (s Selection) IDs() []string {
 	ids := make([]string, len(s.subSelectionIDs)+1)
 	ids[0] = s.id
 	copy(ids[1:], s.subSelectionIDs)
@@ -105,11 +105,11 @@ func (s Selection) isRedundant(existingSelections Selections) bool {
 }
 
 func (s Selection) makesRedundant(other Selection) bool {
-	if utils.ContainsAll(other.ids(), s.ids()) {
+	if utils.ContainsAll(other.IDs(), s.IDs()) {
 		return true
 	}
 
-	if s.action == REMOVE && utils.ContainsAny(other.ids(), s.subSelectionIDs) {
+	if s.action == REMOVE && utils.ContainsAny(other.IDs(), s.subSelectionIDs) {
 		return true
 	}
 
@@ -117,7 +117,7 @@ func (s Selection) makesRedundant(other Selection) bool {
 		return false
 	}
 
-	if utils.ContainsAll(other.ids(), s.subSelectionIDs) {
+	if utils.ContainsAll(other.IDs(), s.subSelectionIDs) {
 		return true
 	}
 

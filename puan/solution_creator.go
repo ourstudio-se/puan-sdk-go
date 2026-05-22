@@ -179,7 +179,7 @@ func independentSolutionValue(variableID string, selections Selections) int {
 
 func validateSelections(selections Selections, ruleset Ruleset) error {
 	for _, selection := range selections {
-		if !utils.ContainsAll(ruleset.selectableVariables, selection.ids()) {
+		if !utils.ContainsAll(ruleset.selectableVariables, selection.IDs()) {
 			return errors.Errorf(
 				"%w: selection contains non-selectable variables: %v",
 				puanerror.InvalidArgument,
@@ -189,7 +189,7 @@ func validateSelections(selections Selections, ruleset Ruleset) error {
 
 		hasSubSelection := len(selection.subSelectionIDs) > 0
 		if hasSubSelection {
-			if utils.ContainsAny(selection.ids(), ruleset.independentVariables) {
+			if utils.ContainsAny(selection.IDs(), ruleset.independentVariables) {
 				return errors.Errorf(
 					"%w: independent variables cannot be part of a composite selections: %v",
 					puanerror.InvalidArgument,
@@ -311,10 +311,8 @@ func (c *SolutionCreator) CreateSolutionsBySelection(
 		return SolutionsBySelectionEnvelope{}, err
 	}
 
-	preparedSelections := prepareSelectionsForQuery(selections)
-
 	dependantSelections, independentSelections :=
-		categorizeSelections(preparedSelections, ruleset.independentVariables)
+		categorizeSelections(selections, ruleset.independentVariables)
 
 	dependentSolutions, err := c.calculateDependentSolutionsBySelection(
 		dependantSelections,
