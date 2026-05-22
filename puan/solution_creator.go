@@ -222,48 +222,35 @@ func categorizeSelections(
 func newQuery(selections Selections, ruleset Ruleset, from *time.Time) (*Query, error) {
 	preparedSelections := selections.prepareForMultiSelectionQuery()
 
-	specification, err := newQuerySpecification(preparedSelections, ruleset, from)
+	preparedRuleset, err := ruleset.prepareForQuery(preparedSelections, from)
 	if err != nil {
 		return nil, err
 	}
 
-	weights, err := newWeights(specification, preparedSelections)
+	weights, err := newWeights(preparedRuleset, preparedSelections)
 	if err != nil {
 		return nil, err
 	}
 
 	query := NewQuery(
-		specification.ruleset.polyhedron,
-		specification.ruleset.dependentVariables,
+		preparedRuleset.polyhedron,
+		preparedRuleset.dependentVariables,
 		weights,
 	)
 
 	return query, nil
 }
 
-func newQuerySpecification(
-	selections Selections,
-	ruleset Ruleset,
-	from *time.Time,
-) (*querySpecification, error) {
-	specification, err := ruleset.newQuerySpecification(selections, from)
-	if err != nil {
-		return nil, err
-	}
-
-	return specification, nil
-}
-
 func newWeights(
-	specification *querySpecification,
+	ruleset Ruleset,
 	selections Selections,
 ) (weights.Weights, error) {
 	dependentSelectableVariables := utils.Without(
-		specification.ruleset.selectableVariables,
-		specification.ruleset.independentVariables,
+		ruleset.selectableVariables,
+		ruleset.independentVariables,
 	)
 
-	weightSelections, err := specification.ruleset.newWeightSelections(selections)
+	weightSelections, err := ruleset.newWeightSelections(selections)
 	if err != nil {
 		return nil, err
 	}
@@ -271,8 +258,8 @@ func newWeights(
 	weights, err := weights.Calculate(
 		dependentSelectableVariables,
 		weightSelections,
-		specification.ruleset.preferredVariables,
-		specification.ruleset.periodVariables.ids(),
+		ruleset.preferredVariables,
+		ruleset.periodVariables.ids(),
 	)
 	if err != nil {
 		return nil, err
@@ -375,14 +362,14 @@ func newMultiWeightQuery(
 	ruleset Ruleset,
 	from *time.Time,
 ) (*MultiWeightQuery, error) {
-	specification, err := newQuerySpecification(selections, ruleset, from)
+	preparedRuleset, err := ruleset.prepareForQuery(selections, from)
 	if err != nil {
 		return nil, err
 	}
 
 	weightGroups := make([]weights.Weights, len(selections))
 	for i, selection := range selections {
-		weights, err := newWeights(specification, Selections{selection})
+		weights, err := newWeights(preparedRuleset, Selections{selection})
 		if err != nil {
 			return nil, err
 		}
@@ -390,8 +377,8 @@ func newMultiWeightQuery(
 	}
 
 	query := NewMultiWeightQuery(
-		specification.ruleset.polyhedron,
-		specification.ruleset.dependentVariables,
+		preparedRuleset.polyhedron,
+		preparedRuleset.dependentVariables,
 		weightGroups,
 	)
 

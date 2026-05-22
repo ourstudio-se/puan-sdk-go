@@ -218,30 +218,24 @@ func (r *Ruleset) copy() Ruleset {
 	}
 }
 
-type querySpecification struct {
-	ruleset Ruleset
-}
-
-func (r *Ruleset) newQuerySpecification(
+func (r *Ruleset) prepareForQuery(
 	selections Selections,
 	from *time.Time,
-) (*querySpecification, error) {
+) (Ruleset, error) {
 	ruleset := r.copy()
 
 	if err := ruleset.setCompositeSelectionConstraints(selections); err != nil {
-		return nil, err
+		return Ruleset{}, err
 	}
 
 	if from != nil {
 		err := ruleset.forbidPassedPeriods(*from)
 		if err != nil {
-			return nil, err
+			return Ruleset{}, err
 		}
 	}
 
-	return &querySpecification{
-		ruleset: ruleset,
-	}, nil
+	return ruleset, nil
 }
 
 func (r *Ruleset) setCompositeSelectionConstraints(
