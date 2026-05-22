@@ -71,39 +71,6 @@ func (s Selection) IDs() []string {
 	return ids
 }
 
-func getImpactingSelections(selectionsOrderedByOccurrence Selections) Selections {
-	selectionsOrderedByPriority := utils.Reverse(selectionsOrderedByOccurrence)
-	impactingSelectionsOrderedByPriority := filterOutRedundantSelections(selectionsOrderedByPriority)
-	impactingSelections := utils.Reverse(impactingSelectionsOrderedByPriority)
-
-	return impactingSelections
-}
-
-func filterOutRedundantSelections(
-	selectionsOrderedByPriority Selections,
-) Selections {
-	var filtered Selections
-	for _, selection := range selectionsOrderedByPriority {
-		if selection.isRedundant(filtered) {
-			continue
-		}
-
-		filtered = append(filtered, selection)
-	}
-
-	return filtered
-}
-
-func (s Selection) isRedundant(existingSelections Selections) bool {
-	for _, existingSelection := range existingSelections {
-		if existingSelection.makesRedundant(s) {
-			return true
-		}
-	}
-
-	return false
-}
-
 func (s Selection) makesRedundant(other Selection) bool {
 	if utils.ContainsAll(other.IDs(), s.IDs()) {
 		return true
@@ -126,25 +93,26 @@ func (s Selection) makesRedundant(other Selection) bool {
 	return prioritisedIsNotComposite
 }
 
-func prepareSelectionsForQuery(
-	selectionsOrderedByOccurrence Selections,
-) Selections {
-	extendedSelections := selectionsOrderedByOccurrence.modifySelections()
-	impactingSelections := getImpactingSelections(extendedSelections)
+// Prepares selections for queries that solves for many selections
+// at the same time.
+// Modifies, adds additional and cleans up redundant selections.
+func (selectionsByOccurrence Selections) prepareForMultiSelectionQuery() Selections {
+	modified := selectionsByOccurrence.modifyForMultiSelectionQuery()
+	impacting := modified.getImpactingForMultiSelectionQuery()
 
-	return impactingSelections
+	return impacting
 }
 
-func (s Selections) modifySelections() Selections {
+func (s Selections) modifyForMultiSelectionQuery() Selections {
 	modifiedSelections := Selections{}
 	for _, selection := range s {
-		modifiedSelections = append(modifiedSelections, selection.modifySelection()...)
+		modifiedSelections = append(modifiedSelections, selection.modifyForMultiSelectionQuery()...)
 	}
 
 	return modifiedSelections
 }
 
-func (s Selection) modifySelection() Selections {
+func (s Selection) modifyForMultiSelectionQuery() Selections {
 	if s.action == REMOVE {
 		removeSelection := NewSelectionBuilder(s.id).
 			WithAction(REMOVE).
@@ -161,4 +129,39 @@ func (s Selection) modifySelection() Selections {
 	}
 
 	return Selections{s}
+}
+
+func (selectionsByOccurance Selections) getImpactingForMultiSelectionQuery() Selections {
+	byPriority := selectionsByOccurance.reverse()
+	impactingByPriority := byPriority.filterOutRedundant()
+	impactingByOccurance := impactingByPriority.reverse()
+
+	return impactingByOccurance
+}
+
+func (s Selections) reverse() Selections {
+	return utils.Reverse(s)
+}
+
+func (selectionsByPriority Selections) filterOutRedundant() Selections {
+	var filtered Selections
+	for _, selection := range selectionsByPriority {
+		if selection.isRedundant(filtered) {
+			continue
+		}
+
+		filtered = append(filtered, selection)
+	}
+
+	return filtered
+}
+
+func (s Selection) isRedundant(existingSelections Selections) bool {
+	for _, existingSelection := range existingSelections {
+		if existingSelection.makesRedundant(s) {
+			return true
+		}
+	}
+
+	return false
 }

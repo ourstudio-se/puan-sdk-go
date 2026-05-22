@@ -37,10 +37,8 @@ func (c *SolutionCreator) Create(
 		return SolutionEnvelope{}, err
 	}
 
-	preparedSelections := prepareSelectionsForQuery(selections)
-
 	dependentSelections, independentSelections :=
-		categorizeSelections(preparedSelections, ruleset.independentVariables)
+		categorizeSelections(selections, ruleset.independentVariables)
 
 	dependentSolution, err := c.calculateDependentSolution(
 		dependentSelections,
@@ -222,12 +220,14 @@ func categorizeSelections(
 }
 
 func newQuery(selections Selections, ruleset Ruleset, from *time.Time) (*Query, error) {
-	specification, err := newQuerySpecification(selections, ruleset, from)
+	preparedSelections := selections.prepareForMultiSelectionQuery()
+
+	specification, err := newQuerySpecification(preparedSelections, ruleset, from)
 	if err != nil {
 		return nil, err
 	}
 
-	weights, err := newWeights(specification, selections)
+	weights, err := newWeights(specification, preparedSelections)
 	if err != nil {
 		return nil, err
 	}

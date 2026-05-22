@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_getImpactingSelections(t *testing.T) {
+func Test_Selections_getImpactingForMultiSelectionQuery(t *testing.T) {
 	theories := []struct {
 		name       string
 		selections Selections
@@ -135,13 +135,13 @@ func Test_getImpactingSelections(t *testing.T) {
 
 	for _, tt := range theories {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := getImpactingSelections(tt.selections)
+			actual := tt.selections.getImpactingForMultiSelectionQuery()
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }
 
-func Test_filterOutRedundantSelections(t *testing.T) {
+func Test_Selections_filterOutRedundant(t *testing.T) {
 	theories := []struct {
 		name       string
 		selections Selections
@@ -227,14 +227,14 @@ func Test_filterOutRedundantSelections(t *testing.T) {
 
 	for _, tt := range theories {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := filterOutRedundantSelections(tt.selections)
+			actual := tt.selections.filterOutRedundant()
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
 
 	for _, tt := range theories {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := filterOutRedundantSelections(tt.selections)
+			actual := tt.selections.filterOutRedundant()
 			assert.Equal(t, tt.expected, actual, tt.name)
 		})
 	}
@@ -347,7 +347,7 @@ func Test_Selections_extendWithPrimaryPrimitiveSelections(t *testing.T) {
 		NewSelectionBuilder("z").WithSubSelectionID("w").WithAction(REMOVE).Build(),
 	}
 
-	extended := selections.modifySelections()
+	extended := selections.modifyForMultiSelectionQuery()
 
 	want := Selections{
 		NewSelectionBuilder("x").WithAction(ADD).Build(),
