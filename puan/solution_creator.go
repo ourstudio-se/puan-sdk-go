@@ -390,25 +390,21 @@ func (c *SolutionCreator) calculateIndependentSolutionsBySelection(
 	ruleset Ruleset,
 	from *time.Time,
 ) ([]SolutionBySelection, error) {
-	query, err := newQuery(nil, ruleset, from)
+	defaultSolution, err := c.calculateDependentSolution(
+		nil,
+		ruleset,
+		from,
+	)
 	if err != nil {
 		return nil, err
 	}
-
-	defaultSolution, err := c.Solve(query)
-	if err != nil {
-		return nil, err
-	}
-
-	primitiveDefaultSolution := ruleset.RemoveSupportVariables(defaultSolution)
 
 	solutionsBySelection := make([]SolutionBySelection, len(selections))
 	for i, selection := range selections {
-		solutionWithSelection := Solution{selection.id: 1}
-		defaultSolutionWithSelection := primitiveDefaultSolution.merge(solutionWithSelection)
+		solution := defaultSolution.withSelection(selection.id)
 		solutionsBySelection[i] = SolutionBySelection{
 			selection: selection,
-			solution:  defaultSolutionWithSelection,
+			solution:  solution,
 		}
 	}
 

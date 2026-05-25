@@ -1,5 +1,7 @@
 package puan
 
+import "maps"
+
 // Map of variable IDs and 0 or 1, representing whether the variable is selected or not
 type Solution map[string]int
 
@@ -15,11 +17,22 @@ func (s Solution) Extract(variables ...string) Solution {
 }
 
 func (s Solution) merge(other Solution) Solution {
-	for variable, value := range other {
-		s[variable] = value
-	}
+	maps.Copy(s, other)
 
 	return s
+}
+
+func (s Solution) copy() Solution {
+	copied := make(Solution)
+	maps.Copy(copied, s)
+	return copied
+}
+
+func (s Solution) withSelection(variableID string) Solution {
+	newSolution := s.copy()
+	newSolution.merge(Solution{variableID: 1})
+
+	return newSolution
 }
 
 func (s Solution) isSelected(variableID string) bool {

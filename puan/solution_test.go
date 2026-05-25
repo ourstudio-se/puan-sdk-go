@@ -73,6 +73,76 @@ func Test_Solution_Extract_validCases(t *testing.T) {
 	}
 }
 
+func Test_Solution_merge(t *testing.T) {
+	tests := []struct {
+		name     string
+		solution Solution
+		other    Solution
+		want     Solution
+	}{
+		{
+			name: "Given non-overlapping keys, includes values from both solutions",
+			solution: Solution{
+				"x": 1,
+			},
+			other: Solution{
+				"y": 0,
+			},
+			want: Solution{
+				"x": 1,
+				"y": 0,
+			},
+		},
+		{
+			name: "Given overlapping keys, values from other override existing",
+			solution: Solution{
+				"x": 1,
+				"y": 1,
+			},
+			other: Solution{
+				"y": 0,
+				"z": 1,
+			},
+			want: Solution{
+				"x": 1,
+				"y": 0,
+				"z": 1,
+			},
+		},
+		{
+			name: "Given empty other solution, keeps original values",
+			solution: Solution{
+				"x": 1,
+			},
+			other: Solution{},
+			want: Solution{
+				"x": 1,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.solution.merge(tt.other)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_Solution_copy(t *testing.T) {
+	original := Solution{
+		"x": 1,
+		"y": 0,
+	}
+
+	copied := original.copy()
+	copied["x"] = 0
+	copied["z"] = 1
+
+	assert.Equal(t, Solution{"x": 1, "y": 0}, original)
+	assert.Equal(t, Solution{"x": 0, "y": 0, "z": 1}, copied)
+}
+
 func Test_Solution_isSelected(t *testing.T) {
 	variableID := fake.New[string]()
 	tests := []struct {

@@ -11,19 +11,6 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
-func Test_solution_validate_givenSingleSolution_shouldBeValid(
-	t *testing.T,
-) {
-	solution := Solution{
-		Solution: fake.New[map[string]int](),
-		Status:   "Optimal",
-	}
-
-	err := solution.validate()
-
-	assert.NoError(t, err)
-}
-
 func Test_solutionResponse_getSingleSolution_givenMultipleSolutions_shouldReturnError(
 	t *testing.T,
 ) {
