@@ -107,7 +107,9 @@ func Test_RuleSet_getWeightSelectionID_givenCompositeSelection_andRulesetPrepare
 	err := creator.AddPrimitives(primaryID, subID)
 	require.NoError(t, err)
 
-	or, err := creator.SetOr(primaryID, subID)
+	// Primitives must be part of constraint for them
+	// to be dependent variables in the ruleset
+	or, err := creator.SetImply(primaryID, subID)
 	require.NoError(t, err)
 
 	err = creator.Assume(or)
@@ -122,7 +124,7 @@ func Test_RuleSet_getWeightSelectionID_givenCompositeSelection_andRulesetPrepare
 	got, err := ruleset.getWeightSelectionID(selection)
 
 	assert.NoError(t, err)
-	want := ruleset.dependentVariables[3]
+	want := ruleset.dependentVariables[len(ruleset.dependentVariables)-1]
 	assert.Equal(t, want, got)
 }
 

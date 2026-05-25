@@ -1,6 +1,10 @@
 package puan
 
-import "maps"
+import (
+	"maps"
+
+	"github.com/go-errors/errors"
+)
 
 // Map of variable IDs and 0 or 1, representing whether the variable is selected or not
 type Solution map[string]int
@@ -48,11 +52,49 @@ func (e SolutionEnvelope) Solution() Solution {
 }
 
 type SolutionsBySelectionEnvelope struct {
-	solutions []SolutionBySelection
+	solutionsBySelection map[string]SolutionBySelection
+}
+
+func NewSolutionsBySelectionEnvelope(
+	solutions []SolutionBySelection,
+) (SolutionsBySelectionEnvelope, error) {
+	solutionsBySelection := make(map[string]SolutionBySelection)
+	for _, solution := range solutions {
+		selectionHash := solution.selection.Hash()
+		if _, exists := solutionsBySelection[selectionHash]; exists {
+			return SolutionsBySelectionEnvelope{}, errors.Errorf(
+				"duplicate solution for selection: %v",
+				solution.selection,
+			)
+		}
+		solutionsBySelection[solution.selection.Hash()] = solution
+	}
+
+	return SolutionsBySelectionEnvelope{
+		solutionsBySelection: solutionsBySelection,
+	}, nil
 }
 
 func (e SolutionsBySelectionEnvelope) Solutions() []SolutionBySelection {
-	return e.solutions
+	solutions := make([]SolutionBySelection, len(e.solutionsBySelection))
+	for _, solution := range e.solutionsBySelection {
+		solutions = append(solutions, solution)
+	}
+	return solutions
+}
+
+func (e SolutionsBySelectionEnvelope) GetSolutionBySelection(
+	selection Selection,
+) (SolutionBySelection, error) {
+	selectionHash := selection.Hash()
+	solution, ok := e.solutionsBySelection[selectionHash]
+	if !ok {
+		return SolutionBySelection{}, errors.Errorf(
+			"solution not found for selection: %v",
+			selection,
+		)
+	}
+	return solution, nil
 }
 
 type SolutionBySelection struct {

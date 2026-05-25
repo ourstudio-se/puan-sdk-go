@@ -6,7 +6,6 @@ import (
 	"github.com/go-errors/errors"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
-	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
 	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
@@ -17,13 +16,17 @@ type SolverClient interface {
 
 type SolutionCreator struct {
 	SolverClient
+	queryCreator *queryCreator
 }
 
 func NewSolutionCreator(
 	client SolverClient,
+
 ) *SolutionCreator {
+	queryCreator := newQueryCreator()
 	return &SolutionCreator{
 		SolverClient: client,
+		queryCreator: queryCreator,
 	}
 }
 
@@ -37,6 +40,26 @@ func (c *SolutionCreator) Create(
 		return SolutionEnvelope{}, err
 	}
 
+	solution, err := c.calculateSolution(
+		selections,
+		ruleset,
+		from,
+	)
+	if err != nil {
+		err = updateSolveError(err, ruleset, from)
+		return SolutionEnvelope{}, err
+	}
+
+	return SolutionEnvelope{
+		solution: solution,
+	}, nil
+}
+
+func (c *SolutionCreator) calculateSolution(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+) (Solution, error) {
 	dependentSelections, independentSelections :=
 		categorizeSelections(selections, ruleset.independentVariables)
 
@@ -46,8 +69,7 @@ func (c *SolutionCreator) Create(
 		from,
 	)
 	if err != nil {
-		err = updateSolveError(err, ruleset, from)
-		return SolutionEnvelope{}, err
+		return Solution{}, err
 	}
 
 	independentSolution := calculateIndependentSolution(
@@ -57,9 +79,7 @@ func (c *SolutionCreator) Create(
 
 	solution := dependentSolution.merge(independentSolution)
 
-	return SolutionEnvelope{
-		solution: solution,
-	}, nil
+	return solution, nil
 }
 
 func (c *SolutionCreator) calculateDependentSolution(
@@ -67,7 +87,7 @@ func (c *SolutionCreator) calculateDependentSolution(
 	ruleset Ruleset,
 	from *time.Time,
 ) (Solution, error) {
-	query, err := newQuery(selections, ruleset, from)
+	query, err := c.queryCreator.create(selections, ruleset, from)
 	if err != nil {
 		return Solution{}, err
 	}
@@ -75,7 +95,7 @@ func (c *SolutionCreator) calculateDependentSolution(
 	tooLarge := query.weights.WeightsTooLarge()
 
 	if tooLarge {
-		return c.calculateSplitSolveSolution(selections, ruleset, from)
+		return c.calculateSplitDependentSolution(selections, ruleset, from)
 	}
 
 	solution, err := c.Solve(query)
@@ -96,14 +116,14 @@ func (c *SolutionCreator) calculateDependentSolution(
 // 4. Solve with remaining selections using the new ruleset
 //
 // this can happen many times recursively until all selections are solved
-func (c *SolutionCreator) calculateSplitSolveSolution(
+func (c *SolutionCreator) calculateSplitDependentSolution(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
 ) (Solution, error) {
 	if len(selections) < 2 {
 		return Solution{},
-			errors.New("at least 2 selections are required for multi-solve")
+			errors.New("at least 2 selections are required for split solving")
 	}
 
 	remainingSelections, prioritisedSelections := selections.split()
@@ -219,55 +239,6 @@ func categorizeSelections(
 	return dependantSelections, independentSelections
 }
 
-func newQuery(selections Selections, ruleset Ruleset, from *time.Time) (*Query, error) {
-	preparedSelections := selections.prepareForMultiSelectionQuery()
-
-	preparedRuleset, err := ruleset.prepareForQuery(preparedSelections, from)
-	if err != nil {
-		return nil, err
-	}
-
-	weights, err := newWeights(preparedRuleset, preparedSelections)
-	if err != nil {
-		return nil, err
-	}
-
-	query := NewQuery(
-		preparedRuleset.polyhedron,
-		preparedRuleset.dependentVariables,
-		weights,
-	)
-
-	return query, nil
-}
-
-func newWeights(
-	ruleset Ruleset,
-	selections Selections,
-) (weights.Weights, error) {
-	dependentSelectableVariables := utils.Without(
-		ruleset.selectableVariables,
-		ruleset.independentVariables,
-	)
-
-	weightSelections, err := ruleset.newWeightSelections(selections)
-	if err != nil {
-		return nil, err
-	}
-
-	weights, err := weights.Calculate(
-		dependentSelectableVariables,
-		weightSelections,
-		ruleset.preferredVariables,
-		ruleset.periodVariables.ids(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return weights, nil
-}
-
 func updateSolveError(
 	err error,
 	ruleset Ruleset,
@@ -298,6 +269,20 @@ func (c *SolutionCreator) CreateSolutionsBySelection(
 		return SolutionsBySelectionEnvelope{}, err
 	}
 
+	solutions, err := c.calculateSolutionsBySelection(selections, ruleset, from)
+	if err != nil {
+		err = updateSolveError(err, ruleset, from)
+		return SolutionsBySelectionEnvelope{}, err
+	}
+
+	return NewSolutionsBySelectionEnvelope(solutions)
+}
+
+func (c *SolutionCreator) calculateSolutionsBySelection(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+) ([]SolutionBySelection, error) {
 	dependantSelections, independentSelections :=
 		categorizeSelections(selections, ruleset.independentVariables)
 
@@ -307,8 +292,7 @@ func (c *SolutionCreator) CreateSolutionsBySelection(
 		from,
 	)
 	if err != nil {
-		err = updateSolveError(err, ruleset, from)
-		return SolutionsBySelectionEnvelope{}, err
+		return nil, err
 	}
 
 	independentSolutions, err := c.calculateIndependentSolutionsBySelection(
@@ -317,17 +301,14 @@ func (c *SolutionCreator) CreateSolutionsBySelection(
 		from,
 	)
 	if err != nil {
-		err = updateSolveError(err, ruleset, from)
-		return SolutionsBySelectionEnvelope{}, err
+		return nil, err
 	}
 
 	var solutions []SolutionBySelection
 	solutions = append(solutions, dependentSolutions...)
 	solutions = append(solutions, independentSolutions...)
 
-	return SolutionsBySelectionEnvelope{
-		solutions: solutions,
-	}, nil
+	return solutions, nil
 }
 
 func (c *SolutionCreator) calculateDependentSolutionsBySelection(
@@ -335,7 +316,7 @@ func (c *SolutionCreator) calculateDependentSolutionsBySelection(
 	ruleset Ruleset,
 	from *time.Time,
 ) ([]SolutionBySelection, error) {
-	query, err := newMultiWeightQuery(selections, ruleset, from)
+	query, err := c.queryCreator.newSolutionsBySelectionQuery(selections, ruleset, from)
 	if err != nil {
 		return nil, err
 	}
@@ -345,44 +326,19 @@ func (c *SolutionCreator) calculateDependentSolutionsBySelection(
 		return nil, err
 	}
 
+	primitiveSolutions := ruleset.RemoveSupportVariablesForMany(solutions)
+
 	solutionsBySelection := make([]SolutionBySelection, len(solutions))
-	for i, solution := range solutions {
-		primitiveSolution := ruleset.RemoveSupportVariables(solution)
+	for i := range primitiveSolutions {
+		selection := selections[i]
+		solution := primitiveSolutions[i]
 		solutionsBySelection[i] = SolutionBySelection{
-			selection: selections[i],
-			solution:  primitiveSolution,
+			selection: selection,
+			solution:  solution,
 		}
 	}
 
 	return solutionsBySelection, nil
-}
-
-func newMultiWeightQuery(
-	selections Selections,
-	ruleset Ruleset,
-	from *time.Time,
-) (*MultiWeightQuery, error) {
-	preparedRuleset, err := ruleset.prepareForQuery(selections, from)
-	if err != nil {
-		return nil, err
-	}
-
-	weightGroups := make([]weights.Weights, len(selections))
-	for i, selection := range selections {
-		weights, err := newWeights(preparedRuleset, Selections{selection})
-		if err != nil {
-			return nil, err
-		}
-		weightGroups[i] = weights
-	}
-
-	query := NewMultiWeightQuery(
-		preparedRuleset.polyhedron,
-		preparedRuleset.dependentVariables,
-		weightGroups,
-	)
-
-	return query, nil
 }
 
 func (c *SolutionCreator) calculateIndependentSolutionsBySelection(

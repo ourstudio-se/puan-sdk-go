@@ -185,3 +185,66 @@ func Test_Solution_isSelected(t *testing.T) {
 		})
 	}
 }
+
+func Test_NewSolutionsBySelectionEnvelope(t *testing.T) {
+	selection1 := NewSelectionBuilder("x").Build()
+	solution1 := Solution{"x": 1}
+	selection2 := NewSelectionBuilder("y").Build()
+	solution2 := Solution{"y": 1}
+	solutions := []SolutionBySelection{
+		{selection: selection1, solution: solution1},
+		{selection: selection2, solution: solution2},
+	}
+
+	envelope, err := NewSolutionsBySelectionEnvelope(solutions)
+
+	assert.NoError(t, err)
+
+	assert.Equal(
+		t,
+		map[string]SolutionBySelection{
+			selection1.Hash(): {selection: selection1, solution: solution1},
+			selection2.Hash(): {selection: selection2, solution: solution2},
+		},
+		envelope.solutionsBySelection,
+	)
+}
+
+func Test_NewSolutionsBySelectionEnvelope_givenDuplicateSelection_shouldReturnError(
+	t *testing.T,
+) {
+	selection := NewSelectionBuilder(fake.New[string]()).Build()
+	solutions := []SolutionBySelection{
+		{selection: selection},
+		{selection: selection},
+	}
+
+	_, err := NewSolutionsBySelectionEnvelope(solutions)
+
+	assert.Error(t, err)
+}
+
+func Test_SolutionsBySelectionEnvelope_GetSolutionBySelection(t *testing.T) {
+	selection := NewSelectionBuilder("x").Build()
+	expected := SolutionBySelection{
+		selection: selection,
+		solution:  Solution{"x": 1},
+	}
+
+	envelope, err := NewSolutionsBySelectionEnvelope([]SolutionBySelection{expected})
+	assert.NoError(t, err)
+
+	got, err := envelope.GetSolutionBySelection(selection)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, got)
+}
+
+func Test_SolutionsBySelectionEnvelope_GetSolutionBySelection_givenMissingSelection_shouldReturnError(
+	t *testing.T,
+) {
+	envelope := SolutionsBySelectionEnvelope{}
+
+	_, err := envelope.GetSolutionBySelection(NewSelectionBuilder("y").Build())
+
+	assert.Error(t, err)
+}

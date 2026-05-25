@@ -13,7 +13,7 @@ import (
 // Ruleset with many dependent primitives.
 // Create selections for all, some of which are composite.
 // The solver should create a solution for each selection.
-func Test_CreateSolutionsBySelection_givenManySelections_shouldCreateSolutionForEachSelection(
+func Test_CreateSolutionsBySelection_givenManyDependentSelections_shouldCreateSolutionForEachSelection(
 	t *testing.T,
 ) {
 	creator := puan.NewRulesetCreator()
@@ -43,6 +43,41 @@ func Test_CreateSolutionsBySelection_givenManySelections_shouldCreateSolutionFor
 			builder.WithSubSelectionID(otherPrimitive)
 		}
 		selections[i] = builder.Build()
+	}
+
+	solutions, _ := solutionCreator.CreateSolutionsBySelection(selections, ruleset, nil)
+
+	assert.Len(t, solutions.Solutions(), len(primitives))
+	for _, solution := range solutions.Solutions() {
+		newSolutionAsserter(solution.Solution()).
+			assertActive(t, solution.Selection().IDs()...)
+	}
+}
+
+// Ruleset with many indipendent primitives.
+// The solver should create a solution for each selection.
+func Test_CreateSolutionsBySelection_givenManyIndependentSelections_shouldCreateSolutionForEachSelection(
+	t *testing.T,
+) {
+	creator := puan.NewRulesetCreator()
+	from := time.Now()
+	end := from.Add(1 * time.Hour)
+	_ = creator.EnableTime(from, end)
+
+	primitivesCount := 80
+	primitives := fake.New[[]string](
+		func(oo *options.Options) {
+			oo.RandomMinSliceSize = primitivesCount
+			oo.RandomMaxSliceSize = primitivesCount
+		},
+	)
+	_ = creator.AddPrimitives(primitives...)
+
+	ruleset, _ := creator.Create()
+
+	selections := make([]puan.Selection, len(primitives))
+	for i, primitive := range primitives {
+		selections[i] = puan.NewSelectionBuilder(primitive).Build()
 	}
 
 	solutions, _ := solutionCreator.CreateSolutionsBySelection(selections, ruleset, nil)

@@ -1,6 +1,8 @@
 package puan
 
 import (
+	"time"
+
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
 )
@@ -59,4 +61,102 @@ func (q *MultiWeightQuery) Variables() []string {
 
 func (q *MultiWeightQuery) WeightGroups() []weights.Weights {
 	return q.weightGroups
+}
+
+type queryCreator struct{}
+
+func newQueryCreator() *queryCreator {
+	return &queryCreator{}
+}
+
+func (c *queryCreator) create(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+) (*Query, error) {
+	preparedRuleset, err := ruleset.modifyForQuery(selections, from)
+	if err != nil {
+		return nil, err
+	}
+
+	weights, err := newWeights(preparedRuleset, selections)
+	if err != nil {
+		return nil, err
+	}
+
+	query := NewQuery(
+		preparedRuleset.polyhedron,
+		preparedRuleset.dependentVariables,
+		weights,
+	)
+
+	return query, nil
+}
+
+func (c *queryCreator) newSolutionsBySelectionQuery(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+) (*MultiWeightQuery, error) {
+	preparedRuleset, err := ruleset.modifyForQuery(selections, from)
+	if err != nil {
+		return nil, err
+	}
+
+	weightGroups, err := c.calculateWeightsForSolutionsBySelection(preparedRuleset, selections)
+	if err != nil {
+		return nil, err
+	}
+
+	query := NewMultiWeightQuery(
+		preparedRuleset.polyhedron,
+		preparedRuleset.dependentVariables,
+		weightGroups,
+	)
+
+	return query, nil
+}
+
+func (c *queryCreator) calculateWeightsForSolutionsBySelection(
+	ruleset Ruleset,
+	selections Selections,
+) ([]weights.Weights, error) {
+	weightsBySelection := make([]weights.Weights, len(selections))
+	for i, selection := range selections {
+		modifiedSelections := Selections{selection}.prepareForQuery()
+
+		weights, err := newWeights(ruleset, modifiedSelections)
+		if err != nil {
+			return nil, err
+		}
+		weightsBySelection[i] = weights
+	}
+
+	return weightsBySelection, nil
+}
+
+func newWeights(
+	ruleset Ruleset,
+	selections Selections,
+) (weights.Weights, error) {
+	preparedSelections := selections.prepareForQuery()
+
+	dependentSelectableVariables := ruleset.dependentSelectableVariables()
+
+	weightSelections, err := ruleset.newWeightSelections(preparedSelections)
+	if err != nil {
+		return nil, err
+	}
+
+	weights, err := weights.Calculate(
+		dependentSelectableVariables,
+		weightSelections,
+		ruleset.preferredVariables,
+		ruleset.periodVariables.ids(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return weights, nil
 }

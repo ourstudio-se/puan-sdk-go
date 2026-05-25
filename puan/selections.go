@@ -1,6 +1,9 @@
 package puan
 
 import (
+	"crypto/sha1"
+	"fmt"
+
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
 
@@ -71,6 +74,20 @@ func (s Selection) IDs() []string {
 	return ids
 }
 
+func (s Selection) Hash() string {
+	h := sha1.New()
+	h.Write([]byte(s.action))
+	h.Write([]byte(s.id))
+	for _, subID := range utils.Sorted(s.subSelectionIDs) {
+		h.Write([]byte(subID))
+	}
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func (s Selection) Equals(other Selection) bool {
+	return s.Hash() == other.Hash()
+}
+
 func (s Selection) makesRedundant(other Selection) bool {
 	if utils.ContainsAll(other.IDs(), s.IDs()) {
 		return true
@@ -93,26 +110,28 @@ func (s Selection) makesRedundant(other Selection) bool {
 	return prioritisedIsNotComposite
 }
 
-// Prepares selections for queries that solves for many selections
-// at the same time.
+// Prepares selections for a query.
 // Modifies, adds additional and cleans up redundant selections.
-func (selectionsByOccurrence Selections) prepareForMultiSelectionQuery() Selections {
-	modified := selectionsByOccurrence.modifyForMultiSelectionQuery()
-	impacting := modified.getImpactingForMultiSelectionQuery()
+func (selectionsByOccurrence Selections) prepareForQuery() Selections {
+	modified := selectionsByOccurrence.modifyForQuery()
+	impacting := modified.getImpacting()
 
 	return impacting
 }
 
-func (s Selections) modifyForMultiSelectionQuery() Selections {
+func (s Selections) modifyForQuery() Selections {
 	modifiedSelections := Selections{}
 	for _, selection := range s {
-		modifiedSelections = append(modifiedSelections, selection.modifyForMultiSelectionQuery()...)
+		modifiedSelections = append(
+			modifiedSelections,
+			selection.modifyForQuery()...,
+		)
 	}
 
 	return modifiedSelections
 }
 
-func (s Selection) modifyForMultiSelectionQuery() Selections {
+func (s Selection) modifyForQuery() Selections {
 	if s.action == REMOVE {
 		removeSelection := NewSelectionBuilder(s.id).
 			WithAction(REMOVE).
@@ -131,8 +150,8 @@ func (s Selection) modifyForMultiSelectionQuery() Selections {
 	return Selections{s}
 }
 
-func (selectionsByOccurance Selections) getImpactingForMultiSelectionQuery() Selections {
-	byPriority := selectionsByOccurance.reverse()
+func (selectionsByOccurrence Selections) getImpacting() Selections {
+	byPriority := selectionsByOccurrence.reverse()
 	impactingByPriority := byPriority.filterOutRedundant()
 	impactingByOccurance := impactingByPriority.reverse()
 

@@ -145,12 +145,25 @@ func (r *Ruleset) PeriodVariables() TimeBoundVariables {
 	return r.periodVariables
 }
 
+func (r *Ruleset) dependentSelectableVariables() []string {
+	return utils.Without(r.selectableVariables, r.independentVariables)
+}
+
 func (r *Ruleset) RemoveSupportVariables(solution Solution) Solution {
 	nonSupportVariables := []string{}
 	nonSupportVariables = append(nonSupportVariables, r.selectableVariables...)
 	nonSupportVariables = append(nonSupportVariables, r.periodVariables.ids()...)
 
 	return solution.Extract(nonSupportVariables...)
+}
+
+func (r *Ruleset) RemoveSupportVariablesForMany(solutions []Solution) []Solution {
+	cleaned := make([]Solution, len(solutions))
+	for i, solution := range solutions {
+		cleaned[i] = r.RemoveSupportVariables(solution)
+	}
+
+	return cleaned
 }
 
 func (r *Ruleset) FindPeriodInSolution(solution Solution) (Period, error) {
@@ -218,7 +231,7 @@ func (r *Ruleset) copy() Ruleset {
 	}
 }
 
-func (r *Ruleset) prepareForQuery(
+func (r *Ruleset) modifyForQuery(
 	selections Selections,
 	from *time.Time,
 ) (Ruleset, error) {

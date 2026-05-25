@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_Selections_getImpactingForMultiSelectionQuery(t *testing.T) {
+func Test_Selections_getImpacting(t *testing.T) {
 	theories := []struct {
 		name       string
 		selections Selections
@@ -135,7 +135,7 @@ func Test_Selections_getImpactingForMultiSelectionQuery(t *testing.T) {
 
 	for _, tt := range theories {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := tt.selections.getImpactingForMultiSelectionQuery()
+			actual := tt.selections.getImpacting()
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
@@ -347,7 +347,7 @@ func Test_Selections_extendWithPrimaryPrimitiveSelections(t *testing.T) {
 		NewSelectionBuilder("z").WithSubSelectionID("w").WithAction(REMOVE).Build(),
 	}
 
-	extended := selections.modifyForMultiSelectionQuery()
+	extended := selections.modifyForQuery()
 
 	want := Selections{
 		NewSelectionBuilder("x").WithAction(ADD).Build(),
@@ -451,6 +451,109 @@ func Test_Selections_split(t *testing.T) {
 			first, second := tt.selections.split()
 			assert.Equal(t, tt.wantFirst, first)
 			assert.Equal(t, tt.wantSecond, second)
+		})
+	}
+}
+
+func Test_Selection_Hash(t *testing.T) {
+	theories := []struct {
+		name      string
+		selection Selection
+		expected  string
+	}{
+		{
+			name:      "ADD selection",
+			selection: NewSelectionBuilder("x").Build(),
+			expected:  "c3b14e6c5ba76924b48df086f52c5e3237675ff5",
+		},
+		{
+			name:      "REMOVE selection",
+			selection: NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+			expected:  "235b76cf9d9c9334c4736b4c1f5439fe92f49327",
+		},
+		{
+			name:      "different id same action",
+			selection: NewSelectionBuilder("y").Build(),
+			expected:  "390671eaeda30f8b9a6ee3dae4a357f47da8803b",
+		},
+		{
+			name:      "composite with sub-selection",
+			selection: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			expected:  "c93cf323b09bf5b73b27a92c4208b3c8c1f5bded",
+		},
+	}
+
+	for _, tt := range theories {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.selection.Hash())
+		})
+	}
+}
+
+func Test_Selection_Equals(t *testing.T) {
+	theories := []struct {
+		name     string
+		first    Selection
+		second   Selection
+		expected bool
+	}{
+		{
+			name:     "same primitive selection",
+			first:    NewSelectionBuilder("x").Build(),
+			second:   NewSelectionBuilder("x").Build(),
+			expected: true,
+		},
+		{
+			name:     "different id",
+			first:    NewSelectionBuilder("x").Build(),
+			second:   NewSelectionBuilder("y").Build(),
+			expected: false,
+		},
+		{
+			name:     "different action",
+			first:    NewSelectionBuilder("x").Build(),
+			second:   NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+			expected: false,
+		},
+		{
+			name:     "composite with same sub-selection",
+			first:    NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			second:   NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			expected: true,
+		},
+		{
+			name:     "composite without sub-selection",
+			first:    NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			second:   NewSelectionBuilder("x").Build(),
+			expected: false,
+		},
+		{
+			name: "sub-selections in different order",
+			first: NewSelectionBuilder("x").
+				WithSubSelectionID("y").
+				WithSubSelectionID("z").
+				Build(),
+			second: NewSelectionBuilder("x").
+				WithSubSelectionID("z").
+				WithSubSelectionID("y").
+				Build(),
+			expected: true,
+		},
+		{
+			name: "different sub-selections",
+			first: NewSelectionBuilder("x").
+				WithSubSelectionID("y").
+				Build(),
+			second: NewSelectionBuilder("x").
+				WithSubSelectionID("z").
+				Build(),
+			expected: false,
+		},
+	}
+
+	for _, tt := range theories {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.first.Equals(tt.second))
 		})
 	}
 }
