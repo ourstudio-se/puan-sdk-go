@@ -8,6 +8,7 @@ linters:
     - errcheck
     - gochecknoinits
     - gocritic
+    - goconst
     - gocyclo
     - goprintffuncname
     - gosec
@@ -45,6 +46,10 @@ linters:
       - third_party$
       - builtin$
       - examples$
+    rules:
+      - linters:
+          - goconst
+        path: _test\.go$
 formatters:
   enable:
     - gofmt

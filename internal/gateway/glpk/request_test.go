@@ -32,7 +32,7 @@ func Test_newSolveRequest(t *testing.T) {
 			},
 		},
 		Objectives: objectives,
-		Direction:  "maximize",
+		Direction:  DefaultDirection,
 	}
 
 	got := newSolveRequest(polyhedron, variableIDs, objectives...)
@@ -70,7 +70,7 @@ func Test_newSolveRequestFromQuery_givenQuery_shouldReturnSolveRequest(t *testin
 			},
 		},
 		Objectives: []Objective{objective},
-		Direction:  "maximize",
+		Direction:  DefaultDirection,
 	}
 
 	got := newSolveRequestFromQuery(query)
@@ -108,7 +108,7 @@ func Test_newSolveRequestFromMultiQuery(t *testing.T) {
 			{"x": 3, "y": 4},
 			{"x": 1, "y": 2},
 		},
-		Direction: "maximize",
+		Direction: DefaultDirection,
 	}
 
 	got := newSolveRequestFromMultiQuery(query)

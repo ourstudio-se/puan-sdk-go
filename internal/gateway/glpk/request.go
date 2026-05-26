@@ -5,6 +5,8 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
+const DefaultDirection = "maximize"
+
 func newSolveRequestFromQuery(
 	query *puan.Query,
 ) SolveRequest {
@@ -52,7 +54,7 @@ func newSolveRequest(
 			Variables: variables,
 		},
 		Objectives: objectives,
-		Direction:  "maximize",
+		Direction:  DefaultDirection,
 	}
 
 	return request
