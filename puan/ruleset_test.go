@@ -301,6 +301,7 @@ func Test_RuleSet_setConstraint_shouldAddTwoBiases(t *testing.T) {
 	assert.Len(t, ruleset.polyhedron.B(), 2)
 }
 
+// nolint:goconst
 func Test_RuleSet_FindPeriodInSolution_givenSingleMatchingPeriod_shouldReturnPeriod(
 	t *testing.T,
 ) {

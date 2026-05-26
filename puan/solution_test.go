@@ -239,6 +239,7 @@ func Test_SolutionsBySelectionEnvelope_GetSolutionBySelection(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
+// nolint:lll
 func Test_SolutionsBySelectionEnvelope_GetSolutionBySelection_givenMissingSelection_shouldReturnError(
 	t *testing.T,
 ) {

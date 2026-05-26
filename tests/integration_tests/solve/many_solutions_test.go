@@ -13,6 +13,7 @@ import (
 // Ruleset with many dependent primitives.
 // Create selections for all, some of which are composite.
 // The solver should create a solution for each selection.
+// nolint:lll
 func Test_CreateSolutionsBySelection_givenManyDependentSelections_shouldCreateSolutionForEachSelection(
 	t *testing.T,
 ) {
@@ -48,14 +49,18 @@ func Test_CreateSolutionsBySelection_givenManyDependentSelections_shouldCreateSo
 	solutions, _ := solutionCreator.CreateSolutionsBySelection(selections, ruleset, nil)
 
 	assert.Len(t, solutions.Solutions(), len(primitives))
-	for _, solution := range solutions.Solutions() {
+	for _, selection := range selections {
+		solution, err := solutions.GetSolutionBySelection(selection)
+
+		assert.NoError(t, err)
 		newSolutionAsserter(solution.Solution()).
-			assertActive(t, solution.Selection().IDs()...)
+			assertActive(t, selection.IDs()...)
 	}
 }
 
-// Ruleset with many indipendent primitives.
+// Ruleset with many independent primitives.
 // The solver should create a solution for each selection.
+// nolint:lll
 func Test_CreateSolutionsBySelection_givenManyIndependentSelections_shouldCreateSolutionForEachSelection(
 	t *testing.T,
 ) {
@@ -83,8 +88,11 @@ func Test_CreateSolutionsBySelection_givenManyIndependentSelections_shouldCreate
 	solutions, _ := solutionCreator.CreateSolutionsBySelection(selections, ruleset, nil)
 
 	assert.Len(t, solutions.Solutions(), len(primitives))
-	for _, solution := range solutions.Solutions() {
+	for _, selection := range selections {
+		solution, err := solutions.GetSolutionBySelection(selection)
+
+		assert.NoError(t, err)
 		newSolutionAsserter(solution.Solution()).
-			assertActive(t, solution.Selection().IDs()...)
+			assertActive(t, selection.IDs()...)
 	}
 }

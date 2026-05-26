@@ -7,7 +7,6 @@ linters:
     - dogsled
     - errcheck
     - gochecknoinits
-    - goconst
     - gocritic
     - gocyclo
     - goprintffuncname

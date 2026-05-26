@@ -76,7 +76,7 @@ func NewSolutionsBySelectionEnvelope(
 }
 
 func (e SolutionsBySelectionEnvelope) Solutions() []SolutionBySelection {
-	solutions := make([]SolutionBySelection, len(e.solutionsBySelection))
+	var solutions []SolutionBySelection
 	for _, solution := range e.solutionsBySelection {
 		solutions = append(solutions, solution)
 	}
