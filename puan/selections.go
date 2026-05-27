@@ -153,9 +153,9 @@ func (s Selection) modifyForQuery() Selections {
 func (selectionsByOccurrence Selections) getImpacting() Selections {
 	byPriority := selectionsByOccurrence.reverse()
 	impactingByPriority := byPriority.filterOutRedundant()
-	impactingByOccurance := impactingByPriority.reverse()
+	impactingByOccurrence := impactingByPriority.reverse()
 
-	return impactingByOccurance
+	return impactingByOccurrence
 }
 
 func (s Selections) reverse() Selections {

@@ -48,7 +48,7 @@ func Test_CreateSolutionsBySelection_givenManyDependentSelections_shouldCreateSo
 
 	solutions, _ := solutionCreator.CreateSolutionsBySelection(selections, ruleset, nil)
 
-	assert.Len(t, solutions.Solutions(), len(primitives))
+	assert.Len(t, solutions.SolutionsBySelection(), len(primitives))
 	for _, selection := range selections {
 		solution, err := solutions.GetSolutionBySelection(selection)
 
@@ -87,7 +87,7 @@ func Test_CreateSolutionsBySelection_givenManyIndependentSelections_shouldCreate
 
 	solutions, _ := solutionCreator.CreateSolutionsBySelection(selections, ruleset, nil)
 
-	assert.Len(t, solutions.Solutions(), len(primitives))
+	assert.Len(t, solutions.SolutionsBySelection(), len(primitives))
 	for _, selection := range selections {
 		solution, err := solutions.GetSolutionBySelection(selection)
 

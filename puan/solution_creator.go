@@ -21,7 +21,6 @@ type SolutionCreator struct {
 
 func NewSolutionCreator(
 	client SolverClient,
-
 ) *SolutionCreator {
 	queryCreator := newQueryCreator()
 	return &SolutionCreator{

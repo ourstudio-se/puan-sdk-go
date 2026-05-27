@@ -67,7 +67,7 @@ func NewSolutionsBySelectionEnvelope(
 				solution.selection,
 			)
 		}
-		solutionsBySelection[solution.selection.Hash()] = solution
+		solutionsBySelection[selectionHash] = solution
 	}
 
 	return SolutionsBySelectionEnvelope{
@@ -75,12 +75,8 @@ func NewSolutionsBySelectionEnvelope(
 	}, nil
 }
 
-func (e SolutionsBySelectionEnvelope) Solutions() []SolutionBySelection {
-	var solutions []SolutionBySelection
-	for _, solution := range e.solutionsBySelection {
-		solutions = append(solutions, solution)
-	}
-	return solutions
+func (e SolutionsBySelectionEnvelope) SolutionsBySelection() map[string]SolutionBySelection {
+	return e.solutionsBySelection
 }
 
 func (e SolutionsBySelectionEnvelope) GetSolutionBySelection(

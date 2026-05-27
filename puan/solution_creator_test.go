@@ -9,7 +9,9 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
 )
 
-func Test_validateSelections_givenIndependentVariableInSubSelection_shouldReturnError(t *testing.T) {
+func Test_validateSelections_givenIndependentVariableInSubSelection_shouldReturnError(
+	t *testing.T,
+) {
 	primaryID := fake.New[string]()
 	subID := fake.New[string]()
 
@@ -27,7 +29,9 @@ func Test_validateSelections_givenIndependentVariableInSubSelection_shouldReturn
 	assert.Error(t, err)
 }
 
-func Test_validateSelections_givenIndependentVariableSelectionWithSubSelection_shouldReturnError(t *testing.T) {
+func Test_validateSelections_givenIndependentVariableSelectionWithSubSelection_shouldReturnError(
+	t *testing.T,
+) {
 	primaryID := fake.New[string]()
 	subID := fake.New[string]()
 
@@ -45,7 +49,9 @@ func Test_validateSelections_givenIndependentVariableSelectionWithSubSelection_s
 	assert.Error(t, err)
 }
 
-func Test_validateSelections_givenNotExistingID_shouldReturnError(t *testing.T) {
+func Test_validateSelections_givenNotExistingID_shouldReturnError(
+	t *testing.T,
+) {
 	primaryID := fake.New[string]()
 	subID := fake.New[string]()
 
@@ -63,7 +69,9 @@ func Test_validateSelections_givenNotExistingID_shouldReturnError(t *testing.T) 
 	assert.Error(t, err)
 }
 
-func Test_validateSelections_givenEmptySelection_shouldReturnNoError(t *testing.T) {
+func Test_validateSelections_givenEmptySelection_shouldReturnNoError(
+	t *testing.T,
+) {
 	primaryID := fake.New[string]()
 	subID := fake.New[string]()
 
