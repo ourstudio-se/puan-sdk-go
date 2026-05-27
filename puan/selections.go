@@ -1,6 +1,9 @@
 package puan
 
 import (
+	"crypto/sha1"
+	"fmt"
+
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
 
@@ -23,7 +26,7 @@ func (s Selections) ids() []string {
 	var ids []string
 	seen := make(map[string]bool, len(s))
 	for _, selection := range s {
-		for _, id := range selection.ids() {
+		for _, id := range selection.IDs() {
 			if !seen[id] {
 				seen[id] = true
 				ids = append(ids, id)
@@ -64,26 +67,104 @@ func (s Selection) ID() string {
 	return s.id
 }
 
-func (s Selection) ids() []string {
+func (s Selection) IDs() []string {
 	ids := make([]string, len(s.subSelectionIDs)+1)
 	ids[0] = s.id
 	copy(ids[1:], s.subSelectionIDs)
 	return ids
 }
 
-func getImpactingSelections(selectionsOrderedByOccurrence Selections) Selections {
-	selectionsOrderedByPriority := utils.Reverse(selectionsOrderedByOccurrence)
-	impactingSelectionsOrderedByPriority := filterOutRedundantSelections(selectionsOrderedByPriority)
-	impactingSelections := utils.Reverse(impactingSelectionsOrderedByPriority)
-
-	return impactingSelections
+func (s Selection) Hash() string {
+	h := sha1.New()
+	h.Write([]byte(s.action))
+	h.Write([]byte(s.id))
+	for _, subID := range utils.Sorted(s.subSelectionIDs) {
+		h.Write([]byte(subID))
+	}
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-func filterOutRedundantSelections(
-	selectionsOrderedByPriority Selections,
-) Selections {
+func (s Selection) Equals(other Selection) bool {
+	return s.Hash() == other.Hash()
+}
+
+func (s Selection) makesRedundant(other Selection) bool {
+	if utils.ContainsAll(other.IDs(), s.IDs()) {
+		return true
+	}
+
+	if s.action == REMOVE && utils.ContainsAny(other.IDs(), s.subSelectionIDs) {
+		return true
+	}
+
+	if s.id != other.id {
+		return false
+	}
+
+	if utils.ContainsAll(other.IDs(), s.subSelectionIDs) {
+		return true
+	}
+
+	prioritisedIsNotComposite := !s.IsComposite()
+
+	return prioritisedIsNotComposite
+}
+
+// Prepares selections for a query.
+// Modifies, adds additional and cleans up redundant selections.
+func (selectionsByOccurrence Selections) prepareForQuery() Selections {
+	modified := selectionsByOccurrence.modifyForQuery()
+	impacting := modified.getImpacting()
+
+	return impacting
+}
+
+func (s Selections) modifyForQuery() Selections {
+	modifiedSelections := Selections{}
+	for _, selection := range s {
+		modifiedSelections = append(
+			modifiedSelections,
+			selection.modifyForQuery()...,
+		)
+	}
+
+	return modifiedSelections
+}
+
+func (s Selection) modifyForQuery() Selections {
+	if s.action == REMOVE {
+		removeSelection := NewSelectionBuilder(s.id).
+			WithAction(REMOVE).
+			Build()
+
+		return Selections{removeSelection}
+	}
+
+	if s.IsComposite() {
+		primaryPrimitiveSelection := NewSelectionBuilder(s.id).
+			WithAction(s.action).
+			Build()
+		return Selections{primaryPrimitiveSelection, s}
+	}
+
+	return Selections{s}
+}
+
+func (selectionsByOccurrence Selections) getImpacting() Selections {
+	byPriority := selectionsByOccurrence.reverse()
+	impactingByPriority := byPriority.filterOutRedundant()
+	impactingByOccurrence := impactingByPriority.reverse()
+
+	return impactingByOccurrence
+}
+
+func (s Selections) reverse() Selections {
+	return utils.Reverse(s)
+}
+
+func (selectionsByPriority Selections) filterOutRedundant() Selections {
 	var filtered Selections
-	for _, selection := range selectionsOrderedByPriority {
+	for _, selection := range selectionsByPriority {
 		if selection.isRedundant(filtered) {
 			continue
 		}
@@ -102,54 +183,4 @@ func (s Selection) isRedundant(existingSelections Selections) bool {
 	}
 
 	return false
-}
-
-func (s Selection) makesRedundant(other Selection) bool {
-	if utils.ContainsAll(other.ids(), s.ids()) {
-		return true
-	}
-
-	if s.action == REMOVE && utils.ContainsAny(other.ids(), s.subSelectionIDs) {
-		return true
-	}
-
-	if s.id != other.id {
-		return false
-	}
-
-	if utils.ContainsAll(other.ids(), s.subSelectionIDs) {
-		return true
-	}
-
-	prioritisedIsNotComposite := !s.IsComposite()
-
-	return prioritisedIsNotComposite
-}
-
-func (s Selections) modifySelections() Selections {
-	modifiedSelections := Selections{}
-	for _, selection := range s {
-		modifiedSelections = append(modifiedSelections, selection.modifySelection()...)
-	}
-
-	return modifiedSelections
-}
-
-func (s Selection) modifySelection() Selections {
-	if s.action == REMOVE {
-		removeSelection := NewSelectionBuilder(s.id).
-			WithAction(REMOVE).
-			Build()
-
-		return Selections{removeSelection}
-	}
-
-	if s.IsComposite() {
-		primaryPrimitiveSelection := NewSelectionBuilder(s.id).
-			WithAction(s.action).
-			Build()
-		return Selections{primaryPrimitiveSelection, s}
-	}
-
-	return Selections{s}
 }

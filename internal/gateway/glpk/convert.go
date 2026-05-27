@@ -3,13 +3,11 @@ package glpk
 import (
 	"bytes"
 	"encoding/json"
-	"strings"
 
 	"github.com/go-errors/errors"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/puan"
-	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
 var VALID_STATUSES = map[string]any{
@@ -17,56 +15,47 @@ var VALID_STATUSES = map[string]any{
 	"feasible": nil,
 }
 
-func (solution SolutionResponse) getSolutionEntity() (puan.Solution, error) {
-	if err := solution.validate(); err != nil {
-		return puan.Solution{}, err
-	}
-
-	return solution.asEntity(), nil
-}
-
-func (response SolutionResponse) validate() error {
+func (response SolutionResponse) getSingleSolution() (puan.Solution, error) {
 	if len(response.Solutions) != 1 {
-		return errors.Errorf(
+		return puan.Solution{}, errors.Errorf(
 			"got %d solutions, expected 1",
 			len(response.Solutions),
 		)
 	}
-	solution := response.Solutions[0]
 
-	status := strings.ToLower(solution.Status)
-	if _, ok := VALID_STATUSES[status]; !ok {
-		var msg string
-		if solution.Error != nil {
-			msg = *solution.Error
-		}
+	return response.Solutions[0].asEntity()
+}
 
-		if status == "mipfailed" {
-			return errors.Errorf(
-				"%w: message: %s",
-				puanerror.SolverFailed,
-				msg,
-			)
-		}
+func (solution Solution) asEntity() (puan.Solution, error) {
+	if err := solution.validate(); err != nil {
+		return puan.Solution{}, err
+	}
 
-		return errors.Errorf(
-			"got invalid status: %s, expected one of %v. Message: %s",
-			status,
-			VALID_STATUSES,
-			msg,
+	return puan.Solution(solution.Solution), nil
+}
+
+func (response SolutionResponse) getManySolutions(
+	wantCount int,
+) ([]puan.Solution, error) {
+	if len(response.Solutions) != wantCount {
+		return nil, errors.Errorf(
+			"got %d solutions, want %d",
+			len(response.Solutions),
+			wantCount,
 		)
 	}
 
-	if response.Solutions[0].Error != nil {
-		return errors.Errorf("got error: %s", *solution.Error)
+	entities := make([]puan.Solution, wantCount)
+	for i, solution := range response.Solutions {
+		entity, err := solution.asEntity()
+		if err != nil {
+			return nil, err
+		}
+
+		entities[i] = entity
 	}
 
-	return nil
-}
-
-func (solution SolutionResponse) asEntity() puan.Solution {
-	entity := puan.Solution(solution.Solutions[0].Solution)
-	return entity
+	return entities, nil
 }
 
 func toSparseMatrix(entity pldag.SparseMatrix) SparseMatrix {

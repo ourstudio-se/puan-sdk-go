@@ -11,44 +11,7 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/puan"
 )
 
-func Test_solutionResponse_asEntity_givenSingleSolution_shouldReturnThatSolution(
-	t *testing.T,
-) {
-	solution := SolutionResponse{
-		Solutions: []Solution{
-			{
-				Solution: fake.New[map[string]int](),
-			},
-		},
-	}
-
-	entity := solution.asEntity()
-
-	expected := puan.Solution(solution.Solutions[0].Solution)
-	assert.Equal(t, expected, entity)
-}
-
-func Test_solutionResponse_asEntity_givenMultipleSolutions_shouldReturnFirstSolution(
-	t *testing.T,
-) {
-	solution := SolutionResponse{
-		Solutions: []Solution{
-			{
-				Solution: fake.New[map[string]int](),
-			},
-			{
-				Solution: fake.New[map[string]int](),
-			},
-		},
-	}
-
-	entity := solution.asEntity()
-
-	expected := puan.Solution(solution.Solutions[0].Solution)
-	assert.Equal(t, expected, entity)
-}
-
-func Test_solutionResponse_validate_givenSingleSolution_shouldBeValid(
+func Test_solutionResponse_getSingleSolution_givenMultipleSolutions_shouldReturnError(
 	t *testing.T,
 ) {
 	solution := SolutionResponse{
@@ -57,66 +20,80 @@ func Test_solutionResponse_validate_givenSingleSolution_shouldBeValid(
 				Solution: fake.New[map[string]int](),
 				Status:   "Optimal",
 			},
-		},
-	}
-
-	err := solution.validate()
-
-	assert.NoError(t, err)
-}
-
-func Test_solutionResponse_validate_givenMultipleSolutions_shouldReturnError(
-	t *testing.T,
-) {
-	solution := SolutionResponse{
-		Solutions: []Solution{
-			{
-				Solution: fake.New[map[string]int](),
-				Status:   "Optimal",
-			},
-			{
-				Solution: fake.New[map[string]int](),
-				Status:   "feasible",
-			},
-		},
-	}
-
-	err := solution.validate()
-
-	assert.Error(t, err)
-}
-
-func Test_solutionResponse_validate_givenUnexpectedStatus_shouldReturnError(
-	t *testing.T,
-) {
-	solution := SolutionResponse{
-		Solutions: []Solution{
-			{
-				Solution: fake.New[map[string]int](),
-				Status:   uuid.New().String(),
-			},
-		},
-	}
-
-	err := solution.validate()
-
-	assert.Error(t, err)
-}
-
-func Test_solutionResponse_validate_givenError_shouldReturnThatError(
-	t *testing.T,
-) {
-	solution := SolutionResponse{
-		Solutions: []Solution{
 			{
 				Solution: fake.New[map[string]int](),
 				Status:   "Feasible",
-				Error:    fake.New[*string](),
 			},
 		},
 	}
 
+	_, err := solution.getSingleSolution()
+
+	assert.Error(t, err)
+}
+
+func Test_solution_validate_givenUnexpectedStatus_shouldReturnError(
+	t *testing.T,
+) {
+	solution := Solution{
+		Solution: fake.New[map[string]int](),
+		Status:   uuid.New().String(),
+	}
+
 	err := solution.validate()
+
+	assert.Error(t, err)
+}
+
+func Test_solution_validate_givenError_shouldReturnThatError(
+	t *testing.T,
+) {
+	solution := Solution{
+		Solution: fake.New[map[string]int](),
+		Status:   "Feasible",
+		Error:    fake.New[*string](),
+	}
+
+	err := solution.validate()
+
+	assert.Error(t, err)
+}
+
+func Test_solutionResponse_getManySolutions_shouldReturnSolutionsInOrder(
+	t *testing.T,
+) {
+	response := SolutionResponse{
+		Solutions: []Solution{
+			{
+				Solution: map[string]int{"x": 1},
+				Status:   "Optimal",
+			},
+			{
+				Solution: map[string]int{"y": 1},
+				Status:   "Optimal",
+			},
+		},
+	}
+
+	solutions, err := response.getManySolutions(2)
+
+	assert.NoError(t, err)
+	assert.Equal(t, []puan.Solution{{"x": 1}, {"y": 1}}, solutions)
+}
+
+func Test_solutionResponse_getManySolutions_givenMismatchedCount_shouldReturnError(
+	t *testing.T,
+) {
+	response := SolutionResponse{
+		Solutions: []Solution{
+			{
+				Solution: fake.New[map[string]int](),
+				Status:   "Optimal",
+			},
+		},
+	}
+
+	_, err := response.getManySolutions(2)
 
 	assert.Error(t, err)
 }

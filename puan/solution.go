@@ -1,5 +1,11 @@
 package puan
 
+import (
+	"maps"
+
+	"github.com/go-errors/errors"
+)
+
 // Map of variable IDs and 0 or 1, representing whether the variable is selected or not
 type Solution map[string]int
 
@@ -15,11 +21,22 @@ func (s Solution) Extract(variables ...string) Solution {
 }
 
 func (s Solution) merge(other Solution) Solution {
-	for variable, value := range other {
-		s[variable] = value
-	}
+	maps.Copy(s, other)
 
 	return s
+}
+
+func (s Solution) copy() Solution {
+	copied := make(Solution)
+	maps.Copy(copied, s)
+	return copied
+}
+
+func (s Solution) withSelection(variableID string) Solution {
+	newSolution := s.copy()
+	newSolution.merge(Solution{variableID: 1})
+
+	return newSolution
 }
 
 func (s Solution) isSelected(variableID string) bool {
@@ -30,6 +47,61 @@ type SolutionEnvelope struct {
 	solution Solution
 }
 
-func (se SolutionEnvelope) Solution() Solution {
-	return se.solution
+func (e SolutionEnvelope) Solution() Solution {
+	return e.solution
+}
+
+type SolutionsBySelectionEnvelope struct {
+	solutionsBySelection map[string]SolutionBySelection
+}
+
+func NewSolutionsBySelectionEnvelope(
+	solutions []SolutionBySelection,
+) (SolutionsBySelectionEnvelope, error) {
+	solutionsBySelection := make(map[string]SolutionBySelection)
+	for _, solution := range solutions {
+		selectionHash := solution.selection.Hash()
+		if _, exists := solutionsBySelection[selectionHash]; exists {
+			return SolutionsBySelectionEnvelope{}, errors.Errorf(
+				"duplicate solution for selection: %v",
+				solution.selection,
+			)
+		}
+		solutionsBySelection[selectionHash] = solution
+	}
+
+	return SolutionsBySelectionEnvelope{
+		solutionsBySelection: solutionsBySelection,
+	}, nil
+}
+
+func (e SolutionsBySelectionEnvelope) SolutionsBySelection() map[string]SolutionBySelection {
+	return e.solutionsBySelection
+}
+
+func (e SolutionsBySelectionEnvelope) GetSolutionBySelection(
+	selection Selection,
+) (SolutionBySelection, error) {
+	selectionHash := selection.Hash()
+	solution, ok := e.solutionsBySelection[selectionHash]
+	if !ok {
+		return SolutionBySelection{}, errors.Errorf(
+			"solution not found for selection: %v",
+			selection,
+		)
+	}
+	return solution, nil
+}
+
+type SolutionBySelection struct {
+	selection Selection
+	solution  Solution
+}
+
+func (s SolutionBySelection) Selection() Selection {
+	return s.selection
+}
+
+func (s SolutionBySelection) Solution() Solution {
+	return s.solution
 }

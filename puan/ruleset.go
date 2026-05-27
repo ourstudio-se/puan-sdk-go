@@ -145,12 +145,25 @@ func (r *Ruleset) PeriodVariables() TimeBoundVariables {
 	return r.periodVariables
 }
 
+func (r *Ruleset) dependentSelectableVariables() []string {
+	return utils.Without(r.selectableVariables, r.independentVariables)
+}
+
 func (r *Ruleset) RemoveSupportVariables(solution Solution) Solution {
 	nonSupportVariables := []string{}
 	nonSupportVariables = append(nonSupportVariables, r.selectableVariables...)
 	nonSupportVariables = append(nonSupportVariables, r.periodVariables.ids()...)
 
 	return solution.Extract(nonSupportVariables...)
+}
+
+func (r *Ruleset) RemoveSupportVariablesForMany(solutions []Solution) []Solution {
+	cleaned := make([]Solution, len(solutions))
+	for i, solution := range solutions {
+		cleaned[i] = r.RemoveSupportVariables(solution)
+	}
+
+	return cleaned
 }
 
 func (r *Ruleset) FindPeriodInSolution(solution Solution) (Period, error) {
@@ -218,39 +231,46 @@ func (r *Ruleset) copy() Ruleset {
 	}
 }
 
-type querySpecification struct {
-	ruleset    Ruleset
-	selections weights.Selections
-}
-
-func (r *Ruleset) newQuerySpecification(
+func (r *Ruleset) modifyForQuery(
 	selections Selections,
 	from *time.Time,
-) (*querySpecification, error) {
+) (Ruleset, error) {
 	ruleset := r.copy()
 
-	weightSelections, err := ruleset.newWeightSelections(selections)
-	if err != nil {
-		return nil, err
+	if err := ruleset.setCompositeSelectionConstraints(selections); err != nil {
+		return Ruleset{}, err
 	}
 
 	if from != nil {
-		err = ruleset.forbidPassedPeriods(*from)
+		err := ruleset.forbidPassedPeriods(*from)
 		if err != nil {
-			return nil, err
+			return Ruleset{}, err
 		}
 	}
 
-	return &querySpecification{
-		ruleset:    ruleset,
-		selections: weightSelections,
-	}, nil
+	return ruleset, nil
+}
+
+// Add constraints for composite selections to get a single ID.
+// This is needed to set weights
+func (r *Ruleset) setCompositeSelectionConstraints(
+	selections Selections,
+) error {
+	for _, selection := range selections {
+		if selection.IsComposite() {
+			ids := selection.IDs()
+			if err := r.setCompositeSelectionConstraint(ids); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (r *Ruleset) newWeightSelections(selections Selections) (weights.Selections, error) {
 	weightSelections := make(weights.Selections, len(selections))
 	for i, selection := range selections {
-		weightSelection, err := r.newWeighSelection(selection)
+		weightSelection, err := r.newWeightSelection(selection)
 		if err != nil {
 			return nil, err
 		}
@@ -261,8 +281,8 @@ func (r *Ruleset) newWeightSelections(selections Selections) (weights.Selections
 	return weightSelections, nil
 }
 
-func (r *Ruleset) newWeighSelection(selection Selection) (weights.Selection, error) {
-	id, err := r.obtainQuerySelectionID(selection)
+func (r *Ruleset) newWeightSelection(selection Selection) (weights.Selection, error) {
+	id, err := r.getWeightSelectionID(selection)
 	if err != nil {
 		return weights.Selection{}, err
 	}
@@ -275,26 +295,39 @@ func (r *Ruleset) newWeighSelection(selection Selection) (weights.Selection, err
 	return weightSelection, nil
 }
 
-func (r *Ruleset) obtainQuerySelectionID(selection Selection) (string, error) {
+func (r *Ruleset) getWeightSelectionID(selection Selection) (string, error) {
 	if selection.IsComposite() {
-		return r.setCompositeSelectionConstraint(selection.ids())
+		constraint, err := newCompositeSelectionConstraint(selection.IDs())
+		if err != nil {
+			return "", err
+		}
+
+		missing := !r.constraintExists(constraint)
+		if missing {
+			return "", errors.Errorf(
+				"Weight selection ID not found for: %v. Is the ruleset prepared for the selection?",
+				selection.IDs(),
+			)
+		}
+
+		return constraint.ID(), nil
 	}
 
 	return selection.id, nil
 }
 
-func (r *Ruleset) setCompositeSelectionConstraint(ids []string) (string, error) {
+func (r *Ruleset) setCompositeSelectionConstraint(ids []string) error {
 	constraint, err := newCompositeSelectionConstraint(ids)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	err = r.setConstraintIfNotExist(constraint)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return constraint.ID(), nil
+	return nil
 }
 
 func newCompositeSelectionConstraint(ids []string) (pldag.Constraint, error) {

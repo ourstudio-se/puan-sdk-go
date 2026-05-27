@@ -6,23 +6,26 @@ import (
 	"github.com/go-errors/errors"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
-	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
 	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
 type SolverClient interface {
 	Solve(query *Query) (Solution, error)
+	SolveWithManyWeights(query *MultiWeightQuery) ([]Solution, error)
 }
 
 type SolutionCreator struct {
 	SolverClient
+	queryCreator *queryCreator
 }
 
 func NewSolutionCreator(
 	client SolverClient,
 ) *SolutionCreator {
+	queryCreator := newQueryCreator()
 	return &SolutionCreator{
 		SolverClient: client,
+		queryCreator: queryCreator,
 	}
 }
 
@@ -36,11 +39,8 @@ func (c *SolutionCreator) Create(
 		return SolutionEnvelope{}, err
 	}
 
-	dependantSelections, independentSelections :=
-		categorizeSelections(selections, ruleset.independentVariables)
-
-	envelope, err := c.calculateSolveSolution(
-		dependantSelections,
+	solution, err := c.calculateSolution(
+		selections,
 		ruleset,
 		from,
 	)
@@ -49,7 +49,27 @@ func (c *SolutionCreator) Create(
 		return SolutionEnvelope{}, err
 	}
 
-	dependentSolution := envelope.Solution()
+	return SolutionEnvelope{
+		solution: solution,
+	}, nil
+}
+
+func (c *SolutionCreator) calculateSolution(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+) (Solution, error) {
+	dependentSelections, independentSelections :=
+		categorizeSelections(selections, ruleset.independentVariables)
+
+	dependentSolution, err := c.calculateDependentSolution(
+		dependentSelections,
+		ruleset,
+		from,
+	)
+	if err != nil {
+		return Solution{}, err
+	}
 
 	independentSolution := calculateIndependentSolution(
 		ruleset.independentVariables,
@@ -58,37 +78,33 @@ func (c *SolutionCreator) Create(
 
 	solution := dependentSolution.merge(independentSolution)
 
-	return SolutionEnvelope{
-		solution: solution,
-	}, nil
+	return solution, nil
 }
 
-func (c *SolutionCreator) calculateSolveSolution(
+func (c *SolutionCreator) calculateDependentSolution(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
-) (SolutionEnvelope, error) {
-	query, err := newQuery(selections, ruleset, from)
+) (Solution, error) {
+	query, err := c.queryCreator.create(selections, ruleset, from)
 	if err != nil {
-		return SolutionEnvelope{}, err
+		return Solution{}, err
 	}
 
 	tooLarge := query.weights.WeightsTooLarge()
 
 	if tooLarge {
-		return c.calculateMultiSolveSolution(selections, ruleset, from)
+		return c.calculateSplitDependentSolution(selections, ruleset, from)
 	}
 
 	solution, err := c.Solve(query)
 	if err != nil {
-		return SolutionEnvelope{}, err
+		return Solution{}, err
 	}
 
 	primitiveSolution := ruleset.RemoveSupportVariables(solution)
 
-	return SolutionEnvelope{
-		solution: primitiveSolution,
-	}, nil
+	return primitiveSolution, nil
 }
 
 // When weights are very large, we need to solve many times sequentially
@@ -99,33 +115,33 @@ func (c *SolutionCreator) calculateSolveSolution(
 // 4. Solve with remaining selections using the new ruleset
 //
 // this can happen many times recursively until all selections are solved
-func (c *SolutionCreator) calculateMultiSolveSolution(
+func (c *SolutionCreator) calculateSplitDependentSolution(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
-) (SolutionEnvelope, error) {
+) (Solution, error) {
 	if len(selections) < 2 {
-		return SolutionEnvelope{},
-			errors.New("at least 2 selections are required for multi-solve")
+		return Solution{},
+			errors.New("at least 2 selections are required for split solving")
 	}
 
 	remainingSelections, prioritisedSelections := selections.split()
 
-	prioritisedSolution, err := c.calculateSolveSolution(prioritisedSelections, ruleset, from)
+	prioritisedSolution, err := c.calculateDependentSolution(prioritisedSelections, ruleset, from)
 	if err != nil {
-		return SolutionEnvelope{}, err
+		return Solution{}, err
 	}
 
 	rulesetWithPrioritisedSolution, err := c.newRulesetWithAssumedSolution(
 		ruleset,
 		prioritisedSelections,
-		prioritisedSolution.Solution(),
+		prioritisedSolution,
 	)
 	if err != nil {
-		return SolutionEnvelope{}, err
+		return Solution{}, err
 	}
 
-	return c.calculateSolveSolution(remainingSelections, rulesetWithPrioritisedSolution, from)
+	return c.calculateDependentSolution(remainingSelections, rulesetWithPrioritisedSolution, from)
 }
 
 func (c *SolutionCreator) newRulesetWithAssumedSolution(
@@ -180,7 +196,7 @@ func independentSolutionValue(variableID string, selections Selections) int {
 
 func validateSelections(selections Selections, ruleset Ruleset) error {
 	for _, selection := range selections {
-		if !utils.ContainsAll(ruleset.selectableVariables, selection.ids()) {
+		if !utils.ContainsAll(ruleset.selectableVariables, selection.IDs()) {
 			return errors.Errorf(
 				"%w: selection contains non-selectable variables: %v",
 				puanerror.InvalidArgument,
@@ -190,7 +206,7 @@ func validateSelections(selections Selections, ruleset Ruleset) error {
 
 		hasSubSelection := len(selection.subSelectionIDs) > 0
 		if hasSubSelection {
-			if utils.ContainsAny(selection.ids(), ruleset.independentVariables) {
+			if utils.ContainsAny(selection.IDs(), ruleset.independentVariables) {
 				return errors.Errorf(
 					"%w: independent variables cannot be part of a composite selections: %v",
 					puanerror.InvalidArgument,
@@ -222,39 +238,6 @@ func categorizeSelections(
 	return dependantSelections, independentSelections
 }
 
-func newQuery(selections Selections, ruleset Ruleset, from *time.Time) (*Query, error) {
-	extendedSelections := selections.modifySelections()
-	impactingSelections := getImpactingSelections(extendedSelections)
-
-	specification, err := ruleset.newQuerySpecification(impactingSelections, from)
-	if err != nil {
-		return nil, err
-	}
-
-	dependentSelectableVariables := utils.Without(
-		specification.ruleset.selectableVariables,
-		specification.ruleset.independentVariables,
-	)
-
-	weights, err := weights.Calculate(
-		dependentSelectableVariables,
-		specification.selections,
-		specification.ruleset.preferredVariables,
-		specification.ruleset.periodVariables.ids(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	query := NewQuery(
-		specification.ruleset.polyhedron,
-		specification.ruleset.dependentVariables,
-		weights,
-	)
-
-	return query, nil
-}
-
 func updateSolveError(
 	err error,
 	ruleset Ruleset,
@@ -273,4 +256,112 @@ func updateSolveError(
 	}
 
 	return err
+}
+
+func (c *SolutionCreator) CreateSolutionsBySelection(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+) (SolutionsBySelectionEnvelope, error) {
+	err := validateSelections(selections, ruleset)
+	if err != nil {
+		return SolutionsBySelectionEnvelope{}, err
+	}
+
+	solutions, err := c.calculateSolutionsBySelection(selections, ruleset, from)
+	if err != nil {
+		err = updateSolveError(err, ruleset, from)
+		return SolutionsBySelectionEnvelope{}, err
+	}
+
+	return NewSolutionsBySelectionEnvelope(solutions)
+}
+
+func (c *SolutionCreator) calculateSolutionsBySelection(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+) ([]SolutionBySelection, error) {
+	dependantSelections, independentSelections :=
+		categorizeSelections(selections, ruleset.independentVariables)
+
+	dependentSolutions, err := c.calculateDependentSolutionsBySelection(
+		dependantSelections,
+		ruleset,
+		from,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	independentSolutions, err := c.calculateIndependentSolutionsBySelection(
+		independentSelections,
+		ruleset,
+		from,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var solutions []SolutionBySelection
+	solutions = append(solutions, dependentSolutions...)
+	solutions = append(solutions, independentSolutions...)
+
+	return solutions, nil
+}
+
+func (c *SolutionCreator) calculateDependentSolutionsBySelection(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+) ([]SolutionBySelection, error) {
+	query, err := c.queryCreator.newSolutionsBySelectionQuery(selections, ruleset, from)
+	if err != nil {
+		return nil, err
+	}
+
+	solutions, err := c.SolveWithManyWeights(query)
+	if err != nil {
+		return nil, err
+	}
+
+	primitiveSolutions := ruleset.RemoveSupportVariablesForMany(solutions)
+
+	solutionsBySelection := make([]SolutionBySelection, len(solutions))
+	for i := range primitiveSolutions {
+		selection := selections[i]
+		solution := primitiveSolutions[i]
+		solutionsBySelection[i] = SolutionBySelection{
+			selection: selection,
+			solution:  solution,
+		}
+	}
+
+	return solutionsBySelection, nil
+}
+
+func (c *SolutionCreator) calculateIndependentSolutionsBySelection(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+) ([]SolutionBySelection, error) {
+	defaultSolution, err := c.calculateDependentSolution(
+		nil,
+		ruleset,
+		from,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	solutionsBySelection := make([]SolutionBySelection, len(selections))
+	for i, selection := range selections {
+		solution := defaultSolution.withSelection(selection.id)
+		solutionsBySelection[i] = SolutionBySelection{
+			selection: selection,
+			solution:  solution,
+		}
+	}
+
+	return solutionsBySelection, nil
 }

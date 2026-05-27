@@ -39,56 +39,19 @@ func NewClient(
 func (c *Client) Solve(
 	query *puan.Query,
 ) (puan.Solution, error) {
-	payload := newRequestPayload(query)
+	payload := newSolveRequestFromQuery(query)
 
 	request, err := c.newRequest(payload)
 	if err != nil {
 		return puan.Solution{}, err
 	}
 
-	resp, err := c.Do(request)
+	response, err := c.doSolveRequest(request)
 	if err != nil {
-		return puan.Solution{}, errors.Wrap(err, 0)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return puan.Solution{},
-			errors.Errorf(
-				"body failed with status %d: %s", resp.StatusCode,
-				string(body),
-			)
+		return puan.Solution{}, err
 	}
 
-	var solveResp SolutionResponse
-	if err = json.NewDecoder(resp.Body).Decode(&solveResp); err != nil {
-		return puan.Solution{}, errors.Wrap(err, 0)
-	}
-
-	return solveResp.getSolutionEntity()
-}
-
-func newRequestPayload(
-	query *puan.Query,
-) SolveRequest {
-	A := toSparseMatrix(query.Polyhedron().SparseMatrix())
-	b := query.Polyhedron().B()
-	variables := toBooleanVariables(query.Variables())
-	objective := Objective(query.Weights())
-	objectives := []Objective{objective}
-
-	request := SolveRequest{
-		Polyhedron: Polyhedron{
-			A:         A,
-			B:         b,
-			Variables: variables,
-		},
-		Objectives: objectives,
-		Direction:  "maximize",
-	}
-
-	return request
+	return response.getSingleSolution()
 }
 
 func (c *Client) newRequest(body SolveRequest) (*http.Request, error) {
@@ -106,4 +69,52 @@ func (c *Client) newRequest(body SolveRequest) (*http.Request, error) {
 	req.Header.Set("X-API-KEY", c.apiKey)
 
 	return req, nil
+}
+
+func (c *Client) doSolveRequest(request *http.Request) (SolutionResponse, error) {
+	response, err := c.Do(request)
+	if err != nil {
+		return SolutionResponse{}, errors.Wrap(err, 0)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(response.Body)
+		return SolutionResponse{},
+			errors.Errorf(
+				"body failed with status %d: %s", response.StatusCode,
+				string(body),
+			)
+	}
+
+	var solution SolutionResponse
+	if err = json.NewDecoder(response.Body).Decode(&solution); err != nil {
+		return SolutionResponse{}, errors.Wrap(err, 0)
+	}
+
+	return solution, nil
+}
+
+func (c *Client) SolveWithManyWeights(
+	query *puan.MultiWeightQuery,
+) ([]puan.Solution, error) {
+	payload := newSolveRequestFromMultiQuery(query)
+
+	request, err := c.newRequest(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := c.doSolveRequest(request)
+	if err != nil {
+		return nil, err
+	}
+
+	wantCount := len(query.WeightGroups())
+	solutions, err := response.getManySolutions(wantCount)
+	if err != nil {
+		return nil, err
+	}
+
+	return solutions, nil
 }
