@@ -32,7 +32,7 @@ func NewSolutionCreator(
 func (c *SolutionCreator) Create(
 	query SolutionQuery,
 ) (SolutionEnvelope, error) {
-	err := validateSelections(query.selections, query.ruleset)
+	err := query.validate()
 	if err != nil {
 		return SolutionEnvelope{}, err
 	}
@@ -191,31 +191,6 @@ func independentSolutionValue(variableID string, selections Selections) int {
 	return 0
 }
 
-func validateSelections(selections Selections, ruleset Ruleset) error {
-	for _, selection := range selections {
-		if !utils.ContainsAll(ruleset.selectableVariables, selection.IDs()) {
-			return errors.Errorf(
-				"%w: selection contains non-selectable variables: %v",
-				puanerror.InvalidArgument,
-				selection,
-			)
-		}
-
-		hasSubSelection := len(selection.subSelectionIDs) > 0
-		if hasSubSelection {
-			if utils.ContainsAny(selection.IDs(), ruleset.independentVariables) {
-				return errors.Errorf(
-					"%w: independent variables cannot be part of a composite selections: %v",
-					puanerror.InvalidArgument,
-					selection,
-				)
-			}
-		}
-	}
-
-	return nil
-}
-
 func categorizeSelections(
 	selections Selections,
 	independentVariables []string,
@@ -258,7 +233,7 @@ func updateSolveError(
 func (c *SolutionCreator) CreateSolutionsBySelection(
 	query SolutionQuery,
 ) (SolutionsBySelectionEnvelope, error) {
-	err := validateSelections(query.selections, query.ruleset)
+	err := query.validate()
 	if err != nil {
 		return SolutionsBySelectionEnvelope{}, err
 	}
@@ -335,9 +310,8 @@ func (c *SolutionCreator) calculateIndependentSolutionsBySelection(
 	query SolutionQuery,
 ) ([]SolutionBySelection, error) {
 	defaultQuery := NewSolutionQueryBuilder().
-		WithRuleset(query.ruleset).
-		WithFrom(query.from).
-		WithTo(query.to).
+		fromQuery(query).
+		WithSelections(nil).
 		Build()
 	defaultSolution, err := c.calculateDependentSolution(defaultQuery)
 	if err != nil {
