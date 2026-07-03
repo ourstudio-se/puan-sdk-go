@@ -3,10 +3,10 @@ package puan
 import "time"
 
 type SolutionQuery struct {
-	Selections Selections
-	Ruleset    Ruleset
-	From       *time.Time
-	To         *time.Time
+	selections Selections
+	ruleset    Ruleset
+	from       *time.Time
+	to         *time.Time
 }
 
 type SolutionQueryBuilder struct {
@@ -18,6 +18,16 @@ type SolutionQueryBuilder struct {
 
 func NewSolutionQueryBuilder() *SolutionQueryBuilder {
 	return &SolutionQueryBuilder{}
+}
+
+func (b *SolutionQueryBuilder) fromQuery(
+	query SolutionQuery,
+) *SolutionQueryBuilder {
+	b.selections = query.selections
+	b.ruleset = query.ruleset
+	b.from = query.from
+	b.to = query.to
+	return b
 }
 
 func (b *SolutionQueryBuilder) WithSelections(selections Selections) *SolutionQueryBuilder {
@@ -42,9 +52,9 @@ func (b *SolutionQueryBuilder) WithTo(to *time.Time) *SolutionQueryBuilder {
 
 func (b *SolutionQueryBuilder) Build() SolutionQuery {
 	return SolutionQuery{
-		Selections: b.selections,
-		Ruleset:    b.ruleset,
-		From:       b.from,
-		To:         b.to,
+		selections: b.selections,
+		ruleset:    b.ruleset,
+		from:       b.from,
+		to:         b.to,
 	}
 }

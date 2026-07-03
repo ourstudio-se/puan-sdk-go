@@ -68,12 +68,12 @@ func newQueryCreator() *queryCreator {
 }
 
 func (c *queryCreator) create(query SolutionQuery) (*Query, error) {
-	preparedRuleset, err := query.Ruleset.modifyForQuery(query.Selections, query.From, query.To)
+	preparedRuleset, err := query.ruleset.modifyForQuery(query.selections, query.from, query.to)
 	if err != nil {
 		return nil, err
 	}
 
-	weights, err := newWeights(preparedRuleset, query.Selections)
+	weights, err := newWeights(preparedRuleset, query.selections)
 	if err != nil {
 		return nil, err
 	}
@@ -90,12 +90,12 @@ func (c *queryCreator) create(query SolutionQuery) (*Query, error) {
 func (c *queryCreator) newSolutionsBySelectionQuery(
 	query SolutionQuery,
 ) (*MultiWeightQuery, error) {
-	preparedRuleset, err := query.Ruleset.modifyForQuery(query.Selections, query.From, query.To)
+	preparedRuleset, err := query.ruleset.modifyForQuery(query.selections, query.from, query.to)
 	if err != nil {
 		return nil, err
 	}
 
-	weightGroups, err := c.calculateWeightsForSolutionsBySelection(preparedRuleset, query.Selections)
+	weightGroups, err := c.calculateWeightsForSolutionsBySelection(preparedRuleset, query.selections)
 	if err != nil {
 		return nil, err
 	}
