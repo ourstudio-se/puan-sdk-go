@@ -696,3 +696,35 @@ func Test_forbiddenPeriod_givenRequiredItemOnlyAvailableInForbiddenPeriod_noSolu
 
 	assert.Error(t, err)
 }
+
+func Test_givenRequiredItemInEarlyPeriod_andAnotherInLatePeriod_fromAndToBetweenPeriods_shouldChooseNeither(
+	t *testing.T,
+) {
+	minute0 := time.Now().Truncate(time.Minute)
+	minute20 := minute0.Add(20 * time.Minute)
+	minute40 := minute0.Add(40 * time.Minute)
+	minute60 := minute0.Add(60 * time.Minute)
+
+	creator := puan.NewRulesetCreator()
+
+	_ = creator.EnableTime(minute0, minute60)
+
+	_ = creator.AddPrimitives("itemX", "itemY")
+	_ = creator.AssumeInPeriod("itemX", minute0, minute20)
+	_ = creator.AssumeInPeriod("itemY", minute40, minute60)
+
+	ruleset, _ := creator.Create()
+
+	envelope, err := solutionCreator.Create(
+		nil,
+		ruleset,
+		&minute20,
+		&minute40,
+	)
+
+	assert.NoError(t, err)
+	solution := envelope.Solution()
+	asserter := newSolutionAsserter(solution)
+	asserter.assertInactive(t, "itemX")
+	asserter.assertInactive(t, "itemY")
+}

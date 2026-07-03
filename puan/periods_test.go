@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -889,10 +890,10 @@ func Test_isEqual_givenNotEqual_shouldReturnFalse(t *testing.T) {
 	assert.False(t, period.isEqual(other))
 }
 
-func Test_passed_givenEqualTimestamps_shouldReturnSameVariables(t *testing.T) {
+func Test_earlierThan_givenEqualTimestamps_shouldReturnSameVariables(t *testing.T) {
 	timestamp := newTestTime("2024-01-01T00:00:00Z")
 	variable := TimeBoundVariable{
-		variable: "",
+		variable: fake.New[string](),
 		period: Period{
 			to: timestamp,
 		},
@@ -902,15 +903,15 @@ func Test_passed_givenEqualTimestamps_shouldReturnSameVariables(t *testing.T) {
 		variable,
 	}
 
-	actual := variables.passed(timestamp)
+	actual := variables.earlierThan(timestamp)
 
 	assert.Equal(t, variables, actual)
 }
 
-func Test_passed_givenAfterTimestamp_shouldReturnSameVariables(t *testing.T) {
+func Test_earlierThan_givenAfterTimestamp_shouldReturnSameVariables(t *testing.T) {
 	timestamp := newTestTime("2024-01-01T00:00:00Z")
 	variable := TimeBoundVariable{
-		variable: "",
+		variable: fake.New[string](),
 		period: Period{
 			to: timestamp.Add(-time.Second),
 		},
@@ -920,15 +921,15 @@ func Test_passed_givenAfterTimestamp_shouldReturnSameVariables(t *testing.T) {
 		variable,
 	}
 
-	actual := variables.passed(timestamp)
+	actual := variables.earlierThan(timestamp)
 
 	assert.Equal(t, variables, actual)
 }
 
-func Test_passed_givenBeforeTimestamp_shouldReturnNoVariables(t *testing.T) {
+func Test_earlierThan_givenBeforeTimestamp_shouldReturnNoVariables(t *testing.T) {
 	timestamp := newTestTime("2024-01-01T00:00:00Z")
 	variable := TimeBoundVariable{
-		variable: "",
+		variable: fake.New[string](),
 		period: Period{
 			to: timestamp.Add(time.Second),
 		},
@@ -938,7 +939,60 @@ func Test_passed_givenBeforeTimestamp_shouldReturnNoVariables(t *testing.T) {
 		variable,
 	}
 
-	actual := variables.passed(timestamp)
+	actual := variables.earlierThan(timestamp)
+	assert.Empty(t, actual)
+}
+
+func Test_laterThan_givenEqualTimestamps_shouldReturnSameVariables(t *testing.T) {
+	timestamp := newTestTime("2024-01-01T00:00:00Z")
+	variable := TimeBoundVariable{
+		variable: fake.New[string](),
+		period: Period{
+			from: timestamp,
+		},
+	}
+
+	variables := TimeBoundVariables{
+		variable,
+	}
+
+	actual := variables.laterThan(timestamp)
+
+	assert.Equal(t, variables, actual)
+}
+
+func Test_laterThan_givenAfterTimestamp_shouldReturnSameVariables(t *testing.T) {
+	timestamp := newTestTime("2024-01-01T00:00:00Z")
+	variable := TimeBoundVariable{
+		variable: fake.New[string](),
+		period: Period{
+			from: timestamp.Add(time.Second),
+		},
+	}
+
+	variables := TimeBoundVariables{
+		variable,
+	}
+
+	actual := variables.laterThan(timestamp)
+
+	assert.Equal(t, variables, actual)
+}
+
+func Test_laterThan_givenBeforeTimestamp_shouldReturnNoVariables(t *testing.T) {
+	timestamp := newTestTime("2024-01-01T00:00:00Z")
+	variable := TimeBoundVariable{
+		variable: fake.New[string](),
+		period: Period{
+			from: timestamp.Add(-time.Second),
+		},
+	}
+
+	variables := TimeBoundVariables{
+		variable,
+	}
+
+	actual := variables.laterThan(timestamp)
 	assert.Empty(t, actual)
 }
 
