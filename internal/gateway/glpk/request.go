@@ -8,7 +8,7 @@ import (
 const DefaultDirection = "maximize"
 
 func newSolveRequestFromQuery(
-	query *puan.Query,
+	query *puan.SolverQuery,
 ) SolveRequest {
 	objective := Objective(query.Weights())
 
@@ -22,7 +22,7 @@ func newSolveRequestFromQuery(
 }
 
 func newSolveRequestFromMultiQuery(
-	query *puan.MultiWeightQuery,
+	query *puan.MultiWeightSolverQuery,
 ) SolveRequest {
 	objectives := make([]Objective, len(query.WeightGroups()))
 	for i, group := range query.WeightGroups() {

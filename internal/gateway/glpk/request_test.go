@@ -47,7 +47,7 @@ func Test_newSolveRequestFromQuery_givenQuery_shouldReturnSolveRequest(t *testin
 	variableIDs := []string{"x", "y"}
 	objective := map[string]int{"x": 2, "y": 4}
 
-	query := puan.NewQuery(polyhedron, variableIDs, objective)
+	query := puan.NewSolverQuery(polyhedron, variableIDs, objective)
 
 	want := SolveRequest{
 		Polyhedron: Polyhedron{
@@ -88,7 +88,7 @@ func Test_newSolveRequestFromMultiQuery(t *testing.T) {
 		{"x": 1, "y": 2},
 	}
 
-	query := puan.NewMultiWeightQuery(polyhedron, variableIDs, queryWeights)
+	query := puan.NewMultiWeightSolverQuery(polyhedron, variableIDs, queryWeights)
 
 	want := SolveRequest{
 		Polyhedron: Polyhedron{

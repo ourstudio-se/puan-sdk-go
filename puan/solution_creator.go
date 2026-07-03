@@ -10,19 +10,19 @@ import (
 )
 
 type SolverClient interface {
-	Solve(query *Query) (Solution, error)
-	SolveWithManyWeights(query *MultiWeightQuery) ([]Solution, error)
+	Solve(query *SolverQuery) (Solution, error)
+	SolveWithManyWeights(query *MultiWeightSolverQuery) ([]Solution, error)
 }
 
 type SolutionCreator struct {
 	SolverClient
-	queryCreator *queryCreator
+	queryCreator *solverQueryCreator
 }
 
 func NewSolutionCreator(
 	client SolverClient,
 ) *SolutionCreator {
-	queryCreator := newQueryCreator()
+	queryCreator := newSolverQueryCreator()
 	return &SolutionCreator{
 		SolverClient: client,
 		queryCreator: queryCreator,
@@ -76,7 +76,7 @@ func (c *SolutionCreator) calculateSolution(
 func (c *SolutionCreator) calculateDependentSolution(
 	query SolutionQuery,
 ) (Solution, error) {
-	solverQuery, err := c.queryCreator.create(query)
+	solverQuery, err := c.queryCreator.new(query)
 	if err != nil {
 		return Solution{}, err
 	}

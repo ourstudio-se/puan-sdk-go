@@ -5,69 +5,73 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
 )
 
-type Query struct {
+type SolverQuery struct {
 	polyhedron *pldag.Polyhedron
 	variables  []string
 	weights    weights.Weights
 }
 
-func NewQuery(polyhedron *pldag.Polyhedron, variables []string, weights weights.Weights) *Query {
-	return &Query{
+func NewSolverQuery(
+	polyhedron *pldag.Polyhedron,
+	variables []string,
+	weights weights.Weights,
+) *SolverQuery {
+	return &SolverQuery{
 		polyhedron: polyhedron,
 		variables:  variables,
 		weights:    weights,
 	}
 }
 
-func (q *Query) Polyhedron() *pldag.Polyhedron {
+func (q *SolverQuery) Polyhedron() *pldag.Polyhedron {
 	return q.polyhedron
 }
 
-func (q *Query) Variables() []string {
+func (q *SolverQuery) Variables() []string {
 	return q.variables
 }
 
-func (q *Query) Weights() weights.Weights {
+func (q *SolverQuery) Weights() weights.Weights {
 	return q.weights
 }
 
-type MultiWeightQuery struct {
+type MultiWeightSolverQuery struct {
 	polyhedron   *pldag.Polyhedron
 	variables    []string
 	weightGroups []weights.Weights
 }
 
-func NewMultiWeightQuery(
+func NewMultiWeightSolverQuery(
 	polyhedron *pldag.Polyhedron,
 	variables []string,
 	weightGroups []weights.Weights,
-) *MultiWeightQuery {
-	return &MultiWeightQuery{
+) *MultiWeightSolverQuery {
+	return &MultiWeightSolverQuery{
 		polyhedron:   polyhedron,
 		variables:    variables,
 		weightGroups: weightGroups,
 	}
 }
 
-func (q *MultiWeightQuery) Polyhedron() *pldag.Polyhedron {
+func (q *MultiWeightSolverQuery) Polyhedron() *pldag.Polyhedron {
 	return q.polyhedron
 }
 
-func (q *MultiWeightQuery) Variables() []string {
+func (q *MultiWeightSolverQuery) Variables() []string {
 	return q.variables
 }
 
-func (q *MultiWeightQuery) WeightGroups() []weights.Weights {
+func (q *MultiWeightSolverQuery) WeightGroups() []weights.Weights {
 	return q.weightGroups
 }
 
-type queryCreator struct{}
+type solverQueryCreator struct{}
 
-func newQueryCreator() *queryCreator {
-	return &queryCreator{}
+func newSolverQueryCreator() *solverQueryCreator {
+	return &solverQueryCreator{}
 }
 
-func (c *queryCreator) create(query SolutionQuery) (*Query, error) {
+func (c *solverQueryCreator) new(query SolutionQuery) (*SolverQuery, error) {
 	preparedRuleset, err := query.ruleset.modifyForQuery(query.selections, query.from, query.to)
 	if err != nil {
 		return nil, err
@@ -78,7 +82,7 @@ func (c *queryCreator) create(query SolutionQuery) (*Query, error) {
 		return nil, err
 	}
 
-	solverQuery := NewQuery(
+	solverQuery := NewSolverQuery(
 		preparedRuleset.polyhedron,
 		preparedRuleset.dependentVariables,
 		weights,
@@ -87,9 +91,9 @@ func (c *queryCreator) create(query SolutionQuery) (*Query, error) {
 	return solverQuery, nil
 }
 
-func (c *queryCreator) newSolutionsBySelectionQuery(
+func (c *solverQueryCreator) newSolutionsBySelectionQuery(
 	query SolutionQuery,
-) (*MultiWeightQuery, error) {
+) (*MultiWeightSolverQuery, error) {
 	preparedRuleset, err := query.ruleset.modifyForQuery(query.selections, query.from, query.to)
 	if err != nil {
 		return nil, err
@@ -100,7 +104,7 @@ func (c *queryCreator) newSolutionsBySelectionQuery(
 		return nil, err
 	}
 
-	solverQuery := NewMultiWeightQuery(
+	solverQuery := NewMultiWeightSolverQuery(
 		preparedRuleset.polyhedron,
 		preparedRuleset.dependentVariables,
 		weightGroups,
@@ -109,7 +113,7 @@ func (c *queryCreator) newSolutionsBySelectionQuery(
 	return solverQuery, nil
 }
 
-func (c *queryCreator) calculateWeightsForSolutionsBySelection(
+func (c *solverQueryCreator) calculateWeightsForSolutionsBySelection(
 	ruleset Ruleset,
 	selections Selections,
 ) ([]weights.Weights, error) {

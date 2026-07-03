@@ -37,7 +37,7 @@ func NewClient(
 }
 
 func (c *Client) Solve(
-	query *puan.Query,
+	query *puan.SolverQuery,
 ) (puan.Solution, error) {
 	payload := newSolveRequestFromQuery(query)
 
@@ -96,7 +96,7 @@ func (c *Client) doSolveRequest(request *http.Request) (SolutionResponse, error)
 }
 
 func (c *Client) SolveWithManyWeights(
-	query *puan.MultiWeightQuery,
+	query *puan.MultiWeightSolverQuery,
 ) ([]puan.Solution, error) {
 	payload := newSolveRequestFromMultiQuery(query)
 
