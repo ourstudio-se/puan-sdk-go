@@ -53,12 +53,10 @@ func main() {
 	solutionCreator := puan.NewSolutionCreator(solverClient)
 
 	inSecondPeriod := endOfFirstPeriod.Add(5 * time.Minute)
-	envelope, err := solutionCreator.Create(
-		nil,
-		ruleSet,
-		&inSecondPeriod,
-		nil,
-	)
+	envelope, err := solutionCreator.Create(puan.SolutionQuery{
+		Ruleset: ruleSet,
+		From:    &inSecondPeriod,
+	})
 	if err != nil {
 		panic(err)
 	}

@@ -36,7 +36,7 @@ func Test_givenVeryManySelections_earliestSelectionShouldBeSelected(t *testing.T
 		)
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
+	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Selections: selections, Ruleset: ruleset})
 
 	asserter := newSolutionAsserter(envelope.Solution())
 	asserter.assertActive(

@@ -17,7 +17,7 @@ func Test_multiplePackagesWithOr_noSelectionExpectPreferred(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
+	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Selections: selections, Ruleset: ruleset})
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -43,7 +43,7 @@ func Test_multiplePackagesWithOr_selectPackageB(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
+	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Selections: selections, Ruleset: ruleset})
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -69,7 +69,7 @@ func Test_multiplePackagesWithOr_selectPackageC(t *testing.T) {
 		puan.NewSelectionBuilder("packageC").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
+	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Selections: selections, Ruleset: ruleset})
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -97,7 +97,7 @@ func Test_multiplePackagesWithOr_allSelectedExceptA(t *testing.T) {
 		puan.NewSelectionBuilder("packageD").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
+	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Selections: selections, Ruleset: ruleset})
 	solution := envelope.Solution()
 	assert.Equal(
 		t,

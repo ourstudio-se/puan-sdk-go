@@ -9,6 +9,13 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
+type SolutionQuery struct {
+	Selections Selections
+	Ruleset    Ruleset
+	From       *time.Time
+	To         *time.Time
+}
+
 type SolverClient interface {
 	Solve(query *Query) (Solution, error)
 	SolveWithManyWeights(query *MultiWeightQuery) ([]Solution, error)
@@ -30,24 +37,16 @@ func NewSolutionCreator(
 }
 
 func (c *SolutionCreator) Create(
-	selections Selections,
-	ruleset Ruleset,
-	from *time.Time,
-	to *time.Time,
+	query SolutionQuery,
 ) (SolutionEnvelope, error) {
-	err := validateSelections(selections, ruleset)
+	err := validateSelections(query.Selections, query.Ruleset)
 	if err != nil {
 		return SolutionEnvelope{}, err
 	}
 
-	solution, err := c.calculateSolution(
-		selections,
-		ruleset,
-		from,
-		to,
-	)
+	solution, err := c.calculateSolution(query)
 	if err != nil {
-		err = updateSolveError(err, ruleset, from)
+		err = updateSolveError(err, query.Ruleset, query.From)
 		return SolutionEnvelope{}, err
 	}
 
@@ -57,26 +56,20 @@ func (c *SolutionCreator) Create(
 }
 
 func (c *SolutionCreator) calculateSolution(
-	selections Selections,
-	ruleset Ruleset,
-	from *time.Time,
-	to *time.Time,
+	query SolutionQuery,
 ) (Solution, error) {
 	dependentSelections, independentSelections :=
-		categorizeSelections(selections, ruleset.independentVariables)
+		categorizeSelections(query.Selections, query.Ruleset.independentVariables)
 
-	dependentSolution, err := c.calculateDependentSolution(
-		dependentSelections,
-		ruleset,
-		from,
-		to,
-	)
+	dependentQuery := query
+	dependentQuery.Selections = dependentSelections
+	dependentSolution, err := c.calculateDependentSolution(dependentQuery)
 	if err != nil {
 		return Solution{}, err
 	}
 
 	independentSolution := calculateIndependentSolution(
-		ruleset.independentVariables,
+		query.Ruleset.independentVariables,
 		independentSelections,
 	)
 
@@ -86,28 +79,25 @@ func (c *SolutionCreator) calculateSolution(
 }
 
 func (c *SolutionCreator) calculateDependentSolution(
-	selections Selections,
-	ruleset Ruleset,
-	from *time.Time,
-	to *time.Time,
+	query SolutionQuery,
 ) (Solution, error) {
-	query, err := c.queryCreator.create(selections, ruleset, from, to)
+	solverQuery, err := c.queryCreator.create(query)
 	if err != nil {
 		return Solution{}, err
 	}
 
-	tooLarge := query.weights.WeightsTooLarge()
+	tooLarge := solverQuery.weights.WeightsTooLarge()
 
 	if tooLarge {
-		return c.calculateSplitDependentSolution(selections, ruleset, from, to)
+		return c.calculateSplitDependentSolution(query)
 	}
 
-	solution, err := c.Solve(query)
+	solution, err := c.Solve(solverQuery)
 	if err != nil {
 		return Solution{}, err
 	}
 
-	primitiveSolution := ruleset.RemoveSupportVariables(solution)
+	primitiveSolution := query.Ruleset.RemoveSupportVariables(solution)
 
 	return primitiveSolution, nil
 }
@@ -121,25 +111,24 @@ func (c *SolutionCreator) calculateDependentSolution(
 //
 // this can happen many times recursively until all selections are solved
 func (c *SolutionCreator) calculateSplitDependentSolution(
-	selections Selections,
-	ruleset Ruleset,
-	from *time.Time,
-	to *time.Time,
+	query SolutionQuery,
 ) (Solution, error) {
-	if len(selections) < 2 {
+	if len(query.Selections) < 2 {
 		return Solution{},
 			errors.New("at least 2 selections are required for split solving")
 	}
 
-	remainingSelections, prioritisedSelections := selections.split()
+	remainingSelections, prioritisedSelections := query.Selections.split()
 
-	prioritisedSolution, err := c.calculateDependentSolution(prioritisedSelections, ruleset, from, to)
+	prioritisedQuery := query
+	prioritisedQuery.Selections = prioritisedSelections
+	prioritisedSolution, err := c.calculateDependentSolution(prioritisedQuery)
 	if err != nil {
 		return Solution{}, err
 	}
 
 	rulesetWithPrioritisedSolution, err := c.newRulesetWithAssumedSolution(
-		ruleset,
+		query.Ruleset,
 		prioritisedSelections,
 		prioritisedSolution,
 	)
@@ -147,7 +136,10 @@ func (c *SolutionCreator) calculateSplitDependentSolution(
 		return Solution{}, err
 	}
 
-	return c.calculateDependentSolution(remainingSelections, rulesetWithPrioritisedSolution, from, to)
+	remainingQuery := query
+	remainingQuery.Selections = remainingSelections
+	remainingQuery.Ruleset = rulesetWithPrioritisedSolution
+	return c.calculateDependentSolution(remainingQuery)
 }
 
 func (c *SolutionCreator) newRulesetWithAssumedSolution(
@@ -265,19 +257,16 @@ func updateSolveError(
 }
 
 func (c *SolutionCreator) CreateSolutionsBySelection(
-	selections Selections,
-	ruleset Ruleset,
-	from *time.Time,
-	to *time.Time,
+	query SolutionQuery,
 ) (SolutionsBySelectionEnvelope, error) {
-	err := validateSelections(selections, ruleset)
+	err := validateSelections(query.Selections, query.Ruleset)
 	if err != nil {
 		return SolutionsBySelectionEnvelope{}, err
 	}
 
-	solutions, err := c.calculateSolutionsBySelection(selections, ruleset, from, to)
+	solutions, err := c.calculateSolutionsBySelection(query)
 	if err != nil {
-		err = updateSolveError(err, ruleset, from)
+		err = updateSolveError(err, query.Ruleset, query.From)
 		return SolutionsBySelectionEnvelope{}, err
 	}
 
@@ -285,30 +274,21 @@ func (c *SolutionCreator) CreateSolutionsBySelection(
 }
 
 func (c *SolutionCreator) calculateSolutionsBySelection(
-	selections Selections,
-	ruleset Ruleset,
-	from *time.Time,
-	to *time.Time,
+	query SolutionQuery,
 ) ([]SolutionBySelection, error) {
 	dependantSelections, independentSelections :=
-		categorizeSelections(selections, ruleset.independentVariables)
+		categorizeSelections(query.Selections, query.Ruleset.independentVariables)
 
-	dependentSolutions, err := c.calculateDependentSolutionsBySelection(
-		dependantSelections,
-		ruleset,
-		from,
-		to,
-	)
+	dependentQuery := query
+	dependentQuery.Selections = dependantSelections
+	dependentSolutions, err := c.calculateDependentSolutionsBySelection(dependentQuery)
 	if err != nil {
 		return nil, err
 	}
 
-	independentSolutions, err := c.calculateIndependentSolutionsBySelection(
-		independentSelections,
-		ruleset,
-		from,
-		to,
-	)
+	independentQuery := query
+	independentQuery.Selections = independentSelections
+	independentSolutions, err := c.calculateIndependentSolutionsBySelection(independentQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -321,26 +301,23 @@ func (c *SolutionCreator) calculateSolutionsBySelection(
 }
 
 func (c *SolutionCreator) calculateDependentSolutionsBySelection(
-	selections Selections,
-	ruleset Ruleset,
-	from *time.Time,
-	to *time.Time,
+	query SolutionQuery,
 ) ([]SolutionBySelection, error) {
-	query, err := c.queryCreator.newSolutionsBySelectionQuery(selections, ruleset, from, to)
+	solverQuery, err := c.queryCreator.newSolutionsBySelectionQuery(query)
 	if err != nil {
 		return nil, err
 	}
 
-	solutions, err := c.SolveWithManyWeights(query)
+	solutions, err := c.SolveWithManyWeights(solverQuery)
 	if err != nil {
 		return nil, err
 	}
 
-	primitiveSolutions := ruleset.RemoveSupportVariablesForMany(solutions)
+	primitiveSolutions := query.Ruleset.RemoveSupportVariablesForMany(solutions)
 
 	solutionsBySelection := make([]SolutionBySelection, len(solutions))
 	for i := range primitiveSolutions {
-		selection := selections[i]
+		selection := query.Selections[i]
 		solution := primitiveSolutions[i]
 		solutionsBySelection[i] = SolutionBySelection{
 			selection: selection,
@@ -352,23 +329,20 @@ func (c *SolutionCreator) calculateDependentSolutionsBySelection(
 }
 
 func (c *SolutionCreator) calculateIndependentSolutionsBySelection(
-	selections Selections,
-	ruleset Ruleset,
-	from *time.Time,
-	to *time.Time,
+	query SolutionQuery,
 ) ([]SolutionBySelection, error) {
-	defaultSolution, err := c.calculateDependentSolution(
-		nil,
-		ruleset,
-		from,
-		to,
-	)
+	defaultQuery := SolutionQuery{
+		Ruleset: query.Ruleset,
+		From:    query.From,
+		To:      query.To,
+	}
+	defaultSolution, err := c.calculateDependentSolution(defaultQuery)
 	if err != nil {
 		return nil, err
 	}
 
-	solutionsBySelection := make([]SolutionBySelection, len(selections))
-	for i, selection := range selections {
+	solutionsBySelection := make([]SolutionBySelection, len(query.Selections))
+	for i, selection := range query.Selections {
 		solution := defaultSolution.withSelection(selection.id)
 		solutionsBySelection[i] = SolutionBySelection{
 			selection: selection,

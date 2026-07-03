@@ -15,7 +15,7 @@ func Test_multipleQueries_shouldNotChangeRuleset(t *testing.T) {
 
 	// query 1
 	from := startTime.Add(45 * time.Minute)
-	_, err := solutionCreator.Create(nil, ruleset, &from, nil)
+	_, err := solutionCreator.Create(puan.SolutionQuery{Ruleset: ruleset, From: &from})
 	assert.NoError(t, err)
 	// passed periods should not change the initial ruleset
 	// as it introduce additional constraints.
@@ -26,7 +26,7 @@ func Test_multipleQueries_shouldNotChangeRuleset(t *testing.T) {
 		WithSubSelectionID("y").
 		Build()
 
-	_, err = solutionCreator.Create(puan.Selections{selection}, ruleset, nil, nil)
+	_, err = solutionCreator.Create(puan.SolutionQuery{Selections: puan.Selections{selection}, Ruleset: ruleset})
 	assert.NoError(t, err)
 	// selections should not change the initial ruleset
 	// as composite selections introduce additional constraints.

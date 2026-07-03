@@ -17,7 +17,7 @@ func Test_heavyPreferredWithOr_emptySelection(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
+	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Selections: selections, Ruleset: ruleset})
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -41,7 +41,7 @@ func Test_heavyPreferredWithOr_preferSelection(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
+	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Selections: selections, Ruleset: ruleset})
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -65,7 +65,7 @@ func Test_heavyPreferredWithOr_notPreferSelection(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
+	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Selections: selections, Ruleset: ruleset})
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -90,7 +90,7 @@ func Test_heavyPreferredWithOr_bothPackagesSelection(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
+	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Selections: selections, Ruleset: ruleset})
 	solution := envelope.Solution()
 	assert.Equal(
 		t,

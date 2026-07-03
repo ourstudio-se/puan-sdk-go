@@ -1,8 +1,6 @@
 package puan
 
 import (
-	"time"
-
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
 )
@@ -69,54 +67,44 @@ func newQueryCreator() *queryCreator {
 	return &queryCreator{}
 }
 
-func (c *queryCreator) create(
-	selections Selections,
-	ruleset Ruleset,
-	from *time.Time,
-	to *time.Time,
-) (*Query, error) {
-	preparedRuleset, err := ruleset.modifyForQuery(selections, from, to)
+func (c *queryCreator) create(query SolutionQuery) (*Query, error) {
+	preparedRuleset, err := query.Ruleset.modifyForQuery(query.Selections, query.From, query.To)
 	if err != nil {
 		return nil, err
 	}
 
-	weights, err := newWeights(preparedRuleset, selections)
+	weights, err := newWeights(preparedRuleset, query.Selections)
 	if err != nil {
 		return nil, err
 	}
 
-	query := NewQuery(
+	solverQuery := NewQuery(
 		preparedRuleset.polyhedron,
 		preparedRuleset.dependentVariables,
 		weights,
 	)
 
-	return query, nil
+	return solverQuery, nil
 }
 
-func (c *queryCreator) newSolutionsBySelectionQuery(
-	selections Selections,
-	ruleset Ruleset,
-	from *time.Time,
-	to *time.Time,
-) (*MultiWeightQuery, error) {
-	preparedRuleset, err := ruleset.modifyForQuery(selections, from, to)
+func (c *queryCreator) newSolutionsBySelectionQuery(query SolutionQuery) (*MultiWeightQuery, error) {
+	preparedRuleset, err := query.Ruleset.modifyForQuery(query.Selections, query.From, query.To)
 	if err != nil {
 		return nil, err
 	}
 
-	weightGroups, err := c.calculateWeightsForSolutionsBySelection(preparedRuleset, selections)
+	weightGroups, err := c.calculateWeightsForSolutionsBySelection(preparedRuleset, query.Selections)
 	if err != nil {
 		return nil, err
 	}
 
-	query := NewMultiWeightQuery(
+	solverQuery := NewMultiWeightQuery(
 		preparedRuleset.polyhedron,
 		preparedRuleset.dependentVariables,
 		weightGroups,
 	)
 
-	return query, nil
+	return solverQuery, nil
 }
 
 func (c *queryCreator) calculateWeightsForSolutionsBySelection(
