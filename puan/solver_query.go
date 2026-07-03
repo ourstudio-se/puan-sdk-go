@@ -1,123 +1,119 @@
 package puan
 
 import (
-	"time"
-
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
 )
 
-type Query struct {
+type SolverQuery struct {
 	polyhedron *pldag.Polyhedron
 	variables  []string
 	weights    weights.Weights
 }
 
-func NewQuery(polyhedron *pldag.Polyhedron, variables []string, weights weights.Weights) *Query {
-	return &Query{
+func NewSolverQuery(
+	polyhedron *pldag.Polyhedron,
+	variables []string,
+	weights weights.Weights,
+) *SolverQuery {
+	return &SolverQuery{
 		polyhedron: polyhedron,
 		variables:  variables,
 		weights:    weights,
 	}
 }
 
-func (q *Query) Polyhedron() *pldag.Polyhedron {
+func (q *SolverQuery) Polyhedron() *pldag.Polyhedron {
 	return q.polyhedron
 }
 
-func (q *Query) Variables() []string {
+func (q *SolverQuery) Variables() []string {
 	return q.variables
 }
 
-func (q *Query) Weights() weights.Weights {
+func (q *SolverQuery) Weights() weights.Weights {
 	return q.weights
 }
 
-type MultiWeightQuery struct {
+type MultiWeightSolverQuery struct {
 	polyhedron   *pldag.Polyhedron
 	variables    []string
 	weightGroups []weights.Weights
 }
 
-func NewMultiWeightQuery(
+func NewMultiWeightSolverQuery(
 	polyhedron *pldag.Polyhedron,
 	variables []string,
 	weightGroups []weights.Weights,
-) *MultiWeightQuery {
-	return &MultiWeightQuery{
+) *MultiWeightSolverQuery {
+	return &MultiWeightSolverQuery{
 		polyhedron:   polyhedron,
 		variables:    variables,
 		weightGroups: weightGroups,
 	}
 }
 
-func (q *MultiWeightQuery) Polyhedron() *pldag.Polyhedron {
+func (q *MultiWeightSolverQuery) Polyhedron() *pldag.Polyhedron {
 	return q.polyhedron
 }
 
-func (q *MultiWeightQuery) Variables() []string {
+func (q *MultiWeightSolverQuery) Variables() []string {
 	return q.variables
 }
 
-func (q *MultiWeightQuery) WeightGroups() []weights.Weights {
+func (q *MultiWeightSolverQuery) WeightGroups() []weights.Weights {
 	return q.weightGroups
 }
 
-type queryCreator struct{}
+type solverQueryCreator struct{}
 
-func newQueryCreator() *queryCreator {
-	return &queryCreator{}
+func newSolverQueryCreator() *solverQueryCreator {
+	return &solverQueryCreator{}
 }
 
-func (c *queryCreator) create(
-	selections Selections,
-	ruleset Ruleset,
-	from *time.Time,
-) (*Query, error) {
-	preparedRuleset, err := ruleset.modifyForQuery(selections, from)
+func (c *solverQueryCreator) new(query SolutionQuery) (*SolverQuery, error) {
+	preparedRuleset, err := query.ruleset.modifyForQuery(query.selections, query.from, query.to)
 	if err != nil {
 		return nil, err
 	}
 
-	weights, err := newWeights(preparedRuleset, selections)
+	weights, err := newWeights(preparedRuleset, query.selections)
 	if err != nil {
 		return nil, err
 	}
 
-	query := NewQuery(
+	solverQuery := NewSolverQuery(
 		preparedRuleset.polyhedron,
 		preparedRuleset.dependentVariables,
 		weights,
 	)
 
-	return query, nil
+	return solverQuery, nil
 }
 
-func (c *queryCreator) newSolutionsBySelectionQuery(
-	selections Selections,
-	ruleset Ruleset,
-	from *time.Time,
-) (*MultiWeightQuery, error) {
-	preparedRuleset, err := ruleset.modifyForQuery(selections, from)
+func (c *solverQueryCreator) newSolutionsBySelectionQuery(
+	query SolutionQuery,
+) (*MultiWeightSolverQuery, error) {
+	preparedRuleset, err := query.ruleset.modifyForQuery(query.selections, query.from, query.to)
 	if err != nil {
 		return nil, err
 	}
 
-	weightGroups, err := c.calculateWeightsForSolutionsBySelection(preparedRuleset, selections)
+	weightGroups, err := c.calculateWeightsForSolutionsBySelection(preparedRuleset, query.selections)
 	if err != nil {
 		return nil, err
 	}
 
-	query := NewMultiWeightQuery(
+	solverQuery := NewMultiWeightSolverQuery(
 		preparedRuleset.polyhedron,
 		preparedRuleset.dependentVariables,
 		weightGroups,
 	)
 
-	return query, nil
+	return solverQuery, nil
 }
 
-func (c *queryCreator) calculateWeightsForSolutionsBySelection(
+func (c *solverQueryCreator) calculateWeightsForSolutionsBySelection(
 	ruleset Ruleset,
 	selections Selections,
 ) ([]weights.Weights, error) {

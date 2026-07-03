@@ -234,6 +234,7 @@ func (r *Ruleset) copy() Ruleset {
 func (r *Ruleset) modifyForQuery(
 	selections Selections,
 	from *time.Time,
+	to *time.Time,
 ) (Ruleset, error) {
 	ruleset := r.copy()
 
@@ -243,6 +244,13 @@ func (r *Ruleset) modifyForQuery(
 
 	if from != nil {
 		err := ruleset.forbidPassedPeriods(*from)
+		if err != nil {
+			return Ruleset{}, err
+		}
+	}
+
+	if to != nil {
+		err := ruleset.forbidFuturePeriods(*to)
 		if err != nil {
 			return Ruleset{}, err
 		}
@@ -403,7 +411,7 @@ func (r *Ruleset) newRow(coefficients pldag.Coefficients) ([]int, error) {
 }
 
 func (r *Ruleset) forbidPassedPeriods(from time.Time) error {
-	passedPeriods := r.periodVariables.passed(from)
+	passedPeriods := r.periodVariables.earlierThan(from)
 	passedPeriodIDs := passedPeriods.ids()
 
 	if len(passedPeriodIDs) == 0 {
@@ -411,6 +419,17 @@ func (r *Ruleset) forbidPassedPeriods(from time.Time) error {
 	}
 
 	return r.assumeNot(passedPeriodIDs...)
+}
+
+func (r *Ruleset) forbidFuturePeriods(to time.Time) error {
+	futurePeriods := r.periodVariables.laterThan(to)
+	futurePeriodIDs := futurePeriods.ids()
+
+	if len(futurePeriodIDs) == 0 {
+		return nil
+	}
+
+	return r.assumeNot(futurePeriodIDs...)
 }
 
 func (r *Ruleset) assume(id string) error {

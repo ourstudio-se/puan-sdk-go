@@ -9,67 +9,7 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
 )
 
-func Test_validateSelections_givenIndependentVariableInSubSelection_shouldReturnError(
-	t *testing.T,
-) {
-	primaryID := fake.New[string]()
-	subID := fake.New[string]()
-
-	creator := NewRulesetCreator()
-	_ = creator.AddPrimitives(primaryID, subID)
-	_ = creator.Assume(primaryID)
-	ruleset, _ := creator.Create()
-
-	selections := Selections{
-		NewSelectionBuilder(primaryID).WithSubSelectionID(subID).Build(),
-	}
-
-	err := validateSelections(selections, ruleset)
-
-	assert.Error(t, err)
-}
-
-func Test_validateSelections_givenIndependentVariableSelectionWithSubSelection_shouldReturnError(
-	t *testing.T,
-) {
-	primaryID := fake.New[string]()
-	subID := fake.New[string]()
-
-	creator := NewRulesetCreator()
-	_ = creator.AddPrimitives(primaryID, subID)
-	_ = creator.Assume(subID)
-	ruleset, _ := creator.Create()
-
-	selections := Selections{
-		NewSelectionBuilder(primaryID).WithSubSelectionID(subID).Build(),
-	}
-
-	err := validateSelections(selections, ruleset)
-
-	assert.Error(t, err)
-}
-
-func Test_validateSelections_givenNotExistingID_shouldReturnError(
-	t *testing.T,
-) {
-	primaryID := fake.New[string]()
-	subID := fake.New[string]()
-
-	invalidID := fake.New[string]()
-	creator := NewRulesetCreator()
-	_ = creator.AddPrimitives(primaryID, subID)
-	ruleset, _ := creator.Create()
-
-	selections := Selections{
-		NewSelectionBuilder(invalidID).Build(),
-	}
-
-	err := validateSelections(selections, ruleset)
-
-	assert.Error(t, err)
-}
-
-func Test_validateSelections_givenEmptySelection_shouldReturnNoError(
+func Test_SolutionQuery_validateSelections_givenEmptySelection_shouldReturnNoError(
 	t *testing.T,
 ) {
 	primaryID := fake.New[string]()
@@ -81,7 +21,12 @@ func Test_validateSelections_givenEmptySelection_shouldReturnNoError(
 
 	selections := Selections{}
 
-	err := validateSelections(selections, ruleset)
+	query := NewSolutionQueryBuilder().
+		WithSelections(selections).
+		WithRuleset(ruleset).
+		Build()
+
+	err := query.validateSelections()
 
 	assert.NoError(t, err)
 }

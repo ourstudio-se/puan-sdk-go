@@ -41,11 +41,12 @@ func Test_givenConditionalRuleWithDifferentPreferreds_shouldReturnPreferredItemF
 	ruleset, _ := creator.Create()
 
 	inSecondPeriod := endOfFirstPeriod.Add(5 * time.Minute)
-	envelope, _ := solutionCreator.Create(
-		puan.Selections{puan.NewSelectionBuilder(condition).Build()},
-		ruleset,
-		&inSecondPeriod,
-	)
+	query := puan.NewSolutionQueryBuilder().
+		WithSelections(puan.Selections{puan.NewSelectionBuilder(condition).Build()}).
+		WithRuleset(ruleset).
+		WithFrom(&inSecondPeriod).
+		Build()
+	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -87,7 +88,8 @@ func Test_givenXORRuleWithDifferentPreferred_shouldReturnPreferredItemForCurrent
 	ruleset, _ := creator.Create()
 
 	inSecondPeriod := endOfFirstPeriod.Add(5 * time.Minute)
-	envelope, _ := solutionCreator.Create(nil, ruleset, &inSecondPeriod)
+	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).WithFrom(&inSecondPeriod).Build()
+	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,

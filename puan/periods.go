@@ -116,10 +116,17 @@ func (p TimeBoundVariables) ids() []string {
 	return ids
 }
 
-func (p TimeBoundVariables) passed(timestamp time.Time) TimeBoundVariables {
+func (p TimeBoundVariables) earlierThan(timestamp time.Time) TimeBoundVariables {
 	return utils.Filter(p, func(periodVariable TimeBoundVariable) bool {
-		hasPassed := !periodVariable.period.to.After(timestamp)
-		return hasPassed
+		isEarlier := !periodVariable.period.to.After(timestamp)
+		return isEarlier
+	})
+}
+
+func (p TimeBoundVariables) laterThan(timestamp time.Time) TimeBoundVariables {
+	return utils.Filter(p, func(periodVariable TimeBoundVariable) bool {
+		isLater := !periodVariable.period.from.Before(timestamp)
+		return isLater
 	})
 }
 
