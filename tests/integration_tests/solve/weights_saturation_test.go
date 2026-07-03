@@ -36,7 +36,7 @@ func Test_givenVeryManySelections_earliestSelectionShouldBeSelected(t *testing.T
 		)
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
 
 	asserter := newSolutionAsserter(envelope.Solution())
 	asserter.assertActive(

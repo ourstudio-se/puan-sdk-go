@@ -47,7 +47,7 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 		puan.NewSelectionBuilder("itemN").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -99,7 +99,7 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -156,7 +156,7 @@ func Test_twoPackagesWithSharedItems_selectLargestPackage(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,

@@ -38,7 +38,7 @@ func Test_manyItemsIncludedInPeriod(t *testing.T) {
 
 	ruleset, _ := creator.Create()
 
-	envelope, _ := solutionCreator.Create(nil, ruleset, nil)
+	envelope, _ := solutionCreator.Create(nil, ruleset, nil, nil)
 	solution := envelope.Solution()
 
 	asserter := newSolutionAsserter(solution)
@@ -72,7 +72,7 @@ func Test_itemsIncludedInLaterPeriod_shouldChooseEarlierPeriod(t *testing.T) {
 
 	ruleset, _ := creator.Create()
 
-	envelope, _ := solutionCreator.Create(nil, ruleset, nil)
+	envelope, _ := solutionCreator.Create(nil, ruleset, nil, nil)
 	solution := envelope.Solution()
 
 	asserter := newSolutionAsserter(solution)
@@ -109,7 +109,7 @@ func Test_itemsIncludedInLaterPeriod_andFromInLaterPeriod_shouldChooseLaterPerio
 
 	from := startTime.Add(45 * time.Minute)
 
-	envelope, _ := solutionCreator.Create(nil, ruleset, &from)
+	envelope, _ := solutionCreator.Create(nil, ruleset, &from, nil)
 	solution := envelope.Solution()
 
 	asserter := newSolutionAsserter(solution)
@@ -148,7 +148,7 @@ func Test_itemsIncludedInLaterPeriod_andFromInEarlierPeriod_shouldChooseEarlierP
 
 	from := startTime.Add(15 * time.Minute)
 
-	envelope, _ := solutionCreator.Create(nil, ruleset, &from)
+	envelope, _ := solutionCreator.Create(nil, ruleset, &from, nil)
 	solution := envelope.Solution()
 
 	asserter := newSolutionAsserter(solution)
@@ -184,7 +184,7 @@ func Test_itemSelectableInPeriod_givenItemSelected_shouldChoosePeriod(t *testing
 		puan.NewSelectionBuilder("itemX").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -252,7 +252,7 @@ func Test_itemSelectableInPeriod_andManyItemsIncludedInThatPeriod_givenItemSelec
 		puan.NewSelectionBuilder("itemX").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
 	solution := envelope.Solution()
 
 	asserter := newSolutionAsserter(solution)
@@ -305,7 +305,7 @@ func Test_includedPackageInEarlierPeriod_withPreferred_shouldChooseEarlierPeriod
 
 	ruleset, _ := creator.Create()
 
-	envelope, _ := solutionCreator.Create(nil, ruleset, nil)
+	envelope, _ := solutionCreator.Create(nil, ruleset, nil, nil)
 	solution := envelope.Solution()
 
 	asserter := newSolutionAsserter(solution)
@@ -335,7 +335,7 @@ func Test_givenTimeEnabledWithoutTimeboundConstraints_andNoFromSpecified_shouldG
 
 	ruleset, _ := creator.Create()
 
-	envelope, _ := solutionCreator.Create(nil, ruleset, nil)
+	envelope, _ := solutionCreator.Create(nil, ruleset, nil, nil)
 	solution := envelope.Solution()
 
 	assert.Equal(
@@ -368,7 +368,7 @@ func Test_givenTimeEnabledWithoutTimeboundConstraints_andEarlyFromSpecified_shou
 	ruleset, _ := creator.Create()
 
 	beforeStart := startTime.Add(-1 * time.Hour)
-	envelope, _ := solutionCreator.Create(nil, ruleset, &beforeStart)
+	envelope, _ := solutionCreator.Create(nil, ruleset, &beforeStart, nil)
 	solution := envelope.Solution()
 
 	assert.Equal(
@@ -401,7 +401,7 @@ func Test_givenTimeEnabledWithoutTimeboundConstraints_andLateFromSpecified_shoul
 	ruleset, _ := creator.Create()
 
 	afterEnd := endTime.Add(1 * time.Hour)
-	_, err := solutionCreator.Create(nil, ruleset, &afterEnd)
+	_, err := solutionCreator.Create(nil, ruleset, &afterEnd, nil)
 	assert.Error(t, err)
 }
 
@@ -441,6 +441,7 @@ func Test_givenXORWithManyConsequencesInFirstPeriod_selectExpensiveItem_shouldCh
 		},
 		ruleset,
 		&startTime,
+		nil,
 	)
 
 	solution := envelope.Solution()
@@ -489,6 +490,7 @@ func Test_givenXORWithManyPreferredInFirstPeriod_selectNonPreferredItem_shouldCh
 		},
 		ruleset,
 		&startTime,
+		nil,
 	)
 
 	solution := envelope.Solution()
@@ -524,6 +526,7 @@ func Test_forbiddenPeriod_givenFromInForbiddenPeriod_shouldChoosePeriodAfterForb
 		nil,
 		ruleset,
 		&minute30,
+		nil,
 	)
 	solution := envelope.Solution()
 
@@ -555,6 +558,7 @@ func Test_forbiddenPeriod_givenFromBeforeForbiddenPeriod_shouldChoosePeriodThatE
 	envelope, _ := solutionCreator.Create(
 		nil,
 		ruleset,
+		nil,
 		nil,
 	)
 	solution := envelope.Solution()
@@ -607,6 +611,7 @@ func Test_forbiddenPeriod_withChangingDefaultColor(
 		nil,
 		ruleset,
 		&minute15,
+		nil,
 	)
 	solution := envelope.Solution()
 
@@ -650,6 +655,7 @@ func Test_forbiddenPeriod_givenSelectedItem_isOnlyAvailableInForbiddenPeriod(
 		},
 		ruleset,
 		nil,
+		nil,
 	)
 	solution := envelope.Solution()
 
@@ -684,6 +690,7 @@ func Test_forbiddenPeriod_givenRequiredItemOnlyAvailableInForbiddenPeriod_noSolu
 	_, err := solutionCreator.Create(
 		nil,
 		ruleset,
+		nil,
 		nil,
 	)
 

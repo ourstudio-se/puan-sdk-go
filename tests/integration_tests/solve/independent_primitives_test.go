@@ -13,7 +13,7 @@ func Test_givenNoFreeSelection_shouldGiveZeroValueFreeVariables(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -35,7 +35,7 @@ func Test_givenOneFreeSelection_shouldGiveSelectedFreeVariable(t *testing.T) {
 		puan.NewSelectionBuilder("independentItem1").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -58,7 +58,7 @@ func Test_givenAllFreeSelection_shouldGiveAllSelectedFreeVariable(t *testing.T) 
 		puan.NewSelectionBuilder("independentItem2").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -82,7 +82,7 @@ func Test_givenAllFreeSelectionAndDependantSelection_shouldGiveAllSelectedVariab
 		puan.NewSelectionBuilder("itemZ").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,

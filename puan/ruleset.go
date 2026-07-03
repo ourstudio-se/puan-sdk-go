@@ -234,6 +234,7 @@ func (r *Ruleset) copy() Ruleset {
 func (r *Ruleset) modifyForQuery(
 	selections Selections,
 	from *time.Time,
+	to *time.Time,
 ) (Ruleset, error) {
 	ruleset := r.copy()
 
@@ -247,6 +248,8 @@ func (r *Ruleset) modifyForQuery(
 			return Ruleset{}, err
 		}
 	}
+
+	// TODO: Support `to`
 
 	return ruleset, nil
 }

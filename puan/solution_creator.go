@@ -33,6 +33,7 @@ func (c *SolutionCreator) Create(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
+	to *time.Time,
 ) (SolutionEnvelope, error) {
 	err := validateSelections(selections, ruleset)
 	if err != nil {
@@ -43,6 +44,7 @@ func (c *SolutionCreator) Create(
 		selections,
 		ruleset,
 		from,
+		to,
 	)
 	if err != nil {
 		err = updateSolveError(err, ruleset, from)
@@ -58,6 +60,7 @@ func (c *SolutionCreator) calculateSolution(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
+	to *time.Time,
 ) (Solution, error) {
 	dependentSelections, independentSelections :=
 		categorizeSelections(selections, ruleset.independentVariables)
@@ -66,6 +69,7 @@ func (c *SolutionCreator) calculateSolution(
 		dependentSelections,
 		ruleset,
 		from,
+		to,
 	)
 	if err != nil {
 		return Solution{}, err
@@ -85,8 +89,9 @@ func (c *SolutionCreator) calculateDependentSolution(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
+	to *time.Time,
 ) (Solution, error) {
-	query, err := c.queryCreator.create(selections, ruleset, from)
+	query, err := c.queryCreator.create(selections, ruleset, from, to)
 	if err != nil {
 		return Solution{}, err
 	}
@@ -94,7 +99,7 @@ func (c *SolutionCreator) calculateDependentSolution(
 	tooLarge := query.weights.WeightsTooLarge()
 
 	if tooLarge {
-		return c.calculateSplitDependentSolution(selections, ruleset, from)
+		return c.calculateSplitDependentSolution(selections, ruleset, from, to)
 	}
 
 	solution, err := c.Solve(query)
@@ -119,6 +124,7 @@ func (c *SolutionCreator) calculateSplitDependentSolution(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
+	to *time.Time,
 ) (Solution, error) {
 	if len(selections) < 2 {
 		return Solution{},
@@ -127,7 +133,7 @@ func (c *SolutionCreator) calculateSplitDependentSolution(
 
 	remainingSelections, prioritisedSelections := selections.split()
 
-	prioritisedSolution, err := c.calculateDependentSolution(prioritisedSelections, ruleset, from)
+	prioritisedSolution, err := c.calculateDependentSolution(prioritisedSelections, ruleset, from, to)
 	if err != nil {
 		return Solution{}, err
 	}
@@ -141,7 +147,7 @@ func (c *SolutionCreator) calculateSplitDependentSolution(
 		return Solution{}, err
 	}
 
-	return c.calculateDependentSolution(remainingSelections, rulesetWithPrioritisedSolution, from)
+	return c.calculateDependentSolution(remainingSelections, rulesetWithPrioritisedSolution, from, to)
 }
 
 func (c *SolutionCreator) newRulesetWithAssumedSolution(
@@ -262,13 +268,14 @@ func (c *SolutionCreator) CreateSolutionsBySelection(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
+	to *time.Time,
 ) (SolutionsBySelectionEnvelope, error) {
 	err := validateSelections(selections, ruleset)
 	if err != nil {
 		return SolutionsBySelectionEnvelope{}, err
 	}
 
-	solutions, err := c.calculateSolutionsBySelection(selections, ruleset, from)
+	solutions, err := c.calculateSolutionsBySelection(selections, ruleset, from, to)
 	if err != nil {
 		err = updateSolveError(err, ruleset, from)
 		return SolutionsBySelectionEnvelope{}, err
@@ -281,6 +288,7 @@ func (c *SolutionCreator) calculateSolutionsBySelection(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
+	to *time.Time,
 ) ([]SolutionBySelection, error) {
 	dependantSelections, independentSelections :=
 		categorizeSelections(selections, ruleset.independentVariables)
@@ -289,6 +297,7 @@ func (c *SolutionCreator) calculateSolutionsBySelection(
 		dependantSelections,
 		ruleset,
 		from,
+		to,
 	)
 	if err != nil {
 		return nil, err
@@ -298,6 +307,7 @@ func (c *SolutionCreator) calculateSolutionsBySelection(
 		independentSelections,
 		ruleset,
 		from,
+		to,
 	)
 	if err != nil {
 		return nil, err
@@ -314,8 +324,9 @@ func (c *SolutionCreator) calculateDependentSolutionsBySelection(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
+	to *time.Time,
 ) ([]SolutionBySelection, error) {
-	query, err := c.queryCreator.newSolutionsBySelectionQuery(selections, ruleset, from)
+	query, err := c.queryCreator.newSolutionsBySelectionQuery(selections, ruleset, from, to)
 	if err != nil {
 		return nil, err
 	}
@@ -344,11 +355,13 @@ func (c *SolutionCreator) calculateIndependentSolutionsBySelection(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
+	to *time.Time,
 ) ([]SolutionBySelection, error) {
 	defaultSolution, err := c.calculateDependentSolution(
 		nil,
 		ruleset,
 		from,
+		to,
 	)
 	if err != nil {
 		return nil, err

@@ -73,8 +73,9 @@ func (c *queryCreator) create(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
+	to *time.Time,
 ) (*Query, error) {
-	preparedRuleset, err := ruleset.modifyForQuery(selections, from)
+	preparedRuleset, err := ruleset.modifyForQuery(selections, from, to)
 	if err != nil {
 		return nil, err
 	}
@@ -97,8 +98,9 @@ func (c *queryCreator) newSolutionsBySelectionQuery(
 	selections Selections,
 	ruleset Ruleset,
 	from *time.Time,
+	to *time.Time,
 ) (*MultiWeightQuery, error) {
-	preparedRuleset, err := ruleset.modifyForQuery(selections, from)
+	preparedRuleset, err := ruleset.modifyForQuery(selections, from, to)
 	if err != nil {
 		return nil, err
 	}

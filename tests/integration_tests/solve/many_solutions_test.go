@@ -47,7 +47,7 @@ func Test_CreateSolutionsBySelection_givenManyDependentSelections_shouldCreateSo
 		selections[i] = builder.Build()
 	}
 
-	solutions, _ := solutionCreator.CreateSolutionsBySelection(selections, ruleset, nil)
+	solutions, _ := solutionCreator.CreateSolutionsBySelection(selections, ruleset, nil, nil)
 
 	assert.Len(t, solutions.SolutionsBySelection(), len(primitives))
 	for _, selection := range selections {
@@ -86,7 +86,7 @@ func Test_CreateSolutionsBySelection_givenManyIndependentSelections_shouldCreate
 		selections[i] = puan.NewSelectionBuilder(primitive).Build()
 	}
 
-	solutions, _ := solutionCreator.CreateSolutionsBySelection(selections, ruleset, nil)
+	solutions, _ := solutionCreator.CreateSolutionsBySelection(selections, ruleset, nil, nil)
 
 	assert.Len(t, solutions.SolutionsBySelection(), len(primitives))
 	for _, selection := range selections {
@@ -138,7 +138,7 @@ func Test_CreateSolutionsBySelection_givenMixedSelections_shouldCreateSolutionFo
 
 	ruleset, _ := creator.Create()
 
-	solutions, _ := solutionCreator.CreateSolutionsBySelection(selections, ruleset, nil)
+	solutions, _ := solutionCreator.CreateSolutionsBySelection(selections, ruleset, nil, nil)
 
 	assert.Len(t, solutions.SolutionsBySelection(), len(primitives))
 	for _, selection := range selections {

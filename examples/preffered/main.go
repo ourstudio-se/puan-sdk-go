@@ -62,7 +62,7 @@ func main() {
 	solutionCreator := puan.NewSolutionCreator(solverClient)
 
 	// Create the solution
-	envelope, err := solutionCreator.Create(selections, ruleset, nil)
+	envelope, err := solutionCreator.Create(selections, ruleset, nil, nil)
 	if err != nil {
 		panic(err)
 	}

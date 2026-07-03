@@ -57,6 +57,7 @@ func main() {
 		nil,
 		ruleSet,
 		&inSecondPeriod,
+		nil,
 	)
 	if err != nil {
 		panic(err)

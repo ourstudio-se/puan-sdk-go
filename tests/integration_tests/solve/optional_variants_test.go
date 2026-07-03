@@ -20,7 +20,7 @@ func Test_optionalVariant_selectNotPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -46,7 +46,7 @@ func Test_optionalVariant_selectPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -73,7 +73,7 @@ func Test_optionalVariant_deselectingVariant_shouldGiveEmptySolution(t *testing.
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").WithAction(puan.REMOVE).Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -99,7 +99,7 @@ func Test_optionalVariant_changeVariant(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemX").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -125,7 +125,7 @@ func Test_optionalVariant_selectItemInAnotherVariant_shouldChangeVariant(t *test
 		puan.NewSelectionBuilder("itemY").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -145,7 +145,7 @@ func Test_optionalVariant_noSelection_shouldGiveEmptySolution(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	envelope, _ := solutionCreator.Create(selections, ruleset, nil)
+	envelope, _ := solutionCreator.Create(selections, ruleset, nil, nil)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
