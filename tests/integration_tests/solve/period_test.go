@@ -38,7 +38,8 @@ func Test_manyItemsIncludedInPeriod(t *testing.T) {
 
 	ruleset, _ := creator.Create()
 
-	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Ruleset: ruleset})
+	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
+	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
 	asserter := newSolutionAsserter(solution)
@@ -72,7 +73,8 @@ func Test_itemsIncludedInLaterPeriod_shouldChooseEarlierPeriod(t *testing.T) {
 
 	ruleset, _ := creator.Create()
 
-	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Ruleset: ruleset})
+	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
+	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
 	asserter := newSolutionAsserter(solution)
@@ -109,7 +111,8 @@ func Test_itemsIncludedInLaterPeriod_andFromInLaterPeriod_shouldChooseLaterPerio
 
 	from := startTime.Add(45 * time.Minute)
 
-	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Ruleset: ruleset, From: &from})
+	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).WithFrom(&from).Build()
+	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
 	asserter := newSolutionAsserter(solution)
@@ -148,7 +151,8 @@ func Test_itemsIncludedInLaterPeriod_andFromInEarlierPeriod_shouldChooseEarlierP
 
 	from := startTime.Add(15 * time.Minute)
 
-	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Ruleset: ruleset, From: &from})
+	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).WithFrom(&from).Build()
+	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
 	asserter := newSolutionAsserter(solution)
@@ -184,7 +188,8 @@ func Test_itemSelectableInPeriod_givenItemSelected_shouldChoosePeriod(t *testing
 		puan.NewSelectionBuilder("itemX").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Selections: selections, Ruleset: ruleset})
+	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -252,7 +257,8 @@ func Test_itemSelectableInPeriod_andManyItemsIncludedInThatPeriod_givenItemSelec
 		puan.NewSelectionBuilder("itemX").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Selections: selections, Ruleset: ruleset})
+	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
 	asserter := newSolutionAsserter(solution)
@@ -305,7 +311,8 @@ func Test_includedPackageInEarlierPeriod_withPreferred_shouldChooseEarlierPeriod
 
 	ruleset, _ := creator.Create()
 
-	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Ruleset: ruleset})
+	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
+	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
 	asserter := newSolutionAsserter(solution)
@@ -335,7 +342,8 @@ func Test_givenTimeEnabledWithoutTimeboundConstraints_andNoFromSpecified_shouldG
 
 	ruleset, _ := creator.Create()
 
-	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Ruleset: ruleset})
+	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
+	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
 	assert.Equal(
@@ -368,7 +376,8 @@ func Test_givenTimeEnabledWithoutTimeboundConstraints_andEarlyFromSpecified_shou
 	ruleset, _ := creator.Create()
 
 	beforeStart := startTime.Add(-1 * time.Hour)
-	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Ruleset: ruleset, From: &beforeStart})
+	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).WithFrom(&beforeStart).Build()
+	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
 	assert.Equal(
@@ -401,7 +410,8 @@ func Test_givenTimeEnabledWithoutTimeboundConstraints_andLateFromSpecified_shoul
 	ruleset, _ := creator.Create()
 
 	afterEnd := endTime.Add(1 * time.Hour)
-	_, err := solutionCreator.Create(puan.SolutionQuery{Ruleset: ruleset, From: &afterEnd})
+	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).WithFrom(&afterEnd).Build()
+	_, err := solutionCreator.Create(query)
 	assert.Error(t, err)
 }
 
@@ -435,13 +445,14 @@ func Test_givenXORWithManyConsequencesInFirstPeriod_selectExpensiveItem_shouldCh
 
 	ruleset, _ := creator.Create()
 
-	envelope, _ := solutionCreator.Create(puan.SolutionQuery{
-		Selections: puan.Selections{
+	query := puan.NewSolutionQueryBuilder().
+		WithSelections(puan.Selections{
 			puan.NewSelectionBuilder(item2).Build(),
-		},
-		Ruleset: ruleset,
-		From:    &startTime,
-	})
+		}).
+		WithRuleset(ruleset).
+		WithFrom(&startTime).
+		Build()
+	envelope, _ := solutionCreator.Create(query)
 
 	solution := envelope.Solution()
 
@@ -483,13 +494,14 @@ func Test_givenXORWithManyPreferredInFirstPeriod_selectNonPreferredItem_shouldCh
 
 	ruleset, _ := creator.Create()
 
-	envelope, _ := solutionCreator.Create(puan.SolutionQuery{
-		Selections: puan.Selections{
+	query := puan.NewSolutionQueryBuilder().
+		WithSelections(puan.Selections{
 			puan.NewSelectionBuilder(item1).Build(),
-		},
-		Ruleset: ruleset,
-		From:    &startTime,
-	})
+		}).
+		WithRuleset(ruleset).
+		WithFrom(&startTime).
+		Build()
+	envelope, _ := solutionCreator.Create(query)
 
 	solution := envelope.Solution()
 
@@ -520,10 +532,11 @@ func Test_forbiddenPeriod_givenFromInForbiddenPeriod_shouldChoosePeriodAfterForb
 
 	ruleset, _ := creator.Create()
 
-	envelope, _ := solutionCreator.Create(puan.SolutionQuery{
-		Ruleset: ruleset,
-		From:    &minute30,
-	})
+	query := puan.NewSolutionQueryBuilder().
+		WithRuleset(ruleset).
+		WithFrom(&minute30).
+		Build()
+	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
 	solverPeriod, _ := ruleset.FindPeriodInSolution(solution)
@@ -551,7 +564,8 @@ func Test_forbiddenPeriod_givenFromBeforeForbiddenPeriod_shouldChoosePeriodThatE
 
 	ruleset, _ := creator.Create()
 
-	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Ruleset: ruleset})
+	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
+	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
 	solverPeriod, _ := ruleset.FindPeriodInSolution(solution)
@@ -598,10 +612,11 @@ func Test_forbiddenPeriod_withChangingDefaultColor(
 
 	ruleset, _ := creator.Create()
 
-	envelope, _ := solutionCreator.Create(puan.SolutionQuery{
-		Ruleset: ruleset,
-		From:    &minute15,
-	})
+	query := puan.NewSolutionQueryBuilder().
+		WithRuleset(ruleset).
+		WithFrom(&minute15).
+		Build()
+	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
 	asserter := newSolutionAsserter(solution)
@@ -638,12 +653,13 @@ func Test_forbiddenPeriod_givenSelectedItem_isOnlyAvailableInForbiddenPeriod(
 
 	ruleset, _ := creator.Create()
 
-	envelope, _ := solutionCreator.Create(puan.SolutionQuery{
-		Selections: puan.Selections{
+	query := puan.NewSolutionQueryBuilder().
+		WithSelections(puan.Selections{
 			puan.NewSelectionBuilder("itemX").Build(),
-		},
-		Ruleset: ruleset,
-	})
+		}).
+		WithRuleset(ruleset).
+		Build()
+	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
 	asserter := newSolutionAsserter(solution)
@@ -674,7 +690,8 @@ func Test_forbiddenPeriod_givenRequiredItemOnlyAvailableInForbiddenPeriod_noSolu
 
 	ruleset, _ := creator.Create()
 
-	_, err := solutionCreator.Create(puan.SolutionQuery{Ruleset: ruleset})
+	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
+	_, err := solutionCreator.Create(query)
 
 	assert.Error(t, err)
 }
@@ -697,11 +714,12 @@ func Test_givenRequiredItemInEarlyPeriod_andAnotherInLatePeriod_fromAndToBetween
 
 	ruleset, _ := creator.Create()
 
-	envelope, err := solutionCreator.Create(puan.SolutionQuery{
-		Ruleset: ruleset,
-		From:    &minute20,
-		To:      &minute40,
-	})
+	query := puan.NewSolutionQueryBuilder().
+		WithRuleset(ruleset).
+		WithFrom(&minute20).
+		WithTo(&minute40).
+		Build()
+	envelope, err := solutionCreator.Create(query)
 
 	assert.NoError(t, err)
 	solution := envelope.Solution()

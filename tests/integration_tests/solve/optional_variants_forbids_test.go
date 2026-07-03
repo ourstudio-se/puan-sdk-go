@@ -31,7 +31,8 @@ func Test_optionalVariantsWithForbids_shouldReturnPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemC").WithSubSelectionID("itemD").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Selections: selections, Ruleset: ruleset})
+	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,
@@ -67,7 +68,8 @@ func Test_optionalVariantsWithForbids_shouldReturnNOTPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageX").WithSubSelectionID("itemA").WithSubSelectionID("itemB").Build(),
 	}
 
-	envelope, _ := solutionCreator.Create(puan.SolutionQuery{Selections: selections, Ruleset: ruleset})
+	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
 		t,

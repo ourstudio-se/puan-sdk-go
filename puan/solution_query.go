@@ -2,6 +2,13 @@ package puan
 
 import "time"
 
+type SolutionQuery struct {
+	Selections Selections
+	Ruleset    Ruleset
+	From       *time.Time
+	To         *time.Time
+}
+
 type SolutionQueryBuilder struct {
 	selections Selections
 	ruleset    Ruleset

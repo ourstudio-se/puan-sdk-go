@@ -87,7 +87,9 @@ func (c *queryCreator) create(query SolutionQuery) (*Query, error) {
 	return solverQuery, nil
 }
 
-func (c *queryCreator) newSolutionsBySelectionQuery(query SolutionQuery) (*MultiWeightQuery, error) {
+func (c *queryCreator) newSolutionsBySelectionQuery(
+	query SolutionQuery,
+) (*MultiWeightQuery, error) {
 	preparedRuleset, err := query.Ruleset.modifyForQuery(query.Selections, query.From, query.To)
 	if err != nil {
 		return nil, err

@@ -9,13 +9,6 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
-type SolutionQuery struct {
-	Selections Selections
-	Ruleset    Ruleset
-	From       *time.Time
-	To         *time.Time
-}
-
 type SolverClient interface {
 	Solve(query *Query) (Solution, error)
 	SolveWithManyWeights(query *MultiWeightQuery) ([]Solution, error)
@@ -331,11 +324,11 @@ func (c *SolutionCreator) calculateDependentSolutionsBySelection(
 func (c *SolutionCreator) calculateIndependentSolutionsBySelection(
 	query SolutionQuery,
 ) ([]SolutionBySelection, error) {
-	defaultQuery := SolutionQuery{
-		Ruleset: query.Ruleset,
-		From:    query.From,
-		To:      query.To,
-	}
+	defaultQuery := NewSolutionQueryBuilder().
+		WithRuleset(query.Ruleset).
+		WithFrom(query.From).
+		WithTo(query.To).
+		Build()
 	defaultSolution, err := c.calculateDependentSolution(defaultQuery)
 	if err != nil {
 		return nil, err
