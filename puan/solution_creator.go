@@ -82,7 +82,6 @@ func (c *SolutionCreator) calculateDependentSolution(
 	}
 
 	tooLarge := solverQuery.weights.WeightsTooLarge()
-
 	if tooLarge {
 		return c.calculateSplitDependentSolution(query)
 	}
@@ -384,6 +383,10 @@ func (c *SolutionCreator) calculateNextSolutionsForDependentVariables(
 		Build()
 	solverQuery, err := c.queryCreator.newNextSolutionsQuery(dependentQuery)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := solverQuery.validate(); err != nil {
 		return nil, err
 	}
 

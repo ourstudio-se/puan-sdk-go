@@ -1,6 +1,7 @@
 package puan
 
 import (
+	"github.com/go-errors/errors"
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
@@ -69,6 +70,18 @@ func (q *MultiWeightSolverQuery) Variables() []string {
 
 func (q *MultiWeightSolverQuery) WeightsBySelection() []WeightsForSelection {
 	return q.weightsBySelection
+}
+
+func (q *MultiWeightSolverQuery) validate() error {
+	for _, weightsForSelection := range q.weightsBySelection {
+		if weightsForSelection.Weights.WeightsTooLarge() {
+			return errors.Errorf(
+				"weights are too large for selection %v",
+				weightsForSelection.Selection,
+			)
+		}
+	}
+	return nil
 }
 
 type solverQueryCreator struct{}
