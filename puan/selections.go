@@ -162,6 +162,12 @@ func (s Selections) reverse() Selections {
 	return utils.Reverse(s)
 }
 
+func (selections Selections) copy() Selections {
+	newSelections := make(Selections, len(selections))
+	copy(newSelections, selections)
+	return newSelections
+}
+
 func (selectionsByPriority Selections) filterOutRedundant() Selections {
 	var filtered Selections
 	for _, selection := range selectionsByPriority {

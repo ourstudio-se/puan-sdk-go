@@ -2,6 +2,7 @@ package puan
 
 import (
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
+	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
 )
 
@@ -35,21 +36,26 @@ func (q *SolverQuery) Weights() weights.Weights {
 	return q.weights
 }
 
+type WeightsForSelection struct {
+	Selection Selection
+	Weights   weights.Weights
+}
+
 type MultiWeightSolverQuery struct {
-	polyhedron   *pldag.Polyhedron
-	variables    []string
-	weightGroups []weights.Weights
+	polyhedron         *pldag.Polyhedron
+	variables          []string
+	weightsBySelection []WeightsForSelection
 }
 
 func NewMultiWeightSolverQuery(
 	polyhedron *pldag.Polyhedron,
 	variables []string,
-	weightGroups []weights.Weights,
+	weightsBySelection []WeightsForSelection,
 ) *MultiWeightSolverQuery {
 	return &MultiWeightSolverQuery{
-		polyhedron:   polyhedron,
-		variables:    variables,
-		weightGroups: weightGroups,
+		polyhedron:         polyhedron,
+		variables:          variables,
+		weightsBySelection: weightsBySelection,
 	}
 }
 
@@ -61,8 +67,8 @@ func (q *MultiWeightSolverQuery) Variables() []string {
 	return q.variables
 }
 
-func (q *MultiWeightSolverQuery) WeightGroups() []weights.Weights {
-	return q.weightGroups
+func (q *MultiWeightSolverQuery) WeightsBySelection() []WeightsForSelection {
+	return q.weightsBySelection
 }
 
 type solverQueryCreator struct{}
@@ -116,19 +122,23 @@ func (c *solverQueryCreator) newSolutionsBySelectionQuery(
 func (c *solverQueryCreator) calculateWeightsForSolutionsBySelection(
 	ruleset Ruleset,
 	selections Selections,
-) ([]weights.Weights, error) {
-	weightsBySelection := make([]weights.Weights, len(selections))
+) ([]WeightsForSelection, error) {
+	weightGroups := make([]WeightsForSelection, len(selections))
 	for i, selection := range selections {
-		modifiedSelections := Selections{selection}.prepareForQuery()
+		modifiedSelections := Selections{selection}
 
 		weights, err := newWeights(ruleset, modifiedSelections)
 		if err != nil {
 			return nil, err
 		}
-		weightsBySelection[i] = weights
+		weightsForSelection := WeightsForSelection{
+			Selection: selection,
+			Weights:   weights,
+		}
+		weightGroups[i] = weightsForSelection
 	}
 
-	return weightsBySelection, nil
+	return weightGroups, nil
 }
 
 func newWeights(
@@ -155,4 +165,73 @@ func newWeights(
 	}
 
 	return weights, nil
+}
+
+func (c *solverQueryCreator) newNextSolutionsQuery(
+	query SolutionQuery,
+) (*MultiWeightSolverQuery, error) {
+	preparedRuleset, err := query.ruleset.modifyForQuery(query.selections, query.from, query.to)
+	if err != nil {
+		return nil, err
+	}
+
+	weightGroups, err := c.calculateNextWeightGroups(preparedRuleset, query.selections)
+	if err != nil {
+		return nil, err
+	}
+
+	solverQuery := NewMultiWeightSolverQuery(
+		preparedRuleset.polyhedron,
+		preparedRuleset.dependentVariables,
+		weightGroups,
+	)
+
+	return solverQuery, nil
+}
+
+func (c *solverQueryCreator) calculateNextWeightGroups(
+	ruleset Ruleset,
+	selections Selections,
+) ([]WeightsForSelection, error) {
+	selectableVariables := ruleset.dependentSelectableVariables()
+
+	weightGroups := make([]WeightsForSelection, len(selectableVariables))
+	for i, variable := range selectableVariables {
+		weightsForSelection, err := c.calculateNextWeights(ruleset, selections, variable)
+		if err != nil {
+			return nil, err
+		}
+		weightGroups[i] = weightsForSelection
+	}
+
+	return weightGroups, nil
+}
+
+func (c *solverQueryCreator) calculateNextWeights(
+	ruleset Ruleset,
+	selections Selections,
+	variable string,
+) (WeightsForSelection, error) {
+	newSelections := selections.copy()
+
+	selectionBuilder := NewSelectionBuilder(variable)
+	isSelected := utils.Contains(newSelections.ids(), variable)
+	if isSelected {
+		selectionBuilder.WithAction(REMOVE)
+	}
+	selection := selectionBuilder.Build()
+
+	newSelections = append(newSelections, selection)
+
+	newSelections = newSelections.prepareForQuery()
+
+	weights, err := newWeights(ruleset, newSelections)
+	if err != nil {
+		return WeightsForSelection{}, err
+	}
+
+	return WeightsForSelection{
+		Selection: selection,
+		Weights:   weights,
+	}, nil
 }

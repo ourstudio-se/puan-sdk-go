@@ -6,7 +6,6 @@ import (
 	"github.com/go-errors/errors"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
-	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
 	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
@@ -351,12 +350,12 @@ func (c *SolutionCreator) CreateNextSolutions(
 func (c *SolutionCreator) createNextSolutions(
 	query SolutionQuery,
 ) ([]SolutionBySelection, error) {
-	dependentSolutions, err := c.calculateNextDependentSolutions(query)
+	dependentSolutions, err := c.calculateNextSolutionsForDependentVariables(query)
 	if err != nil {
 		return nil, err
 	}
 
-	independentSolutions, err := c.calculateNextIndependentSolutions(query)
+	independentSolutions, err := c.calculateNextSolutionsForIndependentVariables(query)
 	if err != nil {
 		return nil, err
 	}
@@ -368,118 +367,67 @@ func (c *SolutionCreator) createNextSolutions(
 	return solutions, nil
 }
 
-func (c *SolutionCreator) calculateNextDependentSolutions(
+func (c *SolutionCreator) calculateNextSolutionsForDependentVariables(
 	query SolutionQuery,
 ) ([]SolutionBySelection, error) {
 	dependentSelections, independentSelections :=
 		categorizeSelections(query.selections, query.ruleset.independentVariables)
-
-	preparedRuleset, err := query.ruleset.modifyForQuery(
-		dependentSelections,
-		query.from,
-		query.to,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	type SelectionWithWeights struct {
-		selection Selection
-		weights   weights.Weights
-	}
-
-	selectableVariables := preparedRuleset.dependentSelectableVariables()
-	selectionWithWeights := make([]SelectionWithWeights, len(selectableVariables))
-	for i, variable := range selectableVariables {
-		newSelections := make(Selections, len(dependentSelections))
-		copy(newSelections, dependentSelections)
-
-		selectionBuilder := NewSelectionBuilder(variable)
-		isSelected := utils.Contains(newSelections.ids(), variable)
-		if isSelected {
-			selectionBuilder.WithAction(REMOVE)
-		}
-		selection := selectionBuilder.Build()
-		newSelections = append(newSelections, selection)
-
-		newSelections = newSelections.prepareForQuery()
-
-		weights, err := newWeights(preparedRuleset, newSelections)
-		if err != nil {
-			return nil, err
-		}
-		selectionWithWeights[i] = SelectionWithWeights{
-			selection: selection,
-			weights:   weights,
-		}
-	}
-
-	weightGroups := make([]weights.Weights, len(selectionWithWeights))
-	for i, selectionWithWeight := range selectionWithWeights {
-		weightGroups[i] = selectionWithWeight.weights
-	}
-
-	solverQuery := NewMultiWeightSolverQuery(
-		preparedRuleset.polyhedron,
-		preparedRuleset.dependentVariables,
-		weightGroups,
-	)
-
-	solutions, err := c.SolveWithManyWeights(solverQuery)
-	if err != nil {
-		return nil, err
-	}
 
 	independentSolution := calculateIndependentSolution(
 		query.ruleset.independentVariables,
 		independentSelections,
 	)
 
+	dependentQuery := NewSolutionQueryBuilder().
+		fromQuery(query).
+		WithSelections(dependentSelections).
+		Build()
+	solverQuery, err := c.queryCreator.newNextSolutionsQuery(dependentQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	dependentSolutions, err := c.SolveWithManyWeights(solverQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	solutions := make([]Solution, len(dependentSolutions))
+	for i := range dependentSolutions {
+		solutions[i] = dependentSolutions[i].merge(independentSolution)
+	}
+
 	primitiveSolutions := query.ruleset.RemoveSupportVariablesForMany(solutions)
 
-	solutionsBySelection := make([]SolutionBySelection, len(solutions))
-	for i := range primitiveSolutions {
-		selectionWithWeight := selectionWithWeights[i]
-		selection := selectionWithWeight.selection
-		solution := primitiveSolutions[i].merge(independentSolution)
-		solutionsBySelection[i] = SolutionBySelection{
+	solutionsBySelection := make([]SolutionBySelection, len(primitiveSolutions))
+	for i, solution := range primitiveSolutions {
+		weightsForSelection := solverQuery.WeightsBySelection()[i]
+		selection := weightsForSelection.Selection
+
+		solutionBySelection := SolutionBySelection{
 			selection: selection,
 			solution:  solution,
 		}
+		solutionsBySelection[i] = solutionBySelection
 	}
 
 	return solutionsBySelection, nil
 }
 
-func (c *SolutionCreator) calculateNextIndependentSolutions(
+func (c *SolutionCreator) calculateNextSolutionsForIndependentVariables(
 	query SolutionQuery,
 ) ([]SolutionBySelection, error) {
-	dependentSelections, independentSelections :=
-		categorizeSelections(query.selections, query.ruleset.independentVariables)
-
-	dependentQuery := NewSolutionQueryBuilder().
-		fromQuery(query).
-		WithSelections(dependentSelections).
-		Build()
-	defaultDependentSolution, err := c.calculateDependentSolution(dependentQuery)
+	defaultSolution, err := c.calculateSolution(query)
 	if err != nil {
 		return nil, err
 	}
-
-	independentDefaultSolution := calculateIndependentSolution(
-		query.ruleset.independentVariables,
-		independentSelections,
-	)
-
-	defaultSolution := defaultDependentSolution.merge(independentDefaultSolution)
 
 	independentVariables := query.ruleset.independentVariables
 
 	solutions := make([]SolutionBySelection, len(independentVariables))
 	for i, variable := range independentVariables {
-		selection := Selection{id: variable}
 		solution := defaultSolution.copy()
-
+		selection := Selection{id: variable}
 		isSelected := utils.Contains(query.selections.ids(), variable)
 		if isSelected {
 			solution[variable] = 0

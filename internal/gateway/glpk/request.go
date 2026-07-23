@@ -24,9 +24,9 @@ func newSolveRequestFromQuery(
 func newSolveRequestFromMultiQuery(
 	query *puan.MultiWeightSolverQuery,
 ) SolveRequest {
-	objectives := make([]Objective, len(query.WeightGroups()))
-	for i, group := range query.WeightGroups() {
-		objectives[i] = Objective(group)
+	objectives := make([]Objective, len(query.WeightsBySelection()))
+	for i, group := range query.WeightsBySelection() {
+		objectives[i] = Objective(group.Weights)
 	}
 
 	request := newSolveRequest(

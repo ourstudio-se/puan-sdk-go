@@ -110,7 +110,7 @@ func (c *Client) SolveWithManyWeights(
 		return nil, err
 	}
 
-	wantCount := len(query.WeightGroups())
+	wantCount := len(query.WeightsBySelection())
 	solutions, err := response.getManySolutions(wantCount)
 	if err != nil {
 		return nil, err
