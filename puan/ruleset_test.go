@@ -505,3 +505,26 @@ func Test_RuleSet_isValidFromTime(t *testing.T) {
 		})
 	}
 }
+
+func Test_Ruleset_CategorizeSelections(t *testing.T) {
+	independentID := fake.New[string]()
+	dependentID := fake.New[string]()
+
+	selections := Selections{
+		NewSelectionBuilder(independentID).Build(),
+		NewSelectionBuilder(dependentID).Build(),
+	}
+
+	ruleset := Ruleset{
+		independentVariables: []string{independentID},
+	}
+
+	dependentSelections, independentSelections :=
+		ruleset.CategorizeSelections(selections)
+
+	assert.Len(t, dependentSelections, 1)
+	assert.Equal(t, dependentID, dependentSelections[0].id)
+
+	assert.Len(t, independentSelections, 1)
+	assert.Equal(t, independentID, independentSelections[0].id)
+}

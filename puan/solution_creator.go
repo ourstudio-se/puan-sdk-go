@@ -5,7 +5,6 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
@@ -52,7 +51,7 @@ func (c *SolutionCreator) calculateSolution(
 	query SolutionQuery,
 ) (Solution, error) {
 	dependentSelections, independentSelections :=
-		categorizeSelections(query.selections, query.ruleset.independentVariables)
+		query.ruleset.CategorizeSelections(query.selections)
 
 	dependentQuery := NewSolutionQueryBuilder().
 		fromQuery(query).
@@ -190,25 +189,6 @@ func independentSolutionValue(variableID string, selections Selections) int {
 	return 0
 }
 
-func categorizeSelections(
-	selections Selections,
-	independentVariables []string,
-) (Selections, Selections) {
-	var dependantSelections Selections
-	var independentSelections Selections
-
-	for _, selection := range selections {
-		isIndependent := utils.Contains(independentVariables, selection.id)
-		if isIndependent {
-			independentSelections = append(independentSelections, selection)
-		} else {
-			dependantSelections = append(dependantSelections, selection)
-		}
-	}
-
-	return dependantSelections, independentSelections
-}
-
 func updateSolveError(
 	err error,
 	ruleset Ruleset,
@@ -250,7 +230,7 @@ func (c *SolutionCreator) calculateSolutionsBySelection(
 	query SolutionQuery,
 ) ([]SolutionBySelection, error) {
 	dependantSelections, independentSelections :=
-		categorizeSelections(query.selections, query.ruleset.independentVariables)
+		query.ruleset.CategorizeSelections(query.selections)
 
 	dependentQuery := NewSolutionQueryBuilder().
 		fromQuery(query).
@@ -337,7 +317,7 @@ func (c *SolutionCreator) CreateNextSolutions(
 		return SolutionsBySelectionEnvelope{}, err
 	}
 
-	solutions, err := c.createNextSolutions2(query)
+	solutions, err := c.createNextSolutions(query)
 	if err != nil {
 		err = updateSolveError(err, query.ruleset, query.from)
 		return SolutionsBySelectionEnvelope{}, err
@@ -346,15 +326,15 @@ func (c *SolutionCreator) CreateNextSolutions(
 	return NewSolutionsBySelectionEnvelope(solutions)
 }
 
-func (c *SolutionCreator) createNextSolutions2(
+func (c *SolutionCreator) createNextSolutions(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
-	dependentSolutions, err := c.calculateNextSolutionsForDependentVariables2(query)
+	dependentSolutions, err := c.calculateNextSolutionsForDependentVariables(query)
 	if err != nil {
 		return nil, err
 	}
 
-	independentSolutions, err := c.calculateNextSolutionsForIndependentVariables2(query)
+	independentSolutions, err := c.calculateNextSolutionsForIndependentVariables(query)
 	if err != nil {
 		return nil, err
 	}
@@ -366,23 +346,15 @@ func (c *SolutionCreator) createNextSolutions2(
 	return solutions, nil
 }
 
-func (c *SolutionCreator) calculateNextSolutionsForDependentVariables2(
+func (c *SolutionCreator) calculateNextSolutionsForDependentVariables(
 	nextQuery NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
 	currentDependentSelections, currentIndependentSelections :=
-		categorizeSelections(nextQuery.currentSelections, nextQuery.ruleset.independentVariables)
+		nextQuery.ruleset.CategorizeSelections(nextQuery.currentSelections)
 
-	currentIndependentSolution := calculateIndependentSolution(
-		nextQuery.ruleset.independentVariables,
-		currentIndependentSelections,
-	)
+	nextDependentSelections, _ := nextQuery.ruleset.CategorizeSelections(nextQuery.nextSelections)
 
-	nextDependentSelections, _ := categorizeSelections(
-		nextQuery.nextSelections,
-		nextQuery.ruleset.independentVariables,
-	)
-
-	solverQuery, err := c.queryCreator.newNextSolutionsQuery2(
+	solverQuery, err := c.queryCreator.newNextSolutionsQuery(
 		currentDependentSelections,
 		nextDependentSelections,
 		nextQuery.ruleset,
@@ -401,6 +373,11 @@ func (c *SolutionCreator) calculateNextSolutionsForDependentVariables2(
 	if err != nil {
 		return nil, err
 	}
+
+	currentIndependentSolution := calculateIndependentSolution(
+		nextQuery.ruleset.independentVariables,
+		currentIndependentSelections,
+	)
 
 	solutions := make([]Solution, len(dependentSolutions))
 	for i := range dependentSolutions {
@@ -424,7 +401,7 @@ func (c *SolutionCreator) calculateNextSolutionsForDependentVariables2(
 	return solutionsBySelection, nil
 }
 
-func (c *SolutionCreator) calculateNextSolutionsForIndependentVariables2(
+func (c *SolutionCreator) calculateNextSolutionsForIndependentVariables(
 	nextQuery NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
 	currentQuery := NewSolutionQueryBuilder().
@@ -438,9 +415,8 @@ func (c *SolutionCreator) calculateNextSolutionsForIndependentVariables2(
 		return nil, err
 	}
 
-	_, nextIndependentSelections := categorizeSelections(
+	_, nextIndependentSelections := nextQuery.ruleset.CategorizeSelections(
 		nextQuery.nextSelections,
-		nextQuery.ruleset.independentVariables,
 	)
 
 	nextSolutions := make([]SolutionBySelection, len(nextIndependentSelections))

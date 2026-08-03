@@ -472,3 +472,19 @@ func (r *Ruleset) isValidFromTime(from *time.Time) bool {
 func (r *Ruleset) timeDisabled() bool {
 	return len(r.periodVariables) == 0
 }
+
+func (r *Ruleset) CategorizeSelections(selections Selections) (Selections, Selections) {
+	var dependantSelections Selections
+	var independentSelections Selections
+
+	for _, selection := range selections {
+		isIndependent := utils.Contains(r.independentVariables, selection.id)
+		if isIndependent {
+			independentSelections = append(independentSelections, selection)
+		} else {
+			dependantSelections = append(dependantSelections, selection)
+		}
+	}
+
+	return dependantSelections, independentSelections
+}

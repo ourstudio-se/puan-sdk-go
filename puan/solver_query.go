@@ -181,7 +181,7 @@ func newWeights(
 	return weights, nil
 }
 
-func (c *solverQueryCreator) newNextSolutionsQuery2(
+func (c *solverQueryCreator) newNextSolutionsQuery(
 	currentSelections Selections,
 	nextSelections Selections,
 	ruleset Ruleset,
