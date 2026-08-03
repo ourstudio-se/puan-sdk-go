@@ -1,6 +1,7 @@
 package puan
 
 import (
+	"slices"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -175,14 +176,9 @@ func calculateIndependentSolution(independentVariables []string, selections Sele
 
 func independentSolutionValue(variableID string, selections Selections) int {
 	// reverse loop for prioritizing the latest selection action
-	for i := len(selections) - 1; i >= 0; i-- {
-		selection := selections[i]
+	for _, selection := range slices.Backward(selections) {
 		if selection.id == variableID {
-			if selection.action == ADD {
-				return 1
-			}
-
-			return 0
+			return selection.action.asInt()
 		}
 	}
 
@@ -297,16 +293,12 @@ func (c *SolutionCreator) calculateIndependentSolutionsBySelection(
 		return nil, err
 	}
 
-	solutionsBySelection := make([]SolutionBySelection, len(query.selections))
-	for i, selection := range query.selections {
-		solution := defaultSolution.withSelection(selection.id)
-		solutionsBySelection[i] = SolutionBySelection{
-			selection: selection,
-			solution:  solution,
-		}
-	}
+	solutions := c.calculateManyIndependentSolutions(
+		defaultSolution,
+		query.selections,
+	)
 
-	return solutionsBySelection, nil
+	return solutions, nil
 }
 
 func (c *SolutionCreator) CreateNextSolutions(
@@ -329,38 +321,39 @@ func (c *SolutionCreator) CreateNextSolutions(
 func (c *SolutionCreator) createNextSolutions(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
-	dependentSolutions, err := c.calculateNextSolutionsForDependentVariables(query)
+	solutionsForDependentSelections, err := c.calculateNextSolutionsForDependentSelections(query)
 	if err != nil {
 		return nil, err
 	}
 
-	independentSolutions, err := c.calculateNextSolutionsForIndependentVariables(query)
+	solutionsForIndependentSelections, err := c.calculateNextSolutionsForIndependentSelections(query)
 	if err != nil {
 		return nil, err
 	}
 
 	var solutions []SolutionBySelection
-	solutions = append(solutions, dependentSolutions...)
-	solutions = append(solutions, independentSolutions...)
+	solutions = append(solutions, solutionsForDependentSelections...)
+	solutions = append(solutions, solutionsForIndependentSelections...)
 
 	return solutions, nil
 }
 
-func (c *SolutionCreator) calculateNextSolutionsForDependentVariables(
-	nextQuery NextSolutionsQuery,
+func (c *SolutionCreator) calculateNextSolutionsForDependentSelections(
+	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
 	currentDependentSelections, currentIndependentSelections :=
-		nextQuery.ruleset.CategorizeSelections(nextQuery.currentSelections)
+		query.ruleset.CategorizeSelections(query.currentSelections)
 
-	nextDependentSelections, _ := nextQuery.ruleset.CategorizeSelections(nextQuery.nextSelections)
+	nextDependentSelections, _ := query.ruleset.CategorizeSelections(query.nextSelections)
 
-	solverQuery, err := c.queryCreator.newNextSolutionsQuery(
+	dependentQuery := NewNextSolutionsQuery(
 		currentDependentSelections,
 		nextDependentSelections,
-		nextQuery.ruleset,
-		nextQuery.from,
-		nextQuery.to,
+		query.ruleset,
+		query.from,
+		query.to,
 	)
+	solverQuery, err := c.queryCreator.newNextSolutionsQuery(dependentQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +368,7 @@ func (c *SolutionCreator) calculateNextSolutionsForDependentVariables(
 	}
 
 	currentIndependentSolution := calculateIndependentSolution(
-		nextQuery.ruleset.independentVariables,
+		query.ruleset.independentVariables,
 		currentIndependentSelections,
 	)
 
@@ -384,12 +377,34 @@ func (c *SolutionCreator) calculateNextSolutionsForDependentVariables(
 		solutions[i] = dependentSolutions[i].merge(currentIndependentSolution)
 	}
 
-	primitiveSolutions := nextQuery.ruleset.RemoveSupportVariablesForMany(solutions)
+	primitiveSolutions := query.ruleset.RemoveSupportVariablesForMany(solutions)
 
-	solutionsBySelection := make([]SolutionBySelection, len(primitiveSolutions))
-	for i, solution := range primitiveSolutions {
-		weightsForSelection := solverQuery.WeightsBySelection()[i]
-		selection := weightsForSelection.Selection
+	solutionsBySelection, err := c.groupSolutionsBySelection(
+		primitiveSolutions,
+		nextDependentSelections,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return solutionsBySelection, nil
+}
+
+func (c *SolutionCreator) groupSolutionsBySelection(
+	solutions []Solution,
+	selections Selections,
+) ([]SolutionBySelection, error) {
+	if len(solutions) != len(selections) {
+		return nil, errors.Errorf(
+			"Expected amount of solutions and selections to match. Got %d and %d",
+			len(solutions),
+			len(selections),
+		)
+	}
+
+	solutionsBySelection := make([]SolutionBySelection, len(solutions))
+	for i, solution := range solutions {
+		selection := selections[i]
 
 		solutionBySelection := SolutionBySelection{
 			selection: selection,
@@ -401,39 +416,44 @@ func (c *SolutionCreator) calculateNextSolutionsForDependentVariables(
 	return solutionsBySelection, nil
 }
 
-func (c *SolutionCreator) calculateNextSolutionsForIndependentVariables(
-	nextQuery NextSolutionsQuery,
+func (c *SolutionCreator) calculateNextSolutionsForIndependentSelections(
+	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
 	currentQuery := NewSolutionQueryBuilder().
-		WithRuleset(nextQuery.ruleset).
-		WithFrom(nextQuery.from).
-		WithTo(nextQuery.to).
-		WithSelections(nextQuery.currentSelections).
+		WithRuleset(query.ruleset).
+		WithFrom(query.from).
+		WithTo(query.to).
+		WithSelections(query.currentSelections).
 		Build()
 	currentSolution, err := c.calculateSolution(currentQuery)
 	if err != nil {
 		return nil, err
 	}
 
-	_, nextIndependentSelections := nextQuery.ruleset.CategorizeSelections(
-		nextQuery.nextSelections,
+	_, nextIndependentSelections := query.ruleset.CategorizeSelections(
+		query.nextSelections,
 	)
 
-	nextSolutions := make([]SolutionBySelection, len(nextIndependentSelections))
-	for i, nextSelection := range nextIndependentSelections {
-		solution := currentSolution.copy()
-		if nextSelection.action == ADD {
-			solution[nextSelection.id] = 1
-		} else {
-			solution[nextSelection.id] = 0
-		}
-
-		solutionBySelection := SolutionBySelection{
-			selection: nextSelection,
-			solution:  solution,
-		}
-		nextSolutions[i] = solutionBySelection
-	}
+	nextSolutions := c.calculateManyIndependentSolutions(
+		currentSolution,
+		nextIndependentSelections,
+	)
 
 	return nextSolutions, nil
+}
+
+func (c *SolutionCreator) calculateManyIndependentSolutions(
+	solution Solution,
+	selections Selections,
+) []SolutionBySelection {
+	solutions := make([]SolutionBySelection, len(selections))
+	for i, selection := range selections {
+		solution := solution.copy()
+		solution[selection.id] = selection.action.asInt()
+		solutions[i] = SolutionBySelection{
+			selection: selection,
+			solution:  solution,
+		}
+	}
+	return solutions
 }

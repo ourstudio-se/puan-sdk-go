@@ -14,6 +14,13 @@ const (
 
 type Action string
 
+func (a Action) asInt() int {
+	if a == ADD {
+		return 1
+	}
+	return 0
+}
+
 type Selection struct {
 	id              string
 	subSelectionIDs []string

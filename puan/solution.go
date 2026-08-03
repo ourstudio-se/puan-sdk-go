@@ -32,13 +32,6 @@ func (s Solution) copy() Solution {
 	return copied
 }
 
-func (s Solution) withSelection(variableID string) Solution {
-	newSolution := s.copy()
-	newSolution.merge(Solution{variableID: 1})
-
-	return newSolution
-}
-
 func (s Solution) isSelected(variableID string) bool {
 	return s[variableID] == 1
 }

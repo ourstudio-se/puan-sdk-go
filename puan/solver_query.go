@@ -1,8 +1,6 @@
 package puan
 
 import (
-	"time"
-
 	"github.com/go-errors/errors"
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
@@ -182,25 +180,25 @@ func newWeights(
 }
 
 func (c *solverQueryCreator) newNextSolutionsQuery(
-	currentSelections Selections,
-	nextSelections Selections,
-	ruleset Ruleset,
-	from *time.Time,
-	to *time.Time,
+	query NextSolutionsQuery,
 ) (*MultiWeightSolverQuery, error) {
-	preparedRuleset, err := ruleset.modifyForQuery(currentSelections, from, to)
+	preparedRuleset, err := query.ruleset.modifyForQuery(
+		query.currentSelections,
+		query.from,
+		query.to,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := preparedRuleset.setCompositeSelectionConstraints(nextSelections); err != nil {
+	if err := preparedRuleset.setCompositeSelectionConstraints(query.nextSelections); err != nil {
 		return nil, err
 	}
 
-	weightGroups, err := c.calculateNextWeightGroups2(
+	weightGroups, err := c.calculateNextWeightGroups(
 		preparedRuleset,
-		currentSelections,
-		nextSelections,
+		query.currentSelections,
+		query.nextSelections,
 	)
 	if err != nil {
 		return nil, err
@@ -215,14 +213,14 @@ func (c *solverQueryCreator) newNextSolutionsQuery(
 	return solverQuery, nil
 }
 
-func (c *solverQueryCreator) calculateNextWeightGroups2(
+func (c *solverQueryCreator) calculateNextWeightGroups(
 	ruleset Ruleset,
 	currentSelections Selections,
 	nextSelections Selections,
 ) ([]WeightsForSelection, error) {
 	weightGroups := make([]WeightsForSelection, len(nextSelections))
 	for i, nextSelection := range nextSelections {
-		weightsForSelection, err := c.calculateNextWeights2(ruleset, currentSelections, nextSelection)
+		weightsForSelection, err := c.calculateNextWeights(ruleset, currentSelections, nextSelection)
 		if err != nil {
 			return nil, err
 		}
@@ -232,7 +230,7 @@ func (c *solverQueryCreator) calculateNextWeightGroups2(
 	return weightGroups, nil
 }
 
-func (c *solverQueryCreator) calculateNextWeights2(
+func (c *solverQueryCreator) calculateNextWeights(
 	ruleset Ruleset,
 	currentSelections Selections,
 	nextSelection Selection,
