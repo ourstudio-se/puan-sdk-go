@@ -1,6 +1,7 @@
 package puan
 
 import (
+	"slices"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -487,4 +488,24 @@ func (r *Ruleset) CategorizeSelections(selections Selections) (Selections, Selec
 	}
 
 	return dependantSelections, independentSelections
+}
+
+func (r *Ruleset) calculateIndependentSolution(selections Selections) Solution {
+	solution := make(Solution, len(r.independentVariables))
+	for _, variable := range r.independentVariables {
+		solution[variable] = independentSolutionValue(variable, selections)
+	}
+
+	return solution
+}
+
+func independentSolutionValue(variableID string, selections Selections) int {
+	// reverse loop for prioritizing the latest selection action
+	for _, selection := range slices.Backward(selections) {
+		if selection.id == variableID {
+			return selection.action.asInt()
+		}
+	}
+
+	return 0
 }

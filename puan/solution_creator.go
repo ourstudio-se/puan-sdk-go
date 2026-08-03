@@ -1,7 +1,6 @@
 package puan
 
 import (
-	"slices"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -63,10 +62,7 @@ func (c *SolutionCreator) calculateSolution(
 		return Solution{}, err
 	}
 
-	independentSolution := calculateIndependentSolution(
-		query.ruleset.independentVariables,
-		independentSelections,
-	)
+	independentSolution := query.ruleset.calculateIndependentSolution(independentSelections)
 
 	solution := dependentSolution.merge(independentSolution)
 
@@ -165,26 +161,6 @@ func (c *SolutionCreator) newRulesetWithAssumedSolution(
 	return newRuleset, nil
 }
 
-func calculateIndependentSolution(independentVariables []string, selections Selections) Solution {
-	solution := make(Solution, len(independentVariables))
-	for _, variable := range independentVariables {
-		solution[variable] = independentSolutionValue(variable, selections)
-	}
-
-	return solution
-}
-
-func independentSolutionValue(variableID string, selections Selections) int {
-	// reverse loop for prioritizing the latest selection action
-	for _, selection := range slices.Backward(selections) {
-		if selection.id == variableID {
-			return selection.action.asInt()
-		}
-	}
-
-	return 0
-}
-
 func updateSolveError(
 	err error,
 	ruleset Ruleset,
@@ -268,14 +244,12 @@ func (c *SolutionCreator) calculateDependentSolutionsBySelection(
 
 	primitiveSolutions := query.ruleset.RemoveSupportVariablesForMany(solutions)
 
-	solutionsBySelection := make([]SolutionBySelection, len(solutions))
-	for i := range primitiveSolutions {
-		selection := query.selections[i]
-		solution := primitiveSolutions[i]
-		solutionsBySelection[i] = SolutionBySelection{
-			selection: selection,
-			solution:  solution,
-		}
+	solutionsBySelection, err := c.groupSolutionsBySelection(
+		primitiveSolutions,
+		query.selections,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	return solutionsBySelection, nil
@@ -353,7 +327,35 @@ func (c *SolutionCreator) calculateNextSolutionsForDependentSelections(
 		query.from,
 		query.to,
 	)
-	solverQuery, err := c.queryCreator.newNextSolutionsQuery(dependentQuery)
+	nextDependentSolutions, err := c.calculateNextDependentSolutions(dependentQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	currentIndependentSolution := query.ruleset.calculateIndependentSolution(
+		currentIndependentSelections,
+	)
+
+	nextSolutions := make([]Solution, len(nextDependentSolutions))
+	for i := range nextDependentSolutions {
+		nextSolutions[i] = nextDependentSolutions[i].merge(currentIndependentSolution)
+	}
+
+	solutionsBySelection, err := c.groupSolutionsBySelection(
+		nextDependentSolutions,
+		nextDependentSelections,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return solutionsBySelection, nil
+}
+
+func (c *SolutionCreator) calculateNextDependentSolutions(
+	query NextSolutionsQuery,
+) ([]Solution, error) {
+	solverQuery, err := c.queryCreator.newNextSolutionsQuery(query)
 	if err != nil {
 		return nil, err
 	}
@@ -367,27 +369,8 @@ func (c *SolutionCreator) calculateNextSolutionsForDependentSelections(
 		return nil, err
 	}
 
-	currentIndependentSolution := calculateIndependentSolution(
-		query.ruleset.independentVariables,
-		currentIndependentSelections,
-	)
-
-	solutions := make([]Solution, len(dependentSolutions))
-	for i := range dependentSolutions {
-		solutions[i] = dependentSolutions[i].merge(currentIndependentSolution)
-	}
-
-	primitiveSolutions := query.ruleset.RemoveSupportVariablesForMany(solutions)
-
-	solutionsBySelection, err := c.groupSolutionsBySelection(
-		primitiveSolutions,
-		nextDependentSelections,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return solutionsBySelection, nil
+	primitiveSolutions := query.ruleset.RemoveSupportVariablesForMany(dependentSolutions)
+	return primitiveSolutions, nil
 }
 
 func (c *SolutionCreator) groupSolutionsBySelection(
