@@ -34,9 +34,14 @@ func main() {
 		panic(err)
 	}
 
-	// Custom selections, which in this specific case will override the preferred variable z
-	selections := puan.Selections{
+	// Custom currentSelections, which in this specific case will override the preferred variable z
+	currentSelections := puan.Selections{
 		puan.NewSelectionBuilder("y").Build(),
+	}
+	nextSelections := puan.Selections{
+		puan.NewSelectionBuilder("x").Build(),
+		puan.NewSelectionBuilder("y").WithAction(puan.REMOVE).Build(),
+		puan.NewSelectionBuilder("z").Build(),
 	}
 
 	// Create a solution creator with a solver client
@@ -44,11 +49,14 @@ func main() {
 	solutionCreator := puan.NewSolutionCreator(solverClient)
 
 	// Create the solution
-	query := puan.NewSolutionQueryBuilder().
-		WithSelections(selections).
-		WithRuleset(ruleset).
-		Build()
-	envelope, err := solutionCreator.CreateNextSolutions(query)
+	query := puan.NewNextSolutionsQuery(
+		currentSelections,
+		nextSelections,
+		ruleset,
+		nil,
+		nil,
+	)
+	envelope, err := solutionCreator.CreateNextSolutions2(query)
 	if err != nil {
 		panic(err)
 	}

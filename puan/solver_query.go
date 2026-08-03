@@ -5,7 +5,6 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
-	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
 )
 
@@ -180,75 +179,6 @@ func newWeights(
 	}
 
 	return weights, nil
-}
-
-func (c *solverQueryCreator) newNextSolutionsQuery(
-	query SolutionQuery,
-) (*MultiWeightSolverQuery, error) {
-	preparedRuleset, err := query.ruleset.modifyForQuery(query.selections, query.from, query.to)
-	if err != nil {
-		return nil, err
-	}
-
-	weightGroups, err := c.calculateNextWeightGroups(preparedRuleset, query.selections)
-	if err != nil {
-		return nil, err
-	}
-
-	solverQuery := NewMultiWeightSolverQuery(
-		preparedRuleset.polyhedron,
-		preparedRuleset.dependentVariables,
-		weightGroups,
-	)
-
-	return solverQuery, nil
-}
-
-func (c *solverQueryCreator) calculateNextWeightGroups(
-	ruleset Ruleset,
-	selections Selections,
-) ([]WeightsForSelection, error) {
-	selectableVariables := ruleset.dependentSelectableVariables()
-
-	weightGroups := make([]WeightsForSelection, len(selectableVariables))
-	for i, variable := range selectableVariables {
-		weightsForSelection, err := c.calculateNextWeights(ruleset, selections, variable)
-		if err != nil {
-			return nil, err
-		}
-		weightGroups[i] = weightsForSelection
-	}
-
-	return weightGroups, nil
-}
-
-func (c *solverQueryCreator) calculateNextWeights(
-	ruleset Ruleset,
-	selections Selections,
-	variable string,
-) (WeightsForSelection, error) {
-	newSelections := selections.copy()
-
-	selectionBuilder := NewSelectionBuilder(variable)
-	isSelected := utils.Contains(newSelections.ids(), variable)
-	if isSelected {
-		selectionBuilder.WithAction(REMOVE)
-	}
-	selection := selectionBuilder.Build()
-
-	newSelections = append(newSelections, selection)
-
-	newSelections = newSelections.prepareForQuery()
-
-	weights, err := newWeights(ruleset, newSelections)
-	if err != nil {
-		return WeightsForSelection{}, err
-	}
-
-	return WeightsForSelection{
-		Selection: selection,
-		Weights:   weights,
-	}, nil
 }
 
 func (c *solverQueryCreator) newNextSolutionsQuery2(
