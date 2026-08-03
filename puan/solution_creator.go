@@ -449,3 +449,136 @@ func (c *SolutionCreator) calculateNextSolutionsForIndependentVariables(
 
 	return solutions, nil
 }
+
+func (c *SolutionCreator) CreateNextSolutions2(
+	query NextSolutionsQuery,
+) (SolutionsBySelectionEnvelope, error) {
+	err := query.validate()
+	if err != nil {
+		return SolutionsBySelectionEnvelope{}, err
+	}
+
+	solutions, err := c.createNextSolutions2(query)
+	if err != nil {
+		err = updateSolveError(err, query.ruleset, query.from)
+		return SolutionsBySelectionEnvelope{}, err
+	}
+
+	return NewSolutionsBySelectionEnvelope(solutions)
+}
+
+func (c *SolutionCreator) createNextSolutions2(
+	query NextSolutionsQuery,
+) ([]SolutionBySelection, error) {
+	dependentSolutions, err := c.calculateNextSolutionsForDependentVariables2(query)
+	if err != nil {
+		return nil, err
+	}
+
+	independentSolutions, err := c.calculateNextSolutionsForIndependentVariables2(query)
+	if err != nil {
+		return nil, err
+	}
+
+	var solutions []SolutionBySelection
+	solutions = append(solutions, dependentSolutions...)
+	solutions = append(solutions, independentSolutions...)
+
+	return solutions, nil
+}
+
+func (c *SolutionCreator) calculateNextSolutionsForDependentVariables2(
+	nextQuery NextSolutionsQuery,
+) ([]SolutionBySelection, error) {
+	currentDependentSelections, currentIndependentSelections :=
+		categorizeSelections(nextQuery.currentSelections, nextQuery.ruleset.independentVariables)
+
+	currentIndependentSolution := calculateIndependentSolution(
+		nextQuery.ruleset.independentVariables,
+		currentIndependentSelections,
+	)
+
+	nextDependentSelections, _ := categorizeSelections(
+		nextQuery.nextSelections,
+		nextQuery.ruleset.independentVariables,
+	)
+
+	solverQuery, err := c.queryCreator.newNextSolutionsQuery2(
+		currentDependentSelections,
+		nextDependentSelections,
+		nextQuery.ruleset,
+		nextQuery.from,
+		nextQuery.to,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := solverQuery.validate(); err != nil {
+		return nil, err
+	}
+
+	dependentSolutions, err := c.SolveWithManyWeights(solverQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	solutions := make([]Solution, len(dependentSolutions))
+	for i := range dependentSolutions {
+		solutions[i] = dependentSolutions[i].merge(currentIndependentSolution)
+	}
+
+	primitiveSolutions := nextQuery.ruleset.RemoveSupportVariablesForMany(solutions)
+
+	solutionsBySelection := make([]SolutionBySelection, len(primitiveSolutions))
+	for i, solution := range primitiveSolutions {
+		weightsForSelection := solverQuery.WeightsBySelection()[i]
+		selection := weightsForSelection.Selection
+
+		solutionBySelection := SolutionBySelection{
+			selection: selection,
+			solution:  solution,
+		}
+		solutionsBySelection[i] = solutionBySelection
+	}
+
+	return solutionsBySelection, nil
+}
+
+func (c *SolutionCreator) calculateNextSolutionsForIndependentVariables2(
+	nextQuery NextSolutionsQuery,
+) ([]SolutionBySelection, error) {
+	currentQuery := NewSolutionQueryBuilder().
+		WithRuleset(nextQuery.ruleset).
+		WithFrom(nextQuery.from).
+		WithTo(nextQuery.to).
+		WithSelections(nextQuery.currentSelections).
+		Build()
+	currentSolution, err := c.calculateSolution(currentQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	_, nextIndependentSelections := categorizeSelections(
+		nextQuery.nextSelections,
+		nextQuery.ruleset.independentVariables,
+	)
+
+	nextSolutions := make([]SolutionBySelection, len(nextIndependentSelections))
+	for i, nextSelection := range nextIndependentSelections {
+		solution := currentSolution.copy()
+		if nextSelection.action == ADD {
+			solution[nextSelection.id] = 1
+		} else {
+			solution[nextSelection.id] = 0
+		}
+
+		solutionBySelection := SolutionBySelection{
+			selection: nextSelection,
+			solution:  solution,
+		}
+		nextSolutions[i] = solutionBySelection
+	}
+
+	return nextSolutions, nil
+}

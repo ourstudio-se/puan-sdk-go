@@ -1,6 +1,8 @@
 package puan
 
 import (
+	"time"
+
 	"github.com/go-errors/errors"
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
@@ -245,6 +247,79 @@ func (c *solverQueryCreator) calculateNextWeights(
 
 	return WeightsForSelection{
 		Selection: selection,
+		Weights:   weights,
+	}, nil
+}
+
+func (c *solverQueryCreator) newNextSolutionsQuery2(
+	currentSelections Selections,
+	nextSelections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+	to *time.Time,
+) (*MultiWeightSolverQuery, error) {
+	preparedRuleset, err := ruleset.modifyForQuery(currentSelections, from, to)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := preparedRuleset.setCompositeSelectionConstraints(nextSelections); err != nil {
+		return nil, err
+	}
+
+	weightGroups, err := c.calculateNextWeightGroups2(
+		preparedRuleset,
+		currentSelections,
+		nextSelections,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	solverQuery := NewMultiWeightSolverQuery(
+		preparedRuleset.polyhedron,
+		preparedRuleset.dependentVariables,
+		weightGroups,
+	)
+
+	return solverQuery, nil
+}
+
+func (c *solverQueryCreator) calculateNextWeightGroups2(
+	ruleset Ruleset,
+	currentSelections Selections,
+	nextSelections Selections,
+) ([]WeightsForSelection, error) {
+	weightGroups := make([]WeightsForSelection, len(nextSelections))
+	for i, nextSelection := range nextSelections {
+		weightsForSelection, err := c.calculateNextWeights2(ruleset, currentSelections, nextSelection)
+		if err != nil {
+			return nil, err
+		}
+		weightGroups[i] = weightsForSelection
+	}
+
+	return weightGroups, nil
+}
+
+func (c *solverQueryCreator) calculateNextWeights2(
+	ruleset Ruleset,
+	currentSelections Selections,
+	nextSelection Selection,
+) (WeightsForSelection, error) {
+	selections := currentSelections.copy()
+
+	selections = append(selections, nextSelection)
+
+	selections = selections.prepareForQuery()
+
+	weights, err := newWeights(ruleset, selections)
+	if err != nil {
+		return WeightsForSelection{}, err
+	}
+
+	return WeightsForSelection{
+		Selection: nextSelection,
 		Weights:   weights,
 	}, nil
 }

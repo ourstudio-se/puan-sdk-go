@@ -126,3 +126,33 @@ func (b *SolutionQueryBuilder) Build() SolutionQuery {
 		to:         b.to,
 	}
 }
+
+type NextSolutionsQuery struct {
+	currentSelections Selections
+	nextSelections    Selections
+	ruleset           Ruleset
+	from              *time.Time
+	to                *time.Time
+}
+
+func NewNextSolutionsQuery(
+	currentSelections Selections,
+	nextSelections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+	to *time.Time,
+) NextSolutionsQuery {
+	return NextSolutionsQuery{
+		currentSelections: currentSelections,
+		nextSelections:    nextSelections,
+		ruleset:           ruleset,
+		from:              from,
+		to:                to,
+	}
+}
+
+func (query NextSolutionsQuery) validate() error {
+	// TODO
+
+	return nil
+}

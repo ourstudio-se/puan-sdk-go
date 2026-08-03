@@ -162,3 +162,51 @@ func Test_CreateNextSolutions_shouldAddNewSelections(
 	asserter.assertActive(t, "optE")
 	asserter.assertInactive(t, "optF")
 }
+
+func Test_CreateNextSolutions2_shouldCreateSolutionsForAllNextSelections(
+	t *testing.T,
+) {
+	creator := puan.NewRulesetCreator()
+
+	primitives := []string{"optA", "optB", "optC", "optD", "optE", "optF"}
+	_ = creator.AddPrimitives(primitives...)
+
+	orID, _ := creator.SetOr("optA", "optB")
+
+	_ = creator.Assume(orID)
+
+	cImpliesD, _ := creator.SetImply("optC", "optD")
+
+	_ = creator.Assume(cImpliesD)
+
+	ruleset, _ := creator.Create()
+
+	currentSelections := puan.Selections{
+		puan.NewSelectionBuilder("optA").Build(),
+		puan.NewSelectionBuilder("optE").Build(),
+		puan.NewSelectionBuilder("optC").Build(),
+	}
+	nextSelections := puan.Selections{
+		puan.NewSelectionBuilder("optA").WithAction(puan.REMOVE).Build(),
+		puan.NewSelectionBuilder("optB").Build(),
+		puan.NewSelectionBuilder("optC").WithAction(puan.REMOVE).Build(),
+		puan.NewSelectionBuilder("optD").Build(),
+		puan.NewSelectionBuilder("optE").WithAction(puan.REMOVE).Build(),
+		puan.NewSelectionBuilder("optF").Build(),
+	}
+	query := puan.NewNextSolutionsQuery(
+		currentSelections,
+		nextSelections,
+		ruleset,
+		nil,
+		nil,
+	)
+	envelope, _ := solutionCreator.CreateNextSolutions2(query)
+
+	assert.Len(t, envelope.SolutionsBySelection(), len(nextSelections))
+
+	for _, nextSelection := range nextSelections {
+		_, err := envelope.GetSolutionBySelection(nextSelection)
+		require.NoError(t, err)
+	}
+}
