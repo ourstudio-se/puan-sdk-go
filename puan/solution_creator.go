@@ -329,7 +329,7 @@ func (c *SolutionCreator) calculateIndependentSolutionsBySelection(
 	return solutionsBySelection, nil
 }
 
-func (c *SolutionCreator) CreateNextSolutions2(
+func (c *SolutionCreator) CreateNextSolutions(
 	query NextSolutionsQuery,
 ) (SolutionsBySelectionEnvelope, error) {
 	err := query.validate()

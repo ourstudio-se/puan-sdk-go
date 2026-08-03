@@ -2,10 +2,6 @@ package puan
 
 import (
 	"time"
-
-	"github.com/go-errors/errors"
-	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
-	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
 type SolutionQuery struct {
@@ -16,62 +12,16 @@ type SolutionQuery struct {
 }
 
 func (query SolutionQuery) validate() error {
-	if err := query.validateRuleset(); err != nil {
+	if err := validateRuleset(query.ruleset); err != nil {
 		return err
 	}
 
-	if err := query.validateTimestamps(); err != nil {
+	if err := validateTimestamps(query.from, query.to); err != nil {
 		return err
 	}
 
-	if err := query.validateSelections(); err != nil {
+	if err := validateSelections(query.ruleset, query.selections); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func (query SolutionQuery) validateRuleset() error {
-	if query.ruleset.polyhedron == nil {
-		return errors.Errorf("%w: ruleset is required", puanerror.InvalidArgument)
-	}
-	return nil
-}
-
-func (query SolutionQuery) validateTimestamps() error {
-	if query.from != nil && query.to != nil {
-		if query.from.After(*query.to) {
-			return errors.Errorf(
-				"%w: from '%s' must be before to '%s'",
-				puanerror.InvalidArgument,
-				query.from,
-				query.to,
-			)
-		}
-	}
-	return nil
-}
-
-func (query SolutionQuery) validateSelections() error {
-	for _, selection := range query.selections {
-		if !utils.ContainsAll(query.ruleset.selectableVariables, selection.IDs()) {
-			return errors.Errorf(
-				"%w: selection contains non-selectable variables: %v",
-				puanerror.InvalidArgument,
-				selection,
-			)
-		}
-
-		hasSubSelection := len(selection.subSelectionIDs) > 0
-		if hasSubSelection {
-			if utils.ContainsAny(selection.IDs(), query.ruleset.independentVariables) {
-				return errors.Errorf(
-					"%w: independent variables cannot be part of a composite selections: %v",
-					puanerror.InvalidArgument,
-					selection,
-				)
-			}
-		}
 	}
 
 	return nil
@@ -152,7 +102,21 @@ func NewNextSolutionsQuery(
 }
 
 func (query NextSolutionsQuery) validate() error {
-	// TODO
+	if err := validateRuleset(query.ruleset); err != nil {
+		return err
+	}
+
+	if err := validateTimestamps(query.from, query.to); err != nil {
+		return err
+	}
+
+	if err := validateSelections(query.ruleset, query.currentSelections); err != nil {
+		return err
+	}
+
+	if err := validateSelections(query.ruleset, query.nextSelections); err != nil {
+		return err
+	}
 
 	return nil
 }

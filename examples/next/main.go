@@ -56,7 +56,7 @@ func main() {
 		nil,
 		nil,
 	)
-	envelope, err := solutionCreator.CreateNextSolutions2(query)
+	envelope, err := solutionCreator.CreateNextSolutions(query)
 	if err != nil {
 		panic(err)
 	}

@@ -9,28 +9,6 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
 )
 
-func Test_SolutionQuery_validateSelections_givenEmptySelection_shouldReturnNoError(
-	t *testing.T,
-) {
-	primaryID := fake.New[string]()
-	subID := fake.New[string]()
-
-	creator := NewRulesetCreator()
-	_ = creator.AddPrimitives(primaryID, subID)
-	ruleset, _ := creator.Create()
-
-	selections := Selections{}
-
-	query := NewSolutionQueryBuilder().
-		WithSelections(selections).
-		WithRuleset(ruleset).
-		Build()
-
-	err := query.validateSelections()
-
-	assert.NoError(t, err)
-}
-
 func Test_categorizeSelections(t *testing.T) {
 	independentID := fake.New[string]()
 	dependentID := fake.New[string]()

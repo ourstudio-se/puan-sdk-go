@@ -44,7 +44,7 @@ func Test_CreateNextSolutions_shouldRemoveExistingSelections(
 		nil,
 		nil,
 	)
-	envelope, err := solutionCreator.CreateNextSolutions2(query)
+	envelope, err := solutionCreator.CreateNextSolutions(query)
 	require.NoError(t, err)
 
 	solution, err := envelope.GetSolutionBySelection(removeA)
@@ -94,7 +94,7 @@ func Test_CreateNextSolutions_shouldAddNewSelections(
 		nil,
 		nil,
 	)
-	envelope, err := solutionCreator.CreateNextSolutions2(query)
+	envelope, err := solutionCreator.CreateNextSolutions(query)
 	require.NoError(t, err)
 
 	solution, err := envelope.GetSolutionBySelection(addB)
@@ -147,7 +147,7 @@ func Test_CreateNextSolutions2_shouldCreateSolutionsForAllNextSelections(
 		nil,
 		nil,
 	)
-	envelope, _ := solutionCreator.CreateNextSolutions2(query)
+	envelope, _ := solutionCreator.CreateNextSolutions(query)
 
 	assert.Len(t, envelope.SolutionsBySelection(), len(nextSelections))
 
