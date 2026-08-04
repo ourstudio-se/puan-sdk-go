@@ -84,8 +84,8 @@ func Test_newSolveRequestFromMultiQuery(t *testing.T) {
 	polyhedron := pldag.NewPolyhedron(aMatrix, bVector)
 	variableIDs := []string{"x", "y"}
 	queryWeights := []weights.Weights{
-		weights.Weights{"x": 3, "y": 4},
-		weights.Weights{"x": 1, "y": 2},
+		{"x": 3, "y": 4},
+		{"x": 1, "y": 2},
 	}
 
 	query, err := puan.NewMultiWeightSolverQuery(
