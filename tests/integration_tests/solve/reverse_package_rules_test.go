@@ -47,7 +47,7 @@ func Test_variantsWithXORBetweenTwoItems_selectVariantThenItemInOtherVariant_sho
 		puan.NewSelectionBuilder("itemN").Build(),
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
@@ -100,7 +100,7 @@ func Test_optionalPackageWithSmallPreferred_selectNotPreferred(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").WithSubSelectionID("itemZ").Build(),
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
@@ -158,7 +158,7 @@ func Test_twoPackagesWithSharedItems_selectLargestPackage(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(

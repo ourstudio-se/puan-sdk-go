@@ -38,7 +38,7 @@ func Test_manyItemsIncludedInPeriod(t *testing.T) {
 
 	ruleset, _ := creator.Create()
 
-	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
@@ -73,7 +73,7 @@ func Test_itemsIncludedInLaterPeriod_shouldChooseEarlierPeriod(t *testing.T) {
 
 	ruleset, _ := creator.Create()
 
-	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
@@ -111,7 +111,7 @@ func Test_itemsIncludedInLaterPeriod_andFromInLaterPeriod_shouldChooseLaterPerio
 
 	from := startTime.Add(45 * time.Minute)
 
-	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).WithFrom(&from).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).WithFrom(&from).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
@@ -151,7 +151,7 @@ func Test_itemsIncludedInLaterPeriod_andFromInEarlierPeriod_shouldChooseEarlierP
 
 	from := startTime.Add(15 * time.Minute)
 
-	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).WithFrom(&from).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).WithFrom(&from).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
@@ -188,7 +188,7 @@ func Test_itemSelectableInPeriod_givenItemSelected_shouldChoosePeriod(t *testing
 		puan.NewSelectionBuilder("itemX").Build(),
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
@@ -257,7 +257,7 @@ func Test_itemSelectableInPeriod_andManyItemsIncludedInThatPeriod_givenItemSelec
 		puan.NewSelectionBuilder("itemX").Build(),
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
@@ -311,7 +311,7 @@ func Test_includedPackageInEarlierPeriod_withPreferred_shouldChooseEarlierPeriod
 
 	ruleset, _ := creator.Create()
 
-	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
@@ -342,7 +342,7 @@ func Test_givenTimeEnabledWithoutTimeboundConstraints_andNoFromSpecified_shouldG
 
 	ruleset, _ := creator.Create()
 
-	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
@@ -376,7 +376,7 @@ func Test_givenTimeEnabledWithoutTimeboundConstraints_andEarlyFromSpecified_shou
 	ruleset, _ := creator.Create()
 
 	beforeStart := startTime.Add(-1 * time.Hour)
-	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).WithFrom(&beforeStart).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).WithFrom(&beforeStart).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
@@ -410,7 +410,7 @@ func Test_givenTimeEnabledWithoutTimeboundConstraints_andLateFromSpecified_shoul
 	ruleset, _ := creator.Create()
 
 	afterEnd := endTime.Add(1 * time.Hour)
-	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).WithFrom(&afterEnd).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).WithFrom(&afterEnd).Build()
 	_, err := solutionCreator.Create(query)
 	assert.Error(t, err)
 }
@@ -445,7 +445,7 @@ func Test_givenXORWithManyConsequencesInFirstPeriod_selectExpensiveItem_shouldCh
 
 	ruleset, _ := creator.Create()
 
-	query := puan.NewSolutionQueryBuilder().
+	query, _ := puan.NewSolutionQueryBuilder().
 		WithSelections(puan.Selections{
 			puan.NewSelectionBuilder(item2).Build(),
 		}).
@@ -494,7 +494,7 @@ func Test_givenXORWithManyPreferredInFirstPeriod_selectNonPreferredItem_shouldCh
 
 	ruleset, _ := creator.Create()
 
-	query := puan.NewSolutionQueryBuilder().
+	query, _ := puan.NewSolutionQueryBuilder().
 		WithSelections(puan.Selections{
 			puan.NewSelectionBuilder(item1).Build(),
 		}).
@@ -532,7 +532,7 @@ func Test_forbiddenPeriod_givenFromInForbiddenPeriod_shouldChoosePeriodAfterForb
 
 	ruleset, _ := creator.Create()
 
-	query := puan.NewSolutionQueryBuilder().
+	query, _ := puan.NewSolutionQueryBuilder().
 		WithRuleset(ruleset).
 		WithFrom(&minute30).
 		Build()
@@ -564,7 +564,7 @@ func Test_forbiddenPeriod_givenFromBeforeForbiddenPeriod_shouldChoosePeriodThatE
 
 	ruleset, _ := creator.Create()
 
-	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 
@@ -612,7 +612,7 @@ func Test_forbiddenPeriod_withChangingDefaultColor(
 
 	ruleset, _ := creator.Create()
 
-	query := puan.NewSolutionQueryBuilder().
+	query, _ := puan.NewSolutionQueryBuilder().
 		WithRuleset(ruleset).
 		WithFrom(&minute15).
 		Build()
@@ -653,7 +653,7 @@ func Test_forbiddenPeriod_givenSelectedItem_isOnlyAvailableInForbiddenPeriod(
 
 	ruleset, _ := creator.Create()
 
-	query := puan.NewSolutionQueryBuilder().
+	query, _ := puan.NewSolutionQueryBuilder().
 		WithSelections(puan.Selections{
 			puan.NewSelectionBuilder("itemX").Build(),
 		}).
@@ -690,7 +690,7 @@ func Test_forbiddenPeriod_givenRequiredItemOnlyAvailableInForbiddenPeriod_noSolu
 
 	ruleset, _ := creator.Create()
 
-	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).Build()
 	_, err := solutionCreator.Create(query)
 
 	assert.Error(t, err)
@@ -714,7 +714,7 @@ func Test_givenRequiredItemInEarlyPeriod_andAnotherInLatePeriod_fromAndToBetween
 
 	ruleset, _ := creator.Create()
 
-	query := puan.NewSolutionQueryBuilder().
+	query, _ := puan.NewSolutionQueryBuilder().
 		WithRuleset(ruleset).
 		WithFrom(&minute20).
 		WithTo(&minute40).

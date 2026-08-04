@@ -11,20 +11,30 @@ type SolutionQuery struct {
 	to         *time.Time
 }
 
-func (query SolutionQuery) validate() error {
-	if err := validateRuleset(query.ruleset); err != nil {
-		return err
+func NewSolutionQuery(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+	to *time.Time,
+) (SolutionQuery, error) {
+	if err := validateRuleset(ruleset); err != nil {
+		return SolutionQuery{}, err
 	}
 
-	if err := validateTimestamps(query.from, query.to); err != nil {
-		return err
+	if err := validateTimestamps(from, to); err != nil {
+		return SolutionQuery{}, err
 	}
 
-	if err := validateSelections(query.ruleset, query.selections); err != nil {
-		return err
+	if err := validateSelections(ruleset, selections); err != nil {
+		return SolutionQuery{}, err
 	}
 
-	return nil
+	return SolutionQuery{
+		selections: selections,
+		ruleset:    ruleset,
+		from:       from,
+		to:         to,
+	}, nil
 }
 
 type SolutionQueryBuilder struct {
@@ -68,13 +78,8 @@ func (b *SolutionQueryBuilder) WithTo(to *time.Time) *SolutionQueryBuilder {
 	return b
 }
 
-func (b *SolutionQueryBuilder) Build() SolutionQuery {
-	return SolutionQuery{
-		selections: b.selections,
-		ruleset:    b.ruleset,
-		from:       b.from,
-		to:         b.to,
-	}
+func (b *SolutionQueryBuilder) Build() (SolutionQuery, error) {
+	return NewSolutionQuery(b.selections, b.ruleset, b.from, b.to)
 }
 
 type NextSolutionsQuery struct {
@@ -91,32 +96,28 @@ func NewNextSolutionsQuery(
 	ruleset Ruleset,
 	from *time.Time,
 	to *time.Time,
-) NextSolutionsQuery {
+) (NextSolutionsQuery, error) {
+	if err := validateRuleset(ruleset); err != nil {
+		return NextSolutionsQuery{}, err
+	}
+
+	if err := validateTimestamps(from, to); err != nil {
+		return NextSolutionsQuery{}, err
+	}
+
+	if err := validateSelections(ruleset, currentSelections); err != nil {
+		return NextSolutionsQuery{}, err
+	}
+
+	if err := validateSelections(ruleset, nextSelections); err != nil {
+		return NextSolutionsQuery{}, err
+	}
+
 	return NextSolutionsQuery{
 		currentSelections: currentSelections,
 		nextSelections:    nextSelections,
 		ruleset:           ruleset,
 		from:              from,
 		to:                to,
-	}
-}
-
-func (query NextSolutionsQuery) validate() error {
-	if err := validateRuleset(query.ruleset); err != nil {
-		return err
-	}
-
-	if err := validateTimestamps(query.from, query.to); err != nil {
-		return err
-	}
-
-	if err := validateSelections(query.ruleset, query.currentSelections); err != nil {
-		return err
-	}
-
-	if err := validateSelections(query.ruleset, query.nextSelections); err != nil {
-		return err
-	}
-
-	return nil
+	}, nil
 }

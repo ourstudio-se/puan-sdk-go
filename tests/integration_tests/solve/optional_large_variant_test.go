@@ -24,7 +24,7 @@ func Test_optionalLargeVariantWithXOR_removePreselectedItem(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemY").Build(),
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
@@ -55,7 +55,7 @@ func Test_optionalLargeVariantWithXOR_shouldChangeVariant(t *testing.T) {
 		puan.NewSelectionBuilder("itemY").Build(),
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
@@ -81,7 +81,7 @@ func Test_optionalLargeVariantWithXOR_noSelection(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
@@ -109,7 +109,7 @@ func Test_optionalLargeVariantWithXOR_singleItemSelection(t *testing.T) {
 		puan.NewSelectionBuilder("itemM").Build(),
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(

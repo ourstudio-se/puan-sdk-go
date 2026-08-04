@@ -31,11 +31,6 @@ func NewSolutionCreator(
 func (c *SolutionCreator) Create(
 	query SolutionQuery,
 ) (SolutionEnvelope, error) {
-	err := query.validate()
-	if err != nil {
-		return SolutionEnvelope{}, err
-	}
-
 	solution, err := c.calculateSolution(query)
 	if err != nil {
 		err = updateSolveError(err, query.ruleset, query.from)
@@ -53,10 +48,14 @@ func (c *SolutionCreator) calculateSolution(
 	dependentSelections, independentSelections :=
 		query.ruleset.CategorizeSelections(query.selections)
 
-	dependentQuery := NewSolutionQueryBuilder().
+	dependentQuery, err := NewSolutionQueryBuilder().
 		fromQuery(query).
 		WithSelections(dependentSelections).
 		Build()
+	if err != nil {
+		return Solution{}, err
+	}
+
 	dependentSolution, err := c.calculateDependentSolution(dependentQuery)
 	if err != nil {
 		return Solution{}, err
@@ -110,10 +109,14 @@ func (c *SolutionCreator) calculateSplitDependentSolution(
 
 	remainingSelections, prioritisedSelections := query.selections.split()
 
-	prioritisedQuery := NewSolutionQueryBuilder().
+	prioritisedQuery, err := NewSolutionQueryBuilder().
 		fromQuery(query).
 		WithSelections(prioritisedSelections).
 		Build()
+	if err != nil {
+		return Solution{}, err
+	}
+
 	prioritisedSolution, err := c.calculateDependentSolution(prioritisedQuery)
 	if err != nil {
 		return Solution{}, err
@@ -128,11 +131,15 @@ func (c *SolutionCreator) calculateSplitDependentSolution(
 		return Solution{}, err
 	}
 
-	remainingQuery := NewSolutionQueryBuilder().
+	remainingQuery, err := NewSolutionQueryBuilder().
 		fromQuery(query).
 		WithSelections(remainingSelections).
 		WithRuleset(rulesetWithPrioritisedSolution).
 		Build()
+	if err != nil {
+		return Solution{}, err
+	}
+
 	return c.calculateDependentSolution(remainingQuery)
 }
 
@@ -184,11 +191,6 @@ func updateSolveError(
 func (c *SolutionCreator) CreateSolutionsBySelection(
 	query SolutionQuery,
 ) (SolutionsBySelectionEnvelope, error) {
-	err := query.validate()
-	if err != nil {
-		return SolutionsBySelectionEnvelope{}, err
-	}
-
 	solutions, err := c.calculateSolutionsBySelection(query)
 	if err != nil {
 		err = updateSolveError(err, query.ruleset, query.from)
@@ -204,19 +206,27 @@ func (c *SolutionCreator) calculateSolutionsBySelection(
 	dependantSelections, independentSelections :=
 		query.ruleset.CategorizeSelections(query.selections)
 
-	dependentQuery := NewSolutionQueryBuilder().
+	dependentQuery, err := NewSolutionQueryBuilder().
 		fromQuery(query).
 		WithSelections(dependantSelections).
 		Build()
+	if err != nil {
+		return nil, err
+	}
+
 	dependentSolutions, err := c.calculateDependentSolutionsBySelection(dependentQuery)
 	if err != nil {
 		return nil, err
 	}
 
-	independentQuery := NewSolutionQueryBuilder().
+	independentQuery, err := NewSolutionQueryBuilder().
 		fromQuery(query).
 		WithSelections(independentSelections).
 		Build()
+	if err != nil {
+		return nil, err
+	}
+
 	independentSolutions, err := c.calculateIndependentSolutionsBySelection(independentQuery)
 	if err != nil {
 		return nil, err
@@ -284,10 +294,14 @@ func (c *SolutionCreator) groupSolutionsBySelection(
 func (c *SolutionCreator) calculateIndependentSolutionsBySelection(
 	query SolutionQuery,
 ) ([]SolutionBySelection, error) {
-	defaultQuery := NewSolutionQueryBuilder().
+	defaultQuery, err := NewSolutionQueryBuilder().
 		fromQuery(query).
 		WithSelections(nil).
 		Build()
+	if err != nil {
+		return nil, err
+	}
+
 	defaultSolution, err := c.calculateDependentSolution(defaultQuery)
 	if err != nil {
 		return nil, err
@@ -304,11 +318,6 @@ func (c *SolutionCreator) calculateIndependentSolutionsBySelection(
 func (c *SolutionCreator) CreateNextSolutions(
 	query NextSolutionsQuery,
 ) (SolutionsBySelectionEnvelope, error) {
-	err := query.validate()
-	if err != nil {
-		return SolutionsBySelectionEnvelope{}, err
-	}
-
 	solutions, err := c.createNextSolutions(query)
 	if err != nil {
 		err = updateSolveError(err, query.ruleset, query.from)
@@ -346,13 +355,17 @@ func (c *SolutionCreator) calculateNextSolutionsForDependentSelections(
 
 	nextDependentSelections, _ := query.ruleset.CategorizeSelections(query.nextSelections)
 
-	dependentQuery := NewNextSolutionsQuery(
+	dependentQuery, err := NewNextSolutionsQuery(
 		currentDependentSelections,
 		nextDependentSelections,
 		query.ruleset,
 		query.from,
 		query.to,
 	)
+	if err != nil {
+		return nil, err
+	}
+
 	nextDependentSolutions, err := c.calculateNextDependentSolutions(dependentQuery)
 	if err != nil {
 		return nil, err
@@ -398,12 +411,16 @@ func (c *SolutionCreator) calculateNextDependentSolutions(
 func (c *SolutionCreator) calculateNextSolutionsForIndependentSelections(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
-	currentQuery := NewSolutionQueryBuilder().
+	currentQuery, err := NewSolutionQueryBuilder().
 		WithRuleset(query.ruleset).
 		WithFrom(query.from).
 		WithTo(query.to).
 		WithSelections(query.currentSelections).
 		Build()
+	if err != nil {
+		return nil, err
+	}
+
 	currentSolution, err := c.calculateSolution(currentQuery)
 	if err != nil {
 		return nil, err

@@ -21,7 +21,7 @@ func Test_exactlyOnePackage_selectSmallestPackage(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
@@ -52,7 +52,7 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case2(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
@@ -83,7 +83,7 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case3(t *testing.T) {
 		puan.NewSelectionBuilder("packageC").Build(),
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
@@ -114,7 +114,7 @@ func Test_exactlyOnePackage_upgradeToLargerPackage_case4(t *testing.T) {
 		puan.NewSelectionBuilder("packageC").Build(),
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
@@ -145,7 +145,7 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case1(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
@@ -176,7 +176,7 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case2(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").Build(),
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
@@ -207,7 +207,7 @@ func Test_exactlyOnePackage_downgradeToSmallerPackage_case3(t *testing.T) {
 		puan.NewSelectionBuilder("packageB").Build(),
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
@@ -235,7 +235,7 @@ func Test_exactlyOnePackage_noSelection_shouldGivePreferred(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(

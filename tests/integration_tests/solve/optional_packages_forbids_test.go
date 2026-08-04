@@ -28,7 +28,7 @@ func Test_optionalPackagesWithForbids_changeToSmallerPackage(t *testing.T) {
 		puan.NewSelectionBuilder("packageC").Build(),
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
@@ -65,7 +65,7 @@ func Test_optionalPackagesWithForbids_changeToLargerPackage(t *testing.T) {
 		puan.NewSelectionBuilder("packageA").WithSubSelectionID("itemN").Build(),
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(
@@ -89,7 +89,7 @@ func Test_optionalPackagesWithForbids_noSelection(t *testing.T) {
 
 	selections := puan.Selections{}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 	solution := envelope.Solution()
 	assert.Equal(

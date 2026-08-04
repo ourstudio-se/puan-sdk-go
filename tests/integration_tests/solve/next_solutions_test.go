@@ -37,7 +37,7 @@ func Test_CreateNextSolutions_shouldRemoveExistingSelections(
 	nextSelections := puan.Selections{
 		removeA,
 	}
-	query := puan.NewNextSolutionsQuery(
+	query, _ := puan.NewNextSolutionsQuery(
 		currentSelections,
 		nextSelections,
 		ruleset,
@@ -87,13 +87,14 @@ func Test_CreateNextSolutions_shouldAddNewSelections(
 	nextSelections := puan.Selections{
 		addB,
 	}
-	query := puan.NewNextSolutionsQuery(
+	query, _ := puan.NewNextSolutionsQuery(
 		currentSelections,
 		nextSelections,
 		ruleset,
 		nil,
 		nil,
 	)
+
 	envelope, err := solutionCreator.CreateNextSolutions(query)
 	require.NoError(t, err)
 
@@ -140,13 +141,14 @@ func Test_CreateNextSolutions2_shouldCreateSolutionsForAllNextSelections(
 		puan.NewSelectionBuilder("optE").WithAction(puan.REMOVE).Build(),
 		puan.NewSelectionBuilder("optF").Build(),
 	}
-	query := puan.NewNextSolutionsQuery(
+	query, _ := puan.NewNextSolutionsQuery(
 		currentSelections,
 		nextSelections,
 		ruleset,
 		nil,
 		nil,
 	)
+
 	envelope, _ := solutionCreator.CreateNextSolutions(query)
 
 	assert.Len(t, envelope.SolutionsBySelection(), len(nextSelections))

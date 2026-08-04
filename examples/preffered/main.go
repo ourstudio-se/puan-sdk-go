@@ -62,10 +62,14 @@ func main() {
 	solutionCreator := puan.NewSolutionCreator(solverClient)
 
 	// Create the solution
-	query := puan.NewSolutionQueryBuilder().
+	query, err := puan.NewSolutionQueryBuilder().
 		WithSelections(selections).
 		WithRuleset(ruleset).
 		Build()
+	if err != nil {
+		panic(err)
+	}
+
 	envelope, err := solutionCreator.Create(query)
 	if err != nil {
 		panic(err)
