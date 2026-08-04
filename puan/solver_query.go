@@ -46,12 +46,18 @@ func NewMultiWeightSolverQuery(
 	polyhedron *pldag.Polyhedron,
 	variables []string,
 	weights []weights.Weights,
-) *MultiWeightSolverQuery {
+) (*MultiWeightSolverQuery, error) {
+	for i, weights := range weights {
+		if weights.WeightsTooLarge() {
+			return nil, errors.Errorf("weights are too large at index %d", i)
+		}
+	}
+
 	return &MultiWeightSolverQuery{
 		polyhedron: polyhedron,
 		variables:  variables,
 		weights:    weights,
-	}
+	}, nil
 }
 
 func (q *MultiWeightSolverQuery) Polyhedron() *pldag.Polyhedron {
@@ -64,15 +70,6 @@ func (q *MultiWeightSolverQuery) Variables() []string {
 
 func (q *MultiWeightSolverQuery) WeightGroups() []weights.Weights {
 	return q.weights
-}
-
-func (q *MultiWeightSolverQuery) validate() error {
-	for i, weights := range q.weights {
-		if weights.WeightsTooLarge() {
-			return errors.Errorf("weights are too large at index %d", i)
-		}
-	}
-	return nil
 }
 
 type solverQueryCreator struct{}
@@ -114,11 +111,14 @@ func (c *solverQueryCreator) newSolutionsBySelectionQuery(
 		return nil, err
 	}
 
-	solverQuery := NewMultiWeightSolverQuery(
+	solverQuery, err := NewMultiWeightSolverQuery(
 		preparedRuleset.polyhedron,
 		preparedRuleset.dependentVariables,
 		weightGroups,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	return solverQuery, nil
 }
@@ -192,11 +192,14 @@ func (c *solverQueryCreator) newNextSolutionsQuery(
 		return nil, err
 	}
 
-	solverQuery := NewMultiWeightSolverQuery(
+	solverQuery, err := NewMultiWeightSolverQuery(
 		preparedRuleset.polyhedron,
 		preparedRuleset.dependentVariables,
 		weightGroups,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	return solverQuery, nil
 }
@@ -226,8 +229,6 @@ func (c *solverQueryCreator) calculateNextWeights(
 	selections := currentSelections.copy()
 
 	selections = append(selections, nextSelection)
-
-	selections = selections.prepareForQuery()
 
 	weights, err := newWeights(ruleset, selections)
 	if err != nil {

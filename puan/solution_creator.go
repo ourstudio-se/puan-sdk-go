@@ -255,6 +255,32 @@ func (c *SolutionCreator) calculateDependentSolutionsBySelection(
 	return solutionsBySelection, nil
 }
 
+func (c *SolutionCreator) groupSolutionsBySelection(
+	solutions []Solution,
+	selections Selections,
+) ([]SolutionBySelection, error) {
+	if len(solutions) != len(selections) {
+		return nil, errors.Errorf(
+			"Expected amount of solutions and selections to match. Got %d and %d",
+			len(solutions),
+			len(selections),
+		)
+	}
+
+	solutionsBySelection := make([]SolutionBySelection, len(solutions))
+	for i, solution := range solutions {
+		selection := selections[i]
+
+		solutionBySelection := SolutionBySelection{
+			selection: selection,
+			solution:  solution,
+		}
+		solutionsBySelection[i] = solutionBySelection
+	}
+
+	return solutionsBySelection, nil
+}
+
 func (c *SolutionCreator) calculateIndependentSolutionsBySelection(
 	query SolutionQuery,
 ) ([]SolutionBySelection, error) {
@@ -342,7 +368,7 @@ func (c *SolutionCreator) calculateNextSolutionsForDependentSelections(
 	}
 
 	solutionsBySelection, err := c.groupSolutionsBySelection(
-		nextDependentSolutions,
+		nextSolutions,
 		nextDependentSelections,
 	)
 	if err != nil {
@@ -360,10 +386,6 @@ func (c *SolutionCreator) calculateNextDependentSolutions(
 		return nil, err
 	}
 
-	if err := solverQuery.validate(); err != nil {
-		return nil, err
-	}
-
 	dependentSolutions, err := c.SolveWithManyWeights(solverQuery)
 	if err != nil {
 		return nil, err
@@ -371,32 +393,6 @@ func (c *SolutionCreator) calculateNextDependentSolutions(
 
 	primitiveSolutions := query.ruleset.RemoveSupportVariablesForMany(dependentSolutions)
 	return primitiveSolutions, nil
-}
-
-func (c *SolutionCreator) groupSolutionsBySelection(
-	solutions []Solution,
-	selections Selections,
-) ([]SolutionBySelection, error) {
-	if len(solutions) != len(selections) {
-		return nil, errors.Errorf(
-			"Expected amount of solutions and selections to match. Got %d and %d",
-			len(solutions),
-			len(selections),
-		)
-	}
-
-	solutionsBySelection := make([]SolutionBySelection, len(solutions))
-	for i, solution := range solutions {
-		selection := selections[i]
-
-		solutionBySelection := SolutionBySelection{
-			selection: selection,
-			solution:  solution,
-		}
-		solutionsBySelection[i] = solutionBySelection
-	}
-
-	return solutionsBySelection, nil
 }
 
 func (c *SolutionCreator) calculateNextSolutionsForIndependentSelections(

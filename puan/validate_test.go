@@ -53,6 +53,16 @@ func Test_validateTimestamps_givenFromBeforeTo_shouldReturnNoError(
 	assert.NoError(t, err)
 }
 
+func Test_validateTimestamps_givenNilTo_shouldReturnNoError(
+	t *testing.T,
+) {
+	from := newTestTime("2024-01-01T00:00:00Z")
+
+	err := validateTimestamps(&from, nil)
+
+	assert.NoError(t, err)
+}
+
 func Test_validateSelections_givenIndependentVariableInSubSelection_shouldReturnError(
 	t *testing.T,
 ) {
