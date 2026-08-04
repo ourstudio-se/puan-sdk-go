@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_CreateNextSolutions_shouldRemoveExistingSelections(
+func Test_CreateNextSolutions_givenNextRemoveSelection(
 	t *testing.T,
 ) {
 	creator := puan.NewRulesetCreator()
@@ -59,7 +59,7 @@ func Test_CreateNextSolutions_shouldRemoveExistingSelections(
 	asserter.assertInactive(t, "optF")
 }
 
-func Test_CreateNextSolutions_shouldAddNewSelections(
+func Test_CreateNextSolutions_givenNextAddSelection(
 	t *testing.T,
 ) {
 	creator := puan.NewRulesetCreator()
@@ -110,7 +110,7 @@ func Test_CreateNextSolutions_shouldAddNewSelections(
 	asserter.assertInactive(t, "optF")
 }
 
-func Test_CreateNextSolutions2_shouldCreateSolutionsForAllNextSelections(
+func Test_CreateNextSolutions_shouldCreateSolutionsForAllNextSelections(
 	t *testing.T,
 ) {
 	creator := puan.NewRulesetCreator()
@@ -157,4 +157,60 @@ func Test_CreateNextSolutions2_shouldCreateSolutionsForAllNextSelections(
 		_, err := envelope.GetSolutionBySelection(nextSelection)
 		require.NoError(t, err)
 	}
+}
+
+func Test_CreateNextSolutions_givenCompositeNextSelection(
+	t *testing.T,
+) {
+	creator := puan.NewRulesetCreator()
+	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemZ")
+
+	xorItem1Item2, _ := creator.SetXor("itemX", "itemY")
+	xorItem1Item3, _ := creator.SetXor("itemX", "itemZ")
+
+	packageExactlyOneOfItem1Item2, _ := creator.SetImply("packageA", xorItem1Item2)
+	packageExactlyOneOfItem1Item3, _ := creator.SetImply("packageA", xorItem1Item3)
+
+	_ = creator.Assume(
+		packageExactlyOneOfItem1Item2,
+		packageExactlyOneOfItem1Item3,
+	)
+
+	ruleset, _ := creator.Create()
+
+	addPackageAVariant1 := puan.NewSelectionBuilder("packageA").
+		WithSubSelectionID("itemY").
+		Build()
+	currentSelections := puan.Selections{
+		addPackageAVariant1,
+	}
+
+	addPackageAVariant2 := puan.NewSelectionBuilder("packageA").
+		WithSubSelectionID("itemX").
+		Build()
+	nextSelections := puan.Selections{
+		addPackageAVariant2,
+	}
+
+	query, _ := puan.NewNextSolutionsQuery(
+		currentSelections,
+		nextSelections,
+		ruleset,
+		nil,
+		nil,
+	)
+	envelope, _ := solutionCreator.CreateNextSolutions(query)
+	solutionForSelection, err := envelope.GetSolutionBySelection(addPackageAVariant2)
+	require.NoError(t, err)
+
+	assert.Equal(
+		t,
+		puan.Solution{
+			"packageA": 1,
+			"itemX":    1,
+			"itemY":    0,
+			"itemZ":    0,
+		},
+		solutionForSelection.Solution(),
+	)
 }
