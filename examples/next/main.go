@@ -16,13 +16,13 @@ func main() {
 	// Adds x, y, z as boolean primitive variables
 	_ = creator.AddPrimitives([]string{"x", "y", "z"}...)
 
-	// Create a simple and between x and y
+	// Create an XOR between x and y
 	rule1, err := creator.SetXor("x", "y")
 	if err != nil {
 		panic(err)
 	}
 
-	// Enforces the connective to be true
+	// Enforces the rule
 	err = creator.Assume(rule1)
 	if err != nil {
 		panic(err)
@@ -34,21 +34,25 @@ func main() {
 		panic(err)
 	}
 
-	// Custom currentSelections, which in this specific case will override the preferred variable z
+	// `y` is the current selection
 	currentSelections := puan.Selections{
 		puan.NewSelectionBuilder("y").Build(),
 	}
+	// Calculate many next selections, after `y` is already selected
+	addX := puan.NewSelectionBuilder("x").Build()
+	removeY := puan.NewSelectionBuilder("y").WithAction(puan.REMOVE).Build()
+	addZ := puan.NewSelectionBuilder("z").Build()
 	nextSelections := puan.Selections{
-		puan.NewSelectionBuilder("x").Build(),
-		puan.NewSelectionBuilder("y").WithAction(puan.REMOVE).Build(),
-		puan.NewSelectionBuilder("z").Build(),
+		addX,
+		removeY,
+		addZ,
 	}
 
 	// Create a solution creator with a solver client
 	solverClient := solver.NewClient("http://127.0.0.1:9000", "1234567890", &http.Client{})
 	solutionCreator := puan.NewSolutionCreator(solverClient)
 
-	// Create the solution
+	// Create solutions
 	query := puan.NewNextSolutionsQuery(
 		currentSelections,
 		nextSelections,
@@ -61,18 +65,12 @@ func main() {
 		panic(err)
 	}
 
-	solutionForX, _ := envelope.GetSolutionBySelection(
-		puan.NewSelectionBuilder("x").Build(),
-	)
+	solutionForX, _ := envelope.GetSolutionBySelection(addX)
 	fmt.Println("x: ", solutionForX.Solution()) // = {x: 1, y: 0, z: 0}
 
-	solutionForY, _ := envelope.GetSolutionBySelection(
-		puan.NewSelectionBuilder("y").WithAction(puan.REMOVE).Build(),
-	)
+	solutionForY, _ := envelope.GetSolutionBySelection(removeY)
 	fmt.Println("y: ", solutionForY.Solution()) // = {x: 1, y: 0, z: 0}
 
-	solutionForZ, _ := envelope.GetSolutionBySelection(
-		puan.NewSelectionBuilder("z").Build(),
-	)
+	solutionForZ, _ := envelope.GetSolutionBySelection(addZ)
 	fmt.Println("z: ", solutionForZ.Solution()) // = {x: 0, y: 1, z: 1}
 }

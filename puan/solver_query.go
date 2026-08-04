@@ -36,26 +36,21 @@ func (q *SolverQuery) Weights() weights.Weights {
 	return q.weights
 }
 
-type WeightsForSelection struct {
-	Selection Selection
-	Weights   weights.Weights
-}
-
 type MultiWeightSolverQuery struct {
-	polyhedron         *pldag.Polyhedron
-	variables          []string
-	weightsBySelection []WeightsForSelection
+	polyhedron *pldag.Polyhedron
+	variables  []string
+	weights    []weights.Weights
 }
 
 func NewMultiWeightSolverQuery(
 	polyhedron *pldag.Polyhedron,
 	variables []string,
-	weightsBySelection []WeightsForSelection,
+	weights []weights.Weights,
 ) *MultiWeightSolverQuery {
 	return &MultiWeightSolverQuery{
-		polyhedron:         polyhedron,
-		variables:          variables,
-		weightsBySelection: weightsBySelection,
+		polyhedron: polyhedron,
+		variables:  variables,
+		weights:    weights,
 	}
 }
 
@@ -67,17 +62,14 @@ func (q *MultiWeightSolverQuery) Variables() []string {
 	return q.variables
 }
 
-func (q *MultiWeightSolverQuery) WeightsBySelection() []WeightsForSelection {
-	return q.weightsBySelection
+func (q *MultiWeightSolverQuery) WeightGroups() []weights.Weights {
+	return q.weights
 }
 
 func (q *MultiWeightSolverQuery) validate() error {
-	for _, weightsForSelection := range q.weightsBySelection {
-		if weightsForSelection.Weights.WeightsTooLarge() {
-			return errors.Errorf(
-				"weights are too large for selection %v",
-				weightsForSelection.Selection,
-			)
+	for i, weights := range q.weights {
+		if weights.WeightsTooLarge() {
+			return errors.Errorf("weights are too large at index %d", i)
 		}
 	}
 	return nil
@@ -117,7 +109,7 @@ func (c *solverQueryCreator) newSolutionsBySelectionQuery(
 		return nil, err
 	}
 
-	weightGroups, err := c.calculateWeightsForSolutionsBySelection(preparedRuleset, query.selections)
+	weightGroups, err := c.calculateWeightsForSelections(preparedRuleset, query.selections)
 	if err != nil {
 		return nil, err
 	}
@@ -131,11 +123,11 @@ func (c *solverQueryCreator) newSolutionsBySelectionQuery(
 	return solverQuery, nil
 }
 
-func (c *solverQueryCreator) calculateWeightsForSolutionsBySelection(
+func (c *solverQueryCreator) calculateWeightsForSelections(
 	ruleset Ruleset,
 	selections Selections,
-) ([]WeightsForSelection, error) {
-	weightGroups := make([]WeightsForSelection, len(selections))
+) ([]weights.Weights, error) {
+	weightGroups := make([]weights.Weights, len(selections))
 	for i, selection := range selections {
 		modifiedSelections := Selections{selection}
 
@@ -143,11 +135,7 @@ func (c *solverQueryCreator) calculateWeightsForSolutionsBySelection(
 		if err != nil {
 			return nil, err
 		}
-		weightsForSelection := WeightsForSelection{
-			Selection: selection,
-			Weights:   weights,
-		}
-		weightGroups[i] = weightsForSelection
+		weightGroups[i] = weights
 	}
 
 	return weightGroups, nil
@@ -217,14 +205,14 @@ func (c *solverQueryCreator) calculateNextWeightGroups(
 	ruleset Ruleset,
 	currentSelections Selections,
 	nextSelections Selections,
-) ([]WeightsForSelection, error) {
-	weightGroups := make([]WeightsForSelection, len(nextSelections))
+) ([]weights.Weights, error) {
+	weightGroups := make([]weights.Weights, len(nextSelections))
 	for i, nextSelection := range nextSelections {
-		weightsForSelection, err := c.calculateNextWeights(ruleset, currentSelections, nextSelection)
+		weights, err := c.calculateNextWeights(ruleset, currentSelections, nextSelection)
 		if err != nil {
 			return nil, err
 		}
-		weightGroups[i] = weightsForSelection
+		weightGroups[i] = weights
 	}
 
 	return weightGroups, nil
@@ -234,7 +222,7 @@ func (c *solverQueryCreator) calculateNextWeights(
 	ruleset Ruleset,
 	currentSelections Selections,
 	nextSelection Selection,
-) (WeightsForSelection, error) {
+) (weights.Weights, error) {
 	selections := currentSelections.copy()
 
 	selections = append(selections, nextSelection)
@@ -243,11 +231,8 @@ func (c *solverQueryCreator) calculateNextWeights(
 
 	weights, err := newWeights(ruleset, selections)
 	if err != nil {
-		return WeightsForSelection{}, err
+		return nil, err
 	}
 
-	return WeightsForSelection{
-		Selection: nextSelection,
-		Weights:   weights,
-	}, nil
+	return weights, nil
 }
