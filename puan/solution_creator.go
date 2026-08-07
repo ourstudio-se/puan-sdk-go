@@ -5,7 +5,6 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
@@ -32,11 +31,6 @@ func NewSolutionCreator(
 func (c *SolutionCreator) Create(
 	query SolutionQuery,
 ) (SolutionEnvelope, error) {
-	err := query.validate()
-	if err != nil {
-		return SolutionEnvelope{}, err
-	}
-
 	solution, err := c.calculateSolution(query)
 	if err != nil {
 		err = updateSolveError(err, query.ruleset, query.from)
@@ -52,21 +46,22 @@ func (c *SolutionCreator) calculateSolution(
 	query SolutionQuery,
 ) (Solution, error) {
 	dependentSelections, independentSelections :=
-		categorizeSelections(query.selections, query.ruleset.independentVariables)
+		query.ruleset.CategorizeSelections(query.selections)
 
-	dependentQuery := NewSolutionQueryBuilder().
+	dependentQuery, err := NewSolutionQueryBuilder().
 		fromQuery(query).
 		WithSelections(dependentSelections).
 		Build()
+	if err != nil {
+		return Solution{}, err
+	}
+
 	dependentSolution, err := c.calculateDependentSolution(dependentQuery)
 	if err != nil {
 		return Solution{}, err
 	}
 
-	independentSolution := calculateIndependentSolution(
-		query.ruleset.independentVariables,
-		independentSelections,
-	)
+	independentSolution := query.ruleset.calculateIndependentSolution(independentSelections)
 
 	solution := dependentSolution.merge(independentSolution)
 
@@ -82,7 +77,6 @@ func (c *SolutionCreator) calculateDependentSolution(
 	}
 
 	tooLarge := solverQuery.weights.WeightsTooLarge()
-
 	if tooLarge {
 		return c.calculateSplitDependentSolution(query)
 	}
@@ -115,10 +109,14 @@ func (c *SolutionCreator) calculateSplitDependentSolution(
 
 	remainingSelections, prioritisedSelections := query.selections.split()
 
-	prioritisedQuery := NewSolutionQueryBuilder().
+	prioritisedQuery, err := NewSolutionQueryBuilder().
 		fromQuery(query).
 		WithSelections(prioritisedSelections).
 		Build()
+	if err != nil {
+		return Solution{}, err
+	}
+
 	prioritisedSolution, err := c.calculateDependentSolution(prioritisedQuery)
 	if err != nil {
 		return Solution{}, err
@@ -133,11 +131,15 @@ func (c *SolutionCreator) calculateSplitDependentSolution(
 		return Solution{}, err
 	}
 
-	remainingQuery := NewSolutionQueryBuilder().
+	remainingQuery, err := NewSolutionQueryBuilder().
 		fromQuery(query).
 		WithSelections(remainingSelections).
 		WithRuleset(rulesetWithPrioritisedSolution).
 		Build()
+	if err != nil {
+		return Solution{}, err
+	}
+
 	return c.calculateDependentSolution(remainingQuery)
 }
 
@@ -166,50 +168,6 @@ func (c *SolutionCreator) newRulesetWithAssumedSolution(
 	return newRuleset, nil
 }
 
-func calculateIndependentSolution(independentVariables []string, selections Selections) Solution {
-	solution := make(Solution, len(independentVariables))
-	for _, variable := range independentVariables {
-		solution[variable] = independentSolutionValue(variable, selections)
-	}
-
-	return solution
-}
-
-func independentSolutionValue(variableID string, selections Selections) int {
-	// reverse loop for prioritizing the latest selection action
-	for i := len(selections) - 1; i >= 0; i-- {
-		selection := selections[i]
-		if selection.id == variableID {
-			if selection.action == ADD {
-				return 1
-			}
-
-			return 0
-		}
-	}
-
-	return 0
-}
-
-func categorizeSelections(
-	selections Selections,
-	independentVariables []string,
-) (Selections, Selections) {
-	var dependantSelections Selections
-	var independentSelections Selections
-
-	for _, selection := range selections {
-		isIndependent := utils.Contains(independentVariables, selection.id)
-		if isIndependent {
-			independentSelections = append(independentSelections, selection)
-		} else {
-			dependantSelections = append(dependantSelections, selection)
-		}
-	}
-
-	return dependantSelections, independentSelections
-}
-
 func updateSolveError(
 	err error,
 	ruleset Ruleset,
@@ -233,11 +191,6 @@ func updateSolveError(
 func (c *SolutionCreator) CreateSolutionsBySelection(
 	query SolutionQuery,
 ) (SolutionsBySelectionEnvelope, error) {
-	err := query.validate()
-	if err != nil {
-		return SolutionsBySelectionEnvelope{}, err
-	}
-
 	solutions, err := c.calculateSolutionsBySelection(query)
 	if err != nil {
 		err = updateSolveError(err, query.ruleset, query.from)
@@ -251,21 +204,29 @@ func (c *SolutionCreator) calculateSolutionsBySelection(
 	query SolutionQuery,
 ) ([]SolutionBySelection, error) {
 	dependantSelections, independentSelections :=
-		categorizeSelections(query.selections, query.ruleset.independentVariables)
+		query.ruleset.CategorizeSelections(query.selections)
 
-	dependentQuery := NewSolutionQueryBuilder().
+	dependentQuery, err := NewSolutionQueryBuilder().
 		fromQuery(query).
 		WithSelections(dependantSelections).
 		Build()
+	if err != nil {
+		return nil, err
+	}
+
 	dependentSolutions, err := c.calculateDependentSolutionsBySelection(dependentQuery)
 	if err != nil {
 		return nil, err
 	}
 
-	independentQuery := NewSolutionQueryBuilder().
+	independentQuery, err := NewSolutionQueryBuilder().
 		fromQuery(query).
 		WithSelections(independentSelections).
 		Build()
+	if err != nil {
+		return nil, err
+	}
+
 	independentSolutions, err := c.calculateIndependentSolutionsBySelection(independentQuery)
 	if err != nil {
 		return nil, err
@@ -293,14 +254,38 @@ func (c *SolutionCreator) calculateDependentSolutionsBySelection(
 
 	primitiveSolutions := query.ruleset.RemoveSupportVariablesForMany(solutions)
 
+	solutionsBySelection, err := c.groupSolutionsBySelection(
+		primitiveSolutions,
+		query.selections,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return solutionsBySelection, nil
+}
+
+func (c *SolutionCreator) groupSolutionsBySelection(
+	solutions []Solution,
+	selections Selections,
+) ([]SolutionBySelection, error) {
+	if len(solutions) != len(selections) {
+		return nil, errors.Errorf(
+			"Expected amount of solutions and selections to match. Got %d and %d",
+			len(solutions),
+			len(selections),
+		)
+	}
+
 	solutionsBySelection := make([]SolutionBySelection, len(solutions))
-	for i := range primitiveSolutions {
-		selection := query.selections[i]
-		solution := primitiveSolutions[i]
-		solutionsBySelection[i] = SolutionBySelection{
+	for i, solution := range solutions {
+		selection := selections[i]
+
+		solutionBySelection := SolutionBySelection{
 			selection: selection,
 			solution:  solution,
 		}
+		solutionsBySelection[i] = solutionBySelection
 	}
 
 	return solutionsBySelection, nil
@@ -309,23 +294,162 @@ func (c *SolutionCreator) calculateDependentSolutionsBySelection(
 func (c *SolutionCreator) calculateIndependentSolutionsBySelection(
 	query SolutionQuery,
 ) ([]SolutionBySelection, error) {
-	defaultQuery := NewSolutionQueryBuilder().
+	defaultQuery, err := NewSolutionQueryBuilder().
 		fromQuery(query).
 		WithSelections(nil).
 		Build()
+	if err != nil {
+		return nil, err
+	}
+
 	defaultSolution, err := c.calculateDependentSolution(defaultQuery)
 	if err != nil {
 		return nil, err
 	}
 
-	solutionsBySelection := make([]SolutionBySelection, len(query.selections))
-	for i, selection := range query.selections {
-		solution := defaultSolution.withSelection(selection.id)
-		solutionsBySelection[i] = SolutionBySelection{
+	solutions := c.calculateManyIndependentSolutions(
+		defaultSolution,
+		query.selections,
+	)
+
+	return solutions, nil
+}
+
+func (c *SolutionCreator) CreateNextSolutions(
+	query NextSolutionsQuery,
+) (SolutionsBySelectionEnvelope, error) {
+	solutions, err := c.createNextSolutions(query)
+	if err != nil {
+		err = updateSolveError(err, query.ruleset, query.from)
+		return SolutionsBySelectionEnvelope{}, err
+	}
+
+	return NewSolutionsBySelectionEnvelope(solutions)
+}
+
+func (c *SolutionCreator) createNextSolutions(
+	query NextSolutionsQuery,
+) ([]SolutionBySelection, error) {
+	solutionsForDependentSelections, err := c.calculateNextSolutionsForDependentSelections(query)
+	if err != nil {
+		return nil, err
+	}
+
+	solutionsForIndependentSelections, err := c.calculateNextSolutionsForIndependentSelections(query)
+	if err != nil {
+		return nil, err
+	}
+
+	var solutions []SolutionBySelection
+	solutions = append(solutions, solutionsForDependentSelections...)
+	solutions = append(solutions, solutionsForIndependentSelections...)
+
+	return solutions, nil
+}
+
+func (c *SolutionCreator) calculateNextSolutionsForDependentSelections(
+	query NextSolutionsQuery,
+) ([]SolutionBySelection, error) {
+	currentDependentSelections, currentIndependentSelections :=
+		query.ruleset.CategorizeSelections(query.currentSelections)
+
+	nextDependentSelections, _ := query.ruleset.CategorizeSelections(query.nextSelections)
+
+	dependentQuery, err := NewNextSolutionsQuery(
+		currentDependentSelections,
+		nextDependentSelections,
+		query.ruleset,
+		query.from,
+		query.to,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	nextDependentSolutions, err := c.calculateNextDependentSolutions(dependentQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	currentIndependentSolution := query.ruleset.calculateIndependentSolution(
+		currentIndependentSelections,
+	)
+
+	nextSolutions := make([]Solution, len(nextDependentSolutions))
+	for i := range nextDependentSolutions {
+		nextSolutions[i] = nextDependentSolutions[i].merge(currentIndependentSolution)
+	}
+
+	solutionsBySelection, err := c.groupSolutionsBySelection(
+		nextSolutions,
+		nextDependentSelections,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return solutionsBySelection, nil
+}
+
+func (c *SolutionCreator) calculateNextDependentSolutions(
+	query NextSolutionsQuery,
+) ([]Solution, error) {
+	solverQuery, err := c.queryCreator.newNextSolutionsQuery(query)
+	if err != nil {
+		return nil, err
+	}
+
+	dependentSolutions, err := c.SolveWithManyWeights(solverQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	primitiveSolutions := query.ruleset.RemoveSupportVariablesForMany(dependentSolutions)
+	return primitiveSolutions, nil
+}
+
+func (c *SolutionCreator) calculateNextSolutionsForIndependentSelections(
+	query NextSolutionsQuery,
+) ([]SolutionBySelection, error) {
+	currentQuery, err := NewSolutionQueryBuilder().
+		WithRuleset(query.ruleset).
+		WithFrom(query.from).
+		WithTo(query.to).
+		WithSelections(query.currentSelections).
+		Build()
+	if err != nil {
+		return nil, err
+	}
+
+	currentSolution, err := c.calculateSolution(currentQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	_, nextIndependentSelections := query.ruleset.CategorizeSelections(
+		query.nextSelections,
+	)
+
+	nextSolutions := c.calculateManyIndependentSolutions(
+		currentSolution,
+		nextIndependentSelections,
+	)
+
+	return nextSolutions, nil
+}
+
+func (c *SolutionCreator) calculateManyIndependentSolutions(
+	solution Solution,
+	selections Selections,
+) []SolutionBySelection {
+	solutions := make([]SolutionBySelection, len(selections))
+	for i, selection := range selections {
+		solution := solution.copy()
+		solution[selection.id] = selection.action.asInt()
+		solutions[i] = SolutionBySelection{
 			selection: selection,
 			solution:  solution,
 		}
 	}
-
-	return solutionsBySelection, nil
+	return solutions
 }

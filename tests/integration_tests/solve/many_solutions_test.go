@@ -47,7 +47,7 @@ func Test_CreateSolutionsBySelection_givenManyDependentSelections_shouldCreateSo
 		selections[i] = builder.Build()
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	solutions, _ := solutionCreator.CreateSolutionsBySelection(query)
 
 	assert.Len(t, solutions.SolutionsBySelection(), len(primitives))
@@ -87,7 +87,7 @@ func Test_CreateSolutionsBySelection_givenManyIndependentSelections_shouldCreate
 		selections[i] = puan.NewSelectionBuilder(primitive).Build()
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	solutions, _ := solutionCreator.CreateSolutionsBySelection(query)
 
 	assert.Len(t, solutions.SolutionsBySelection(), len(primitives))
@@ -140,7 +140,7 @@ func Test_CreateSolutionsBySelection_givenMixedSelections_shouldCreateSolutionFo
 
 	ruleset, _ := creator.Create()
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	solutions, _ := solutionCreator.CreateSolutionsBySelection(query)
 
 	assert.Len(t, solutions.SolutionsBySelection(), len(primitives))

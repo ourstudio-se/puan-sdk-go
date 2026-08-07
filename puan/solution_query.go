@@ -2,10 +2,6 @@ package puan
 
 import (
 	"time"
-
-	"github.com/go-errors/errors"
-	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
-	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
 type SolutionQuery struct {
@@ -15,66 +11,30 @@ type SolutionQuery struct {
 	to         *time.Time
 }
 
-func (query SolutionQuery) validate() error {
-	if err := query.validateRuleset(); err != nil {
-		return err
+func NewSolutionQuery(
+	selections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+	to *time.Time,
+) (SolutionQuery, error) {
+	if err := validateRuleset(ruleset); err != nil {
+		return SolutionQuery{}, err
 	}
 
-	if err := query.validateTimestamps(); err != nil {
-		return err
+	if err := validateTimestamps(from, to); err != nil {
+		return SolutionQuery{}, err
 	}
 
-	if err := query.validateSelections(); err != nil {
-		return err
+	if err := validateSelections(ruleset, selections); err != nil {
+		return SolutionQuery{}, err
 	}
 
-	return nil
-}
-
-func (query SolutionQuery) validateRuleset() error {
-	if query.ruleset.polyhedron == nil {
-		return errors.Errorf("%w: ruleset is required", puanerror.InvalidArgument)
-	}
-	return nil
-}
-
-func (query SolutionQuery) validateTimestamps() error {
-	if query.from != nil && query.to != nil {
-		if query.from.After(*query.to) {
-			return errors.Errorf(
-				"%w: from '%s' must be before to '%s'",
-				puanerror.InvalidArgument,
-				query.from,
-				query.to,
-			)
-		}
-	}
-	return nil
-}
-
-func (query SolutionQuery) validateSelections() error {
-	for _, selection := range query.selections {
-		if !utils.ContainsAll(query.ruleset.selectableVariables, selection.IDs()) {
-			return errors.Errorf(
-				"%w: selection contains non-selectable variables: %v",
-				puanerror.InvalidArgument,
-				selection,
-			)
-		}
-
-		hasSubSelection := len(selection.subSelectionIDs) > 0
-		if hasSubSelection {
-			if utils.ContainsAny(selection.IDs(), query.ruleset.independentVariables) {
-				return errors.Errorf(
-					"%w: independent variables cannot be part of a composite selections: %v",
-					puanerror.InvalidArgument,
-					selection,
-				)
-			}
-		}
-	}
-
-	return nil
+	return SolutionQuery{
+		selections: selections,
+		ruleset:    ruleset,
+		from:       from,
+		to:         to,
+	}, nil
 }
 
 type SolutionQueryBuilder struct {
@@ -118,11 +78,46 @@ func (b *SolutionQueryBuilder) WithTo(to *time.Time) *SolutionQueryBuilder {
 	return b
 }
 
-func (b *SolutionQueryBuilder) Build() SolutionQuery {
-	return SolutionQuery{
-		selections: b.selections,
-		ruleset:    b.ruleset,
-		from:       b.from,
-		to:         b.to,
+func (b *SolutionQueryBuilder) Build() (SolutionQuery, error) {
+	return NewSolutionQuery(b.selections, b.ruleset, b.from, b.to)
+}
+
+type NextSolutionsQuery struct {
+	currentSelections Selections
+	nextSelections    Selections
+	ruleset           Ruleset
+	from              *time.Time
+	to                *time.Time
+}
+
+func NewNextSolutionsQuery(
+	currentSelections Selections,
+	nextSelections Selections,
+	ruleset Ruleset,
+	from *time.Time,
+	to *time.Time,
+) (NextSolutionsQuery, error) {
+	if err := validateRuleset(ruleset); err != nil {
+		return NextSolutionsQuery{}, err
 	}
+
+	if err := validateTimestamps(from, to); err != nil {
+		return NextSolutionsQuery{}, err
+	}
+
+	if err := validateSelections(ruleset, currentSelections); err != nil {
+		return NextSolutionsQuery{}, err
+	}
+
+	if err := validateSelections(ruleset, nextSelections); err != nil {
+		return NextSolutionsQuery{}, err
+	}
+
+	return NextSolutionsQuery{
+		currentSelections: currentSelections,
+		nextSelections:    nextSelections,
+		ruleset:           ruleset,
+		from:              from,
+		to:                to,
+	}, nil
 }

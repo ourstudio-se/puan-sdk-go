@@ -36,7 +36,7 @@ func Test_givenVeryManySelections_earliestSelectionShouldBeSelected(t *testing.T
 		)
 	}
 
-	query := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
 	envelope, _ := solutionCreator.Create(query)
 
 	asserter := newSolutionAsserter(envelope.Solution())

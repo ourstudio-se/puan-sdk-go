@@ -1,53 +1,44 @@
-// nolint:lll
 package puan
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
 )
 
-func Test_SolutionQuery_validateSelections_givenEmptySelection_shouldReturnNoError(
-	t *testing.T,
-) {
-	primaryID := fake.New[string]()
-	subID := fake.New[string]()
+func Test_SolutionCreator_groupSolutionsBySelection(t *testing.T) {
+	creator := &SolutionCreator{}
 
-	creator := NewRulesetCreator()
-	_ = creator.AddPrimitives(primaryID, subID)
-	ruleset, _ := creator.Create()
+	selection1 := NewSelectionBuilder("x").Build()
+	selection2 := NewSelectionBuilder("y").WithAction(REMOVE).Build()
+	solution1 := Solution{"x": 1, "y": 0}
+	solution2 := Solution{"x": 0, "y": 1}
 
-	selections := Selections{}
-
-	query := NewSolutionQueryBuilder().
-		WithSelections(selections).
-		WithRuleset(ruleset).
-		Build()
-
-	err := query.validateSelections()
+	got, err := creator.groupSolutionsBySelection(
+		[]Solution{solution1, solution2},
+		Selections{selection1, selection2},
+	)
 
 	assert.NoError(t, err)
+	assert.Equal(t, []SolutionBySelection{
+		{selection: selection1, solution: solution1},
+		{selection: selection2, solution: solution2},
+	}, got)
 }
 
-func Test_categorizeSelections(t *testing.T) {
-	independentID := fake.New[string]()
-	dependentID := fake.New[string]()
+func Test_SolutionCreator_groupSolutionsBySelection_givenLengthMismatch_shouldReturnError(
+	t *testing.T,
+) {
+	creator := &SolutionCreator{}
 
-	selections := Selections{
-		NewSelectionBuilder(independentID).Build(),
-		NewSelectionBuilder(dependentID).Build(),
-	}
+	got, err := creator.groupSolutionsBySelection(
+		[]Solution{{"x": 1}},
+		Selections{
+			NewSelectionBuilder("x").Build(),
+			NewSelectionBuilder("y").Build(),
+		},
+	)
 
-	independentVariables := []string{independentID}
-
-	dependentSelections, independentSelections :=
-		categorizeSelections(selections, independentVariables)
-
-	assert.Len(t, dependentSelections, 1)
-	assert.Equal(t, dependentID, dependentSelections[0].id)
-
-	assert.Len(t, independentSelections, 1)
-	assert.Equal(t, independentID, independentSelections[0].id)
+	assert.Nil(t, got)
+	assert.Error(t, err)
 }

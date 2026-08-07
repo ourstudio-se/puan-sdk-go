@@ -359,17 +359,6 @@ func Test_Selections_extendWithPrimaryPrimitiveSelections(t *testing.T) {
 	assert.Equal(t, want, extended)
 }
 
-func Test_Selections_ids(t *testing.T) {
-	selections := Selections{
-		NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
-		NewSelectionBuilder("z").Build(),
-		NewSelectionBuilder("z").WithSubSelectionID("w").Build(),
-	}
-
-	ids := selections.ids()
-	assert.Equal(t, []string{"x", "y", "z", "w"}, ids)
-}
-
 func Test_Selections_split(t *testing.T) {
 	type theory struct {
 		name       string
@@ -554,6 +543,92 @@ func Test_Selection_Equals(t *testing.T) {
 	for _, tt := range theories {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.expected, tt.first.Equals(tt.second))
+		})
+	}
+}
+
+func Test_Selections_Contains(t *testing.T) {
+	theories := []struct {
+		name       string
+		selections Selections
+		selection  Selection
+		want       bool
+	}{
+		{
+			name:       "empty selections",
+			selections: Selections{},
+			selection:  NewSelectionBuilder("x").Build(),
+			want:       false,
+		},
+		{
+			name: "contains matching primitive",
+			selections: Selections{
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("y").Build(),
+			},
+			selection: NewSelectionBuilder("x").Build(),
+			want:      true,
+		},
+		{
+			name: "does not contain different id",
+			selections: Selections{
+				NewSelectionBuilder("x").Build(),
+			},
+			selection: NewSelectionBuilder("y").Build(),
+			want:      false,
+		},
+		{
+			name: "does not contain different action",
+			selections: Selections{
+				NewSelectionBuilder("x").Build(),
+			},
+			selection: NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+			want:      false,
+		},
+		{
+			name: "contains matching composite",
+			selections: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			},
+			selection: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			want:      true,
+		},
+		{
+			name: "contains composite with sub-selections in different order",
+			selections: Selections{
+				NewSelectionBuilder("x").
+					WithSubSelectionID("y").
+					WithSubSelectionID("z").
+					Build(),
+			},
+			selection: NewSelectionBuilder("x").
+				WithSubSelectionID("z").
+				WithSubSelectionID("y").
+				Build(),
+			want: true,
+		},
+		{
+			name: "does not contain composite with different sub-selection",
+			selections: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			},
+			selection: NewSelectionBuilder("x").WithSubSelectionID("z").Build(),
+			want:      false,
+		},
+		{
+			name: "does not contain primitive when only composite exists",
+			selections: Selections{
+				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			},
+			selection: NewSelectionBuilder("x").Build(),
+			want:      false,
+		},
+	}
+
+	for _, tt := range theories {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.selections.Contains(tt.selection)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

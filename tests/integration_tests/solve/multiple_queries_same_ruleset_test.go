@@ -15,7 +15,7 @@ func Test_multipleQueries_shouldNotChangeRuleset(t *testing.T) {
 
 	// query 1
 	from := startTime.Add(45 * time.Minute)
-	query := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).WithFrom(&from).Build()
+	query, _ := puan.NewSolutionQueryBuilder().WithRuleset(ruleset).WithFrom(&from).Build()
 	_, err := solutionCreator.Create(query)
 	assert.NoError(t, err)
 	// passed periods should not change the initial ruleset
@@ -27,7 +27,7 @@ func Test_multipleQueries_shouldNotChangeRuleset(t *testing.T) {
 		WithSubSelectionID("y").
 		Build()
 
-	query = puan.NewSolutionQueryBuilder().
+	query, _ = puan.NewSolutionQueryBuilder().
 		WithSelections(puan.Selections{selection}).
 		WithRuleset(ruleset).
 		Build()

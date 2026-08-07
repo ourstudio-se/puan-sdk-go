@@ -505,3 +505,100 @@ func Test_RuleSet_isValidFromTime(t *testing.T) {
 		})
 	}
 }
+
+func Test_Ruleset_CategorizeSelections(t *testing.T) {
+	independentID := fake.New[string]()
+	dependentID := fake.New[string]()
+
+	selections := Selections{
+		NewSelectionBuilder(independentID).Build(),
+		NewSelectionBuilder(dependentID).Build(),
+	}
+
+	ruleset := Ruleset{
+		independentVariables: []string{independentID},
+	}
+
+	dependentSelections, independentSelections :=
+		ruleset.CategorizeSelections(selections)
+
+	assert.Len(t, dependentSelections, 1)
+	assert.Equal(t, dependentID, dependentSelections[0].id)
+
+	assert.Len(t, independentSelections, 1)
+	assert.Equal(t, independentID, independentSelections[0].id)
+}
+
+func Test_independentSolutionValue(t *testing.T) {
+	tests := []struct {
+		name       string
+		variableID string
+		selections Selections
+		want       int
+	}{
+		{
+			name:       "given no selections, returns 0",
+			variableID: "x",
+			selections: Selections{},
+			want:       0,
+		},
+		{
+			name:       "given no matching selection, returns 0",
+			variableID: "x",
+			selections: Selections{
+				NewSelectionBuilder("y").Build(),
+			},
+			want: 0,
+		},
+		{
+			name:       "given add selection, returns 1",
+			variableID: "x",
+			selections: Selections{
+				NewSelectionBuilder("x").WithAction(ADD).Build(),
+			},
+			want: 1,
+		},
+		{
+			name:       "given remove selection, returns 0",
+			variableID: "x",
+			selections: Selections{
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+			},
+			want: 0,
+		},
+		{
+			name:       "given later add after remove, returns 1",
+			variableID: "x",
+			selections: Selections{
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+				NewSelectionBuilder("x").WithAction(ADD).Build(),
+			},
+			want: 1,
+		},
+		{
+			name:       "given later remove after add, returns 0",
+			variableID: "x",
+			selections: Selections{
+				NewSelectionBuilder("x").WithAction(ADD).Build(),
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+			},
+			want: 0,
+		},
+		{
+			name:       "given unrelated selections after matching, still uses matching action",
+			variableID: "x",
+			selections: Selections{
+				NewSelectionBuilder("x").WithAction(ADD).Build(),
+				NewSelectionBuilder("y").WithAction(REMOVE).Build(),
+			},
+			want: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := independentSolutionValue(tt.variableID, tt.selections)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

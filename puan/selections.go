@@ -14,46 +14,21 @@ const (
 
 type Action string
 
-type Selection struct {
-	id              string
-	subSelectionIDs []string
-	action          Action
-}
-
-type Selections []Selection
-
-func (s Selections) ids() []string {
-	var ids []string
-	seen := make(map[string]bool, len(s))
-	for _, selection := range s {
-		for _, id := range selection.IDs() {
-			if !seen[id] {
-				seen[id] = true
-				ids = append(ids, id)
-			}
-		}
+func (a Action) asInt() int {
+	if a == ADD {
+		return 1
 	}
-
-	return ids
+	return 0
 }
 
-// split into two contiguous slices, preserving order
-func (s Selections) split() (Selections, Selections) {
-	n := len(s)
-	switch n {
-	case 0:
-		return nil, nil
-	case 1:
-		return s, nil
-	default:
-		mid := (n + 1) / 2
-		return s[:mid], s[mid:]
+type (
+	Selection struct {
+		id              string
+		subSelectionIDs []string
+		action          Action
 	}
-}
-
-func (s Selection) IsComposite() bool {
-	return len(s.subSelectionIDs) > 0
-}
+	Selections []Selection
+)
 
 func newSelection(action Action, id string, subSelectionIDs []string) Selection {
 	return Selection{
@@ -65,6 +40,18 @@ func newSelection(action Action, id string, subSelectionIDs []string) Selection 
 
 func (s Selection) ID() string {
 	return s.id
+}
+
+func (s Selection) Action() Action {
+	return s.action
+}
+
+func (s Selection) SubSelectionIDs() []string {
+	return s.subSelectionIDs
+}
+
+func (s Selection) IsComposite() bool {
+	return len(s.subSelectionIDs) > 0
 }
 
 func (s Selection) IDs() []string {
@@ -108,6 +95,29 @@ func (s Selection) makesRedundant(other Selection) bool {
 	prioritisedIsNotComposite := !s.IsComposite()
 
 	return prioritisedIsNotComposite
+}
+
+func (s Selections) Contains(selection Selection) bool {
+	for _, s := range s {
+		if s.Equals(selection) {
+			return true
+		}
+	}
+	return false
+}
+
+// split into two contiguous slices, preserving order
+func (s Selections) split() (Selections, Selections) {
+	n := len(s)
+	switch n {
+	case 0:
+		return nil, nil
+	case 1:
+		return s, nil
+	default:
+		mid := (n + 1) / 2
+		return s[:mid], s[mid:]
+	}
 }
 
 // Prepares selections for a query.
@@ -160,6 +170,12 @@ func (selectionsByOccurrence Selections) getImpacting() Selections {
 
 func (s Selections) reverse() Selections {
 	return utils.Reverse(s)
+}
+
+func (selections Selections) copy() Selections {
+	newSelections := make(Selections, len(selections))
+	copy(newSelections, selections)
+	return newSelections
 }
 
 func (selectionsByPriority Selections) filterOutRedundant() Selections {
