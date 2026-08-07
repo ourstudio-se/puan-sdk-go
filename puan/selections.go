@@ -106,21 +106,6 @@ func (s Selections) Contains(selection Selection) bool {
 	return false
 }
 
-func (s Selections) ids() []string {
-	var ids []string
-	seen := make(map[string]bool, len(s))
-	for _, selection := range s {
-		for _, id := range selection.IDs() {
-			if !seen[id] {
-				seen[id] = true
-				ids = append(ids, id)
-			}
-		}
-	}
-
-	return ids
-}
-
 // split into two contiguous slices, preserving order
 func (s Selections) split() (Selections, Selections) {
 	n := len(s)
