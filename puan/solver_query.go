@@ -1,7 +1,6 @@
 package puan
 
 import (
-	"github.com/go-errors/errors"
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
 )
@@ -46,18 +45,12 @@ func NewMultiWeightSolverQuery(
 	polyhedron *pldag.Polyhedron,
 	variables []string,
 	weights []weights.Weights,
-) (*MultiWeightSolverQuery, error) {
-	for i, weights := range weights {
-		if weights.WeightsTooLarge() {
-			return nil, errors.Errorf("weights are too large at index %d", i)
-		}
-	}
-
+) *MultiWeightSolverQuery {
 	return &MultiWeightSolverQuery{
 		polyhedron: polyhedron,
 		variables:  variables,
 		weights:    weights,
-	}, nil
+	}
 }
 
 func (q *MultiWeightSolverQuery) Polyhedron() *pldag.Polyhedron {
@@ -111,14 +104,11 @@ func (c *solverQueryCreator) newSolutionsBySelectionQuery(
 		return nil, err
 	}
 
-	solverQuery, err := NewMultiWeightSolverQuery(
+	solverQuery := NewMultiWeightSolverQuery(
 		preparedRuleset.polyhedron,
 		preparedRuleset.dependentVariables,
 		weightGroups,
 	)
-	if err != nil {
-		return nil, err
-	}
 
 	return solverQuery, nil
 }
@@ -179,7 +169,7 @@ func (c *solverQueryCreator) newNextSolutionsQuery(
 		return nil, err
 	}
 
-	if err := preparedRuleset.setCompositeSelectionConstraints(query.nextSelections); err != nil {
+	if err = preparedRuleset.setCompositeSelectionConstraints(query.nextSelections); err != nil {
 		return nil, err
 	}
 
@@ -192,14 +182,11 @@ func (c *solverQueryCreator) newNextSolutionsQuery(
 		return nil, err
 	}
 
-	solverQuery, err := NewMultiWeightSolverQuery(
+	solverQuery := NewMultiWeightSolverQuery(
 		preparedRuleset.polyhedron,
 		preparedRuleset.dependentVariables,
 		weightGroups,
 	)
-	if err != nil {
-		return nil, err
-	}
 
 	return solverQuery, nil
 }
