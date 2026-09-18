@@ -4,8 +4,6 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
-	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
-
 	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
@@ -144,24 +142,43 @@ func (c *SolutionCreator) calculateSplitDependentSolution(
 	return c.calculateDependentSolution(remainingQuery)
 }
 
+// nolint:gocyclo
 func (c *SolutionCreator) newRulesetWithAssumedSolution(
 	ruleset Ruleset,
 	selections Selections,
 	solution Solution,
 ) (Ruleset, error) {
 	newRuleset := ruleset.copy()
-
 	for _, selection := range selections {
-		isSelected := solution.isSelected(selection.id)
-		if isSelected {
-			err := newRuleset.assume(selection.id)
-			if err != nil {
-				return Ruleset{}, err
-			}
-		} else {
+		isNotSelected := !solution.isSelected(selection.id)
+		if isNotSelected {
+			// Large selection sets are split and solved by priority, locking
+			// higher-priority results first. If a selection isn't chosen in this
+			// split, it must be explicitly assumeNot, otherwise unwanted behavior can occur.
+			// E.g. an ADD followed by a REMOVE, ending up in different splits, would let the
+			// lower-priority ADD have effect and end up in the solution.
+			// Note: subSelectionIDs are not assumeNot here as they may
+			// be included in other selections/subselections.
 			err := newRuleset.assumeNot(selection.id)
 			if err != nil {
 				return Ruleset{}, err
+			}
+
+			continue
+		}
+
+		err := newRuleset.assume(selection.id)
+		if err != nil {
+			return Ruleset{}, err
+		}
+
+		for _, subSelection := range selection.subSelectionIDs {
+			isSubSelected := solution.isSelected(subSelection)
+			if isSubSelected {
+				err = newRuleset.assume(subSelection)
+				if err != nil {
+					return Ruleset{}, err
+				}
 			}
 		}
 	}
@@ -383,38 +400,41 @@ func (c *SolutionCreator) calculateNextSolutionsForDependentSelections(
 		currentIndependentSelections,
 	)
 
-	nextSolutions := make([]SolutionBySelection, len(nextDependentSolutions))
+	solutionBySelection := make([]SolutionBySelection, len(nextDependentSolutions))
 	for i, nextSolution := range nextDependentSolutions {
-		nextSolutions[i] = SolutionBySelection{
+		solutionBySelection[i] = SolutionBySelection{
 			selection: nextSolution.selection,
 			solution:  nextSolution.solution.merge(currentIndependentSolution),
 		}
 	}
 
-	return nextSolutions, nil
+	return solutionBySelection, nil
 }
 
 func (c *SolutionCreator) calculateNextDependentSolutions(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
-	solverQuery, err := c.queryCreator.newNextSolutionsQuery(query)
+	partitioner, err := newNextSolutionQueryPartitioner(query)
 	if err != nil {
 		return nil, err
 	}
 
-	weights, err := newWeightsBySelections(query.nextSelections, solverQuery.WeightGroups())
+	batchable, err := partitioner.batchable()
 	if err != nil {
 		return nil, err
 	}
 
-	batchable, saturated := weights.splitBySaturation()
-
-	batchedSolutions, err := c.calculateBatchedNextSolutions(query.ruleset, solverQuery, batchable)
+	saturated, err := partitioner.saturated()
 	if err != nil {
 		return nil, err
 	}
 
-	saturatedSolutions, err := c.calculateSaturatedNextSolutions(query, saturated.selections())
+	batchedSolutions, err := c.calculateBatchedNextSolutions(batchable)
+	if err != nil {
+		return nil, err
+	}
+
+	saturatedSolutions, err := c.calculateSaturatedNextSolutions(saturated)
 	if err != nil {
 		return nil, err
 	}
@@ -427,40 +447,32 @@ func (c *SolutionCreator) calculateNextDependentSolutions(
 }
 
 func (c *SolutionCreator) calculateBatchedNextSolutions(
-	ruleset Ruleset,
-	solverQuery *MultiWeightSolverQuery,
-	batchable manyWeightsBySelections,
+	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
-	if len(batchable) == 0 {
+	if query.emptyNextSelections() {
 		return nil, nil
 	}
 
-	batchedQuery := NewMultiWeightSolverQuery(
-		solverQuery.Polyhedron(),
-		solverQuery.Variables(),
-		batchable.weightGroups(),
-	)
-
-	solutions, err := c.SolveWithManyWeights(batchedQuery)
+	solverQuery, err := c.queryCreator.newNextSolutionsSolverQuery(query)
 	if err != nil {
 		return nil, err
 	}
 
-	primitiveSolutions := ruleset.RemoveSupportVariablesForMany(solutions)
+	solutions, err := c.SolveWithManyWeights(solverQuery)
+	if err != nil {
+		return nil, err
+	}
 
-	return c.groupSolutionsBySelection(primitiveSolutions, batchable.selections())
+	primitiveSolutions := query.ruleset.RemoveSupportVariablesForMany(solutions)
+
+	return c.groupSolutionsBySelection(primitiveSolutions, query.nextSelections)
 }
 
-// Saturated weight groups cannot share a batched request. Each next selection
-// outweighs all current selections, so the split has to start above the next
-// selection and cannot be shared between the groups - solve them one at a time
-// and let calculateDependentSolution split each one.
 func (c *SolutionCreator) calculateSaturatedNextSolutions(
 	query NextSolutionsQuery,
-	nextSelections Selections,
 ) ([]SolutionBySelection, error) {
-	solutions := make([]Solution, len(nextSelections))
-	for i, nextSelection := range nextSelections {
+	solutions := make([]Solution, len(query.nextSelections))
+	for i, nextSelection := range query.nextSelections {
 		solution, err := c.calculateSaturatedNextSolution(query, nextSelection)
 		if err != nil {
 			return nil, err
@@ -469,7 +481,7 @@ func (c *SolutionCreator) calculateSaturatedNextSolutions(
 		solutions[i] = solution
 	}
 
-	return c.groupSolutionsBySelection(solutions, nextSelections)
+	return c.groupSolutionsBySelection(solutions, query.nextSelections)
 }
 
 func (c *SolutionCreator) calculateSaturatedNextSolution(
@@ -489,7 +501,7 @@ func (c *SolutionCreator) calculateSaturatedNextSolution(
 		return Solution{}, err
 	}
 
-	return c.calculateSolution(selectionQuery)
+	return c.calculateDependentSolution(selectionQuery)
 }
 
 func (c *SolutionCreator) calculateNextSolutionsForIndependentSelections(
@@ -536,72 +548,4 @@ func (c *SolutionCreator) calculateManyIndependentSolutions(
 		}
 	}
 	return solutions
-}
-
-type (
-	weightsBySelection struct {
-		selection Selection
-		weights   weights.Weights
-	}
-	manyWeightsBySelections []weightsBySelection
-)
-
-func newWeightsBySelections(
-	selections Selections,
-	weightGroups []weights.Weights,
-) (manyWeightsBySelections, error) {
-	if len(selections) != len(weightGroups) {
-		return nil, errors.Errorf(
-			"%w: expected %d weight groups, got %d",
-			puanerror.InvalidArgument,
-			len(selections),
-			len(weightGroups),
-		)
-	}
-
-	weights := make(manyWeightsBySelections, len(selections))
-	for i, selection := range selections {
-		weights[i] = weightsBySelection{
-			selection: selection,
-			weights:   weightGroups[i],
-		}
-	}
-
-	return weights, nil
-}
-
-func (w manyWeightsBySelections) splitBySaturation() (
-	batchable manyWeightsBySelections,
-	saturated manyWeightsBySelections,
-) {
-	for _, weighted := range w {
-		tooLarge := weighted.weights.WeightsTooLarge()
-		if tooLarge {
-			saturated = append(saturated, weighted)
-
-			continue
-		}
-
-		batchable = append(batchable, weighted)
-	}
-
-	return batchable, saturated
-}
-
-func (w manyWeightsBySelections) selections() Selections {
-	selections := make(Selections, len(w))
-	for i, weighted := range w {
-		selections[i] = weighted.selection
-	}
-
-	return selections
-}
-
-func (w manyWeightsBySelections) weightGroups() []weights.Weights {
-	weightGroups := make([]weights.Weights, len(w))
-	for i, weighted := range w {
-		weightGroups[i] = weighted.weights
-	}
-
-	return weightGroups
 }

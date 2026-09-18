@@ -217,7 +217,7 @@ func Test_CreateNextSolutions_givenCompositeNextSelection(
 	)
 }
 
-func Test_CreateNextSolutions_givenSaturatedWeights_shouldCreateSolutionForEach(
+func Test_CreateNextSolutions_givenADDThenREMOVEWithSaturatedWeights_shouldNotBeInSolution(
 	t *testing.T,
 ) {
 	creator, primitives := setupSaturatableRuleset(t)
@@ -228,7 +228,6 @@ func Test_CreateNextSolutions_givenSaturatedWeights_shouldCreateSolutionForEach(
 
 	ruleset, _ := creator.Create()
 
-	// select "a" to enable unselection to verify result.
 	currentSelections := puan.Selections{puan.NewSelectionBuilder("a").Build()}
 	for _, primitive := range primitives {
 		currentSelections = append(
@@ -238,8 +237,7 @@ func Test_CreateNextSolutions_givenSaturatedWeights_shouldCreateSolutionForEach(
 	}
 
 	removeA := puan.NewSelectionBuilder("a").WithAction(puan.REMOVE).Build()
-	addB := puan.NewSelectionBuilder("b").Build()
-	nextSelections := puan.Selections{removeA, addB}
+	nextSelections := puan.Selections{removeA}
 	query, _ := puan.NewNextSolutionsQuery(
 		currentSelections,
 		nextSelections,
@@ -253,27 +251,33 @@ func Test_CreateNextSolutions_givenSaturatedWeights_shouldCreateSolutionForEach(
 	solutionWithoutA, err := envelope.GetSolutionBySelection(removeA)
 	require.NoError(t, err)
 	asserter := newSolutionAsserter(solutionWithoutA.Solution())
-	asserter.assertInactive(t, "a", "b")
-
-	// "b" conflicts with nothing, so the current "a" survives.
-	solutionWithB, err := envelope.GetSolutionBySelection(addB)
-	require.NoError(t, err)
-	asserter = newSolutionAsserter(solutionWithB.Solution())
-	asserter.assertActive(t, "a", "b")
+	asserter.assertInactive(t, "a")
 }
 
-func Test_CreateNextSolutions_givenSaturatedWeightsAndIndependentNextSelection(
+func Test_CreateNextSolutions_givenSaturatedCompositeNextSelection_shouldKeepSubSelection(
 	t *testing.T,
 ) {
 	creator, primitives := setupSaturatableRuleset(t)
 
-	_ = creator.AddPrimitives("a", "b", "independent")
-	makeDependant, _ := creator.SetImply("a", "b")
-	_ = creator.Assume(makeDependant)
+	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemZ")
 
-	ruleset, _ := creator.Create()
+	xorItemXItemY, _ := creator.SetXor("itemX", "itemY")
+	xorItemXItemZ, _ := creator.SetXor("itemX", "itemZ")
 
-	currentSelections := puan.Selections{puan.NewSelectionBuilder("a").Build()}
+	packageExactlyOneOfItemXItemY, _ := creator.SetImply("packageA", xorItemXItemY)
+	packageExactlyOneOfItemXItemZ, _ := creator.SetImply("packageA", xorItemXItemZ)
+
+	_ = creator.Assume(packageExactlyOneOfItemXItemY, packageExactlyOneOfItemXItemZ)
+
+	ruleset, err := creator.Create()
+	require.NoError(t, err)
+
+	currentSelections := puan.Selections{
+		puan.NewSelectionBuilder("packageA").
+			WithSubSelectionID("itemY").
+			WithSubSelectionID("itemZ").
+			Build(),
+	}
 	for _, primitive := range primitives {
 		currentSelections = append(
 			currentSelections,
@@ -281,30 +285,77 @@ func Test_CreateNextSolutions_givenSaturatedWeightsAndIndependentNextSelection(
 		)
 	}
 
-	removeA := puan.NewSelectionBuilder("a").WithAction(puan.REMOVE).Build()
-	addIndependent := puan.NewSelectionBuilder("independent").Build()
-	nextSelections := puan.Selections{removeA, addIndependent}
+	addPackageAWithItemX := puan.NewSelectionBuilder("packageA").
+		WithSubSelectionID("itemX").
+		Build()
 
-	query, _ := puan.NewNextSolutionsQuery(
+	query, err := puan.NewNextSolutionsQuery(
 		currentSelections,
-		nextSelections,
+		puan.Selections{addPackageAWithItemX},
 		ruleset,
 		nil,
 		nil,
 	)
+	require.NoError(t, err)
+
 	envelope, err := solutionCreator.CreateNextSolutions(query)
 	require.NoError(t, err)
 
-	solutionWithoutA, err := envelope.GetSolutionBySelection(removeA)
+	solutionForSelection, err := envelope.GetSolutionBySelection(addPackageAWithItemX)
 	require.NoError(t, err)
-	asserter := newSolutionAsserter(solutionWithoutA.Solution())
-	asserter.assertInactive(t, "a", "b", "independent")
 
-	// "independent" conflicts with nothing, so the current "a" survives and implies "b".
-	solutionWithIndependent, err := envelope.GetSolutionBySelection(addIndependent)
+	asserter := newSolutionAsserter(solutionForSelection.Solution())
+	asserter.assertActive(t, "packageA")
+	asserter.assertActive(t, "itemX")
+	asserter.assertInactive(t, "itemY")
+	asserter.assertInactive(t, "itemZ")
+}
+
+func Test_CreateNextSolutions_givenSaturatedREMOVECompositeNextSelectionWithSubSelection_shouldNotRemoveSubSelection(
+	t *testing.T,
+) {
+	creator, primitives := setupSaturatableRuleset(t)
+	_ = creator.AddPrimitives("packageA", "itemX")
+	pkgImpliesX, _ := creator.SetImply("packageA", "itemX")
+
+	_ = creator.Assume(pkgImpliesX)
+
+	ruleset, err := creator.Create()
 	require.NoError(t, err)
-	asserter = newSolutionAsserter(solutionWithIndependent.Solution())
-	asserter.assertActive(t, "a", "b", "independent")
+
+	currentSelections := puan.Selections{
+		puan.NewSelectionBuilder("itemX").Build(),
+	}
+	for _, primitive := range primitives {
+		currentSelections = append(
+			currentSelections,
+			puan.NewSelectionBuilder(primitive).Build(),
+		)
+	}
+
+	removePackageAWithItemX := puan.NewSelectionBuilder("packageA").
+		WithSubSelectionID("itemX").
+		WithAction(puan.REMOVE).
+		Build()
+
+	query, err := puan.NewNextSolutionsQuery(
+		currentSelections,
+		puan.Selections{removePackageAWithItemX},
+		ruleset,
+		nil,
+		nil,
+	)
+	require.NoError(t, err)
+
+	envelope, err := solutionCreator.CreateNextSolutions(query)
+	require.NoError(t, err)
+
+	solutionForSelection, err := envelope.GetSolutionBySelection(removePackageAWithItemX)
+	require.NoError(t, err)
+
+	asserter := newSolutionAsserter(solutionForSelection.Solution())
+	asserter.assertInactive(t, "packageA")
+	asserter.assertActive(t, "itemX")
 }
 
 func setupSaturatableRuleset(t *testing.T) (*puan.RulesetCreator, []string) {

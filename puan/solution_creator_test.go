@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
-	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -54,10 +52,10 @@ func Test_SolutionCreator_calculateNextDependentSolutions_givenSmallWeights_shou
 	client := &fakeSolverClient{}
 	creator := NewSolutionCreator(client)
 
-	currenSelections := selectionsFor(t, primitives[:3])
-	nextSelections := selectionsFor(t, primitives[40:42])
+	currentSelections := selectionsFor(t, primitives[:3])
+	nextSelections := selectionsFor(t, primitives[3:5])
 	query, err := NewNextSolutionsQuery(
-		currenSelections,
+		currentSelections,
 		nextSelections,
 		ruleset,
 		nil,
@@ -69,11 +67,11 @@ func Test_SolutionCreator_calculateNextDependentSolutions_givenSmallWeights_shou
 
 	require.NoError(t, err)
 	assertSolutionExistsForEachSelection(t, actual, nextSelections)
-	assert.Equal(t, len(nextSelections), client.batchedGroupCount)
+	assert.Equal(t, 1, client.multiSolveCalls)
 	assert.Zero(t, client.solveCalls)
 }
 
-func Test_SolutionCreator_calculateNextDependentSolutions_givenTooLargeWeights_shouldSolveOneByOne(
+func Test_SolutionCreator_calculateNextDependentSolutions_givenSaturatedWeights_shouldSolveOneByOne(
 	t *testing.T,
 ) {
 	ruleset, primitives := setupSaturatableRuleset(t)
@@ -81,10 +79,10 @@ func Test_SolutionCreator_calculateNextDependentSolutions_givenTooLargeWeights_s
 	creator := NewSolutionCreator(client)
 
 	// Select many for current to enforce saturation.
-	currenSelections := selectionsFor(t, primitives[:60])
-	nextSelections := selectionsFor(t, primitives[60:62])
+	currentSelections := selectionsFor(t, primitives[:25])
+	nextSelections := selectionsFor(t, primitives[25:27])
 	query, err := NewNextSolutionsQuery(
-		currenSelections,
+		currentSelections,
 		nextSelections,
 		ruleset,
 		nil,
@@ -96,53 +94,31 @@ func Test_SolutionCreator_calculateNextDependentSolutions_givenTooLargeWeights_s
 
 	require.NoError(t, err)
 	assertSolutionExistsForEachSelection(t, actual, nextSelections)
-	assert.Empty(t, client.batchedGroupCount)
-	assert.Positive(t, client.solveCalls)
+	assert.Empty(t, client.multiSolveCalls)
+	// each selection is split once, 2 calls per next selection, therefore 4 in total.
+	assert.Equal(t, 4, client.solveCalls)
 }
 
-type fakeSolverClient struct {
-	solveCalls        int
-	batchedGroupCount int
-}
+func Test_SolutionCreator_CreateNextSolutions_givenNoNextSelections_shouldReturnEmptyEnvelope(
+	t *testing.T,
+) {
+	ruleset, primitives := setupSaturatableRuleset(t)
+	client := &fakeSolverClient{}
+	creator := NewSolutionCreator(client)
 
-func (c *fakeSolverClient) Solve(_ *SolverQuery) (Solution, error) {
-	c.solveCalls++
-
-	return Solution{}, nil
-}
-
-func (c *fakeSolverClient) SolveWithManyWeights(
-	query *MultiWeightSolverQuery,
-) ([]Solution, error) {
-	c.batchedGroupCount = len(query.WeightGroups())
-
-	solutions := make([]Solution, len(query.WeightGroups()))
-	for i := range solutions {
-		solutions[i] = Solution{}
-	}
-
-	return solutions, nil
-}
-
-func setupSaturatableRuleset(t *testing.T) (Ruleset, []string) {
-	t.Helper()
-
-	primitives := make([]string, 100)
-	for i := range primitives {
-		primitives[i] = fmt.Sprintf("p%d", i)
-	}
-
-	creator := NewRulesetCreator()
-	_ = creator.AddPrimitives(primitives...)
-
-	orID, err := creator.SetOr(primitives...)
-	require.NoError(t, err)
-	require.NoError(t, creator.Assume(orID))
-
-	ruleset, err := creator.Create()
+	query, err := NewNextSolutionsQuery(
+		selectionsFor(t, primitives[:3]),
+		nil,
+		ruleset,
+		nil,
+		nil,
+	)
 	require.NoError(t, err)
 
-	return ruleset, primitives
+	envelope, err := creator.CreateNextSolutions(query)
+
+	require.NoError(t, err)
+	assert.Empty(t, envelope.SolutionsBySelection())
 }
 
 func selectionsFor(t *testing.T, primitives []string) Selections {
@@ -173,102 +149,47 @@ func assertSolutionExistsForEachSelection(
 	}
 }
 
-func Test_newWeightsBySelection(t *testing.T) {
-	a := NewSelectionBuilder("a").Build()
-	b := NewSelectionBuilder("b").Build()
-	weightGroups := []weights.Weights{{"a": 1}, {"b": 2}}
+func setupSaturatableRuleset(t *testing.T) (Ruleset, []string) {
+	t.Helper()
 
-	actual, err := newWeightsBySelections(Selections{a, b}, weightGroups)
+	primitives := make([]string, 100)
+	for i := range primitives {
+		primitives[i] = fmt.Sprintf("p%d", i)
+	}
 
+	creator := NewRulesetCreator()
+	_ = creator.AddPrimitives(primitives...)
+
+	orID, err := creator.SetOr(primitives...)
 	require.NoError(t, err)
-	assert.Equal(t, manyWeightsBySelections{
-		{selection: a, weights: weights.Weights{"a": 1}},
-		{selection: b, weights: weights.Weights{"b": 2}},
-	}, actual)
+	require.NoError(t, creator.Assume(orID))
+
+	ruleset, err := creator.Create()
+	require.NoError(t, err)
+
+	return ruleset, primitives
 }
 
-func Test_newWeightsBySelection_givenLengthMismatch_shouldReturnError(t *testing.T) {
-	selections := Selections{NewSelectionBuilder("a").Build()}
-
-	actual, err := newWeightsBySelections(selections, []weights.Weights{{"a": 1}, {"b": 2}})
-
-	assert.Nil(t, actual)
-	assert.ErrorIs(t, err, puanerror.InvalidArgument)
+type fakeSolverClient struct {
+	solveCalls      int
+	multiSolveCalls int
 }
 
-func Test_weightsBySelection_splitBySaturation(t *testing.T) {
-	fits := weights.Weights{"x": 1}
-	saturates := weights.Weights{"x": weights.WEIGHTS_SATURATION_LIMIT + 1}
+func (c *fakeSolverClient) Solve(_ *SolverQuery) (Solution, error) {
+	c.solveCalls++
 
-	aFits := weightsBySelection{selection: NewSelectionBuilder("a").Build(), weights: fits}
-	bSaturate := weightsBySelection{selection: NewSelectionBuilder("b").Build(), weights: saturates}
-	cFits := weightsBySelection{selection: NewSelectionBuilder("c").Build(), weights: fits}
-	dSaturate := weightsBySelection{selection: NewSelectionBuilder("d").Build(), weights: saturates}
-
-	type theory struct {
-		name              string
-		weighted          manyWeightsBySelections
-		expectedBatchable manyWeightsBySelections
-		expectedSaturated manyWeightsBySelections
-	}
-
-	theories := []theory{
-		{
-			name:              "nothing to split",
-			weighted:          nil,
-			expectedBatchable: nil,
-			expectedSaturated: nil,
-		},
-		{
-			name:              "all fit",
-			weighted:          manyWeightsBySelections{aFits, cFits},
-			expectedBatchable: manyWeightsBySelections{aFits, cFits},
-			expectedSaturated: nil,
-		},
-		{
-			name:              "all saturated",
-			weighted:          manyWeightsBySelections{bSaturate, dSaturate},
-			expectedSaturated: manyWeightsBySelections{bSaturate, dSaturate},
-			expectedBatchable: nil,
-		},
-		{
-			name:              "mixed should split",
-			weighted:          manyWeightsBySelections{aFits, bSaturate, cFits, dSaturate},
-			expectedBatchable: manyWeightsBySelections{aFits, cFits},
-			expectedSaturated: manyWeightsBySelections{bSaturate, dSaturate},
-		},
-	}
-
-	for _, tt := range theories {
-		t.Run(tt.name, func(t *testing.T) {
-			batchable, saturated := tt.weighted.splitBySaturation()
-
-			assert.Equal(t, tt.expectedBatchable, batchable)
-			assert.Equal(t, tt.expectedSaturated, saturated)
-		})
-	}
+	return Solution{}, nil
 }
 
-func Test_weightsBySelection_selections(t *testing.T) {
-	a := NewSelectionBuilder("a").Build()
-	b := NewSelectionBuilder("b").Build()
-	weighted := manyWeightsBySelections{
-		{selection: a, weights: weights.Weights{"a": 1}},
-		{selection: b, weights: weights.Weights{"b": 2}},
+func (c *fakeSolverClient) SolveWithManyWeights(
+	query *MultiWeightSolverQuery,
+) ([]Solution, error) {
+	c.multiSolveCalls++
+
+	solutions := make([]Solution, len(query.WeightGroups()))
+	for i := range solutions {
+		solutions[i] = Solution{}
 	}
 
-	actual := weighted.selections()
-
-	assert.Equal(t, Selections{a, b}, actual)
-}
-
-func Test_weightsBySelection_weightGroups(t *testing.T) {
-	weighted := manyWeightsBySelections{
-		{selection: NewSelectionBuilder("a").Build(), weights: weights.Weights{"a": 1}},
-		{selection: NewSelectionBuilder("b").Build(), weights: weights.Weights{"b": 2}},
-	}
-
-	actual := weighted.weightGroups()
-
-	assert.Equal(t, []weights.Weights{{"a": 1}, {"b": 2}}, actual)
+	return solutions, nil
 }

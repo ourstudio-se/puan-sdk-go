@@ -157,23 +157,15 @@ func newWeights(
 	return weights, nil
 }
 
-func (c *solverQueryCreator) newNextSolutionsQuery(
+func (c *solverQueryCreator) newNextSolutionsSolverQuery(
 	query NextSolutionsQuery,
 ) (*MultiWeightSolverQuery, error) {
-	preparedRuleset, err := query.ruleset.modifyForQuery(
-		query.currentSelections,
-		query.from,
-		query.to,
-	)
+	preparedRuleset, err := query.prepareRuleset()
 	if err != nil {
 		return nil, err
 	}
 
-	if err = preparedRuleset.setCompositeSelectionConstraints(query.nextSelections); err != nil {
-		return nil, err
-	}
-
-	weightGroups, err := c.calculateNextWeightGroups(
+	weightGroups, err := calculateNextWeightGroups(
 		preparedRuleset,
 		query.currentSelections,
 		query.nextSelections,
@@ -191,14 +183,14 @@ func (c *solverQueryCreator) newNextSolutionsQuery(
 	return solverQuery, nil
 }
 
-func (c *solverQueryCreator) calculateNextWeightGroups(
+func calculateNextWeightGroups(
 	ruleset Ruleset,
 	currentSelections Selections,
 	nextSelections Selections,
 ) ([]weights.Weights, error) {
 	weightGroups := make([]weights.Weights, len(nextSelections))
 	for i, nextSelection := range nextSelections {
-		weights, err := c.calculateNextWeights(ruleset, currentSelections, nextSelection)
+		weights, err := calculateNextWeights(ruleset, currentSelections, nextSelection)
 		if err != nil {
 			return nil, err
 		}
@@ -208,7 +200,7 @@ func (c *solverQueryCreator) calculateNextWeightGroups(
 	return weightGroups, nil
 }
 
-func (c *solverQueryCreator) calculateNextWeights(
+func calculateNextWeights(
 	ruleset Ruleset,
 	currentSelections Selections,
 	nextSelection Selection,

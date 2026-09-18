@@ -4,10 +4,9 @@ package solve
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/ourstudio-se/puan-sdk-go/internal/gateway/glpk"
 	"github.com/ourstudio-se/puan-sdk-go/puan"
+	"github.com/stretchr/testify/assert"
 )
 
 var solutionCreator = puan.NewSolutionCreator(glpk.NewDefaultClient("http://127.0.0.1:9000"))
