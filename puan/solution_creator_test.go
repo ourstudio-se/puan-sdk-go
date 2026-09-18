@@ -50,7 +50,7 @@ func Test_SolutionCreator_groupSolutionsBySelection_givenLengthMismatch_shouldRe
 func Test_SolutionCreator_calculateNextDependentSolutions_givenSmallWeights_shouldSolveInOneBatch(
 	t *testing.T,
 ) {
-	ruleset, primitives := rulesetWithDependentPrimitives(t)
+	ruleset, primitives := setupSaturatableRuleset(t)
 	client := &fakeSolverClient{}
 	creator := NewSolutionCreator(client)
 
@@ -68,7 +68,7 @@ func Test_SolutionCreator_calculateNextDependentSolutions_givenSmallWeights_shou
 	actual, err := creator.calculateNextDependentSolutions(query)
 
 	require.NoError(t, err)
-	assertSolutionForEachSelection(t, actual, nextSelections)
+	assertSolutionExistsForEachSelection(t, actual, nextSelections)
 	assert.Equal(t, len(nextSelections), client.batchedGroupCount)
 	assert.Zero(t, client.solveCalls)
 }
@@ -76,10 +76,11 @@ func Test_SolutionCreator_calculateNextDependentSolutions_givenSmallWeights_shou
 func Test_SolutionCreator_calculateNextDependentSolutions_givenTooLargeWeights_shouldSolveOneByOne(
 	t *testing.T,
 ) {
-	ruleset, primitives := rulesetWithDependentPrimitives(t)
+	ruleset, primitives := setupSaturatableRuleset(t)
 	client := &fakeSolverClient{}
 	creator := NewSolutionCreator(client)
 
+	// Select many for current to enforce saturation.
 	currenSelections := selectionsFor(t, primitives[:60])
 	nextSelections := selectionsFor(t, primitives[60:62])
 	query, err := NewNextSolutionsQuery(
@@ -94,7 +95,7 @@ func Test_SolutionCreator_calculateNextDependentSolutions_givenTooLargeWeights_s
 	actual, err := creator.calculateNextDependentSolutions(query)
 
 	require.NoError(t, err)
-	assertSolutionForEachSelection(t, actual, nextSelections)
+	assertSolutionExistsForEachSelection(t, actual, nextSelections)
 	assert.Empty(t, client.batchedGroupCount)
 	assert.Positive(t, client.solveCalls)
 }
@@ -123,8 +124,7 @@ func (c *fakeSolverClient) SolveWithManyWeights(
 	return solutions, nil
 }
 
-// All primitives are pulled into one assumed OR so that they end up dependent.
-func rulesetWithDependentPrimitives(t *testing.T) (Ruleset, []string) {
+func setupSaturatableRuleset(t *testing.T) (Ruleset, []string) {
 	t.Helper()
 
 	primitives := make([]string, 100)
@@ -155,9 +155,7 @@ func selectionsFor(t *testing.T, primitives []string) Selections {
 	return selections
 }
 
-// The solutions come back batched first and saturated last, so they are matched
-// by selection rather than by position.
-func assertSolutionForEachSelection(
+func assertSolutionExistsForEachSelection(
 	t *testing.T,
 	solutions []SolutionBySelection,
 	selections Selections,
@@ -175,67 +173,69 @@ func assertSolutionForEachSelection(
 	}
 }
 
-func Test_newWeightedSelections(t *testing.T) {
+func Test_newWeightsBySelection(t *testing.T) {
 	a := NewSelectionBuilder("a").Build()
 	b := NewSelectionBuilder("b").Build()
 	weightGroups := []weights.Weights{{"a": 1}, {"b": 2}}
 
-	actual, err := newWeightedSelections(Selections{a, b}, weightGroups)
+	actual, err := newWeightsBySelections(Selections{a, b}, weightGroups)
 
 	require.NoError(t, err)
-	assert.Equal(t, weightedSelections{
+	assert.Equal(t, manyWeightsBySelections{
 		{selection: a, weights: weights.Weights{"a": 1}},
 		{selection: b, weights: weights.Weights{"b": 2}},
 	}, actual)
 }
 
-func Test_newWeightedSelections_givenLengthMismatch_shouldReturnError(t *testing.T) {
+func Test_newWeightsBySelection_givenLengthMismatch_shouldReturnError(t *testing.T) {
 	selections := Selections{NewSelectionBuilder("a").Build()}
 
-	actual, err := newWeightedSelections(selections, []weights.Weights{{"a": 1}, {"b": 2}})
+	actual, err := newWeightsBySelections(selections, []weights.Weights{{"a": 1}, {"b": 2}})
 
 	assert.Nil(t, actual)
 	assert.ErrorIs(t, err, puanerror.InvalidArgument)
 }
 
-func Test_weightedSelections_splitBySaturation(t *testing.T) {
+func Test_weightsBySelection_splitBySaturation(t *testing.T) {
 	fits := weights.Weights{"x": 1}
 	saturates := weights.Weights{"x": weights.WEIGHTS_SATURATION_LIMIT + 1}
 
-	aFits := weightedSelection{selection: NewSelectionBuilder("a").Build(), weights: fits}
-	bSaturate := weightedSelection{selection: NewSelectionBuilder("b").Build(), weights: saturates}
-	cFits := weightedSelection{selection: NewSelectionBuilder("c").Build(), weights: fits}
-	dSaturate := weightedSelection{selection: NewSelectionBuilder("d").Build(), weights: saturates}
+	aFits := weightsBySelection{selection: NewSelectionBuilder("a").Build(), weights: fits}
+	bSaturate := weightsBySelection{selection: NewSelectionBuilder("b").Build(), weights: saturates}
+	cFits := weightsBySelection{selection: NewSelectionBuilder("c").Build(), weights: fits}
+	dSaturate := weightsBySelection{selection: NewSelectionBuilder("d").Build(), weights: saturates}
 
 	type theory struct {
 		name              string
-		weighted          weightedSelections
-		expectedBatchable weightedSelections
-		expectedSaturated weightedSelections
+		weighted          manyWeightsBySelections
+		expectedBatchable manyWeightsBySelections
+		expectedSaturated manyWeightsBySelections
 	}
 
 	theories := []theory{
 		{
-			name:     "nothing to split",
-			weighted: nil,
+			name:              "nothing to split",
+			weighted:          nil,
+			expectedBatchable: nil,
+			expectedSaturated: nil,
 		},
 		{
 			name:              "all fit",
-			weighted:          weightedSelections{aFits, cFits},
-			expectedBatchable: weightedSelections{aFits, cFits},
+			weighted:          manyWeightsBySelections{aFits, cFits},
+			expectedBatchable: manyWeightsBySelections{aFits, cFits},
 			expectedSaturated: nil,
 		},
 		{
 			name:              "all saturated",
-			weighted:          weightedSelections{bSaturate, dSaturate},
-			expectedSaturated: weightedSelections{bSaturate, dSaturate},
+			weighted:          manyWeightsBySelections{bSaturate, dSaturate},
+			expectedSaturated: manyWeightsBySelections{bSaturate, dSaturate},
 			expectedBatchable: nil,
 		},
 		{
-			name:              "mixed keeps the relative order of each half",
-			weighted:          weightedSelections{aFits, bSaturate, cFits, dSaturate},
-			expectedBatchable: weightedSelections{aFits, cFits},
-			expectedSaturated: weightedSelections{bSaturate, dSaturate},
+			name:              "mixed should split",
+			weighted:          manyWeightsBySelections{aFits, bSaturate, cFits, dSaturate},
+			expectedBatchable: manyWeightsBySelections{aFits, cFits},
+			expectedSaturated: manyWeightsBySelections{bSaturate, dSaturate},
 		},
 	}
 
@@ -249,10 +249,10 @@ func Test_weightedSelections_splitBySaturation(t *testing.T) {
 	}
 }
 
-func Test_weightedSelections_selections(t *testing.T) {
+func Test_weightsBySelection_selections(t *testing.T) {
 	a := NewSelectionBuilder("a").Build()
 	b := NewSelectionBuilder("b").Build()
-	weighted := weightedSelections{
+	weighted := manyWeightsBySelections{
 		{selection: a, weights: weights.Weights{"a": 1}},
 		{selection: b, weights: weights.Weights{"b": 2}},
 	}
@@ -262,8 +262,8 @@ func Test_weightedSelections_selections(t *testing.T) {
 	assert.Equal(t, Selections{a, b}, actual)
 }
 
-func Test_weightedSelections_weightGroups(t *testing.T) {
-	weighted := weightedSelections{
+func Test_weightsBySelection_weightGroups(t *testing.T) {
+	weighted := manyWeightsBySelections{
 		{selection: NewSelectionBuilder("a").Build(), weights: weights.Weights{"a": 1}},
 		{selection: NewSelectionBuilder("b").Build(), weights: weights.Weights{"b": 2}},
 	}

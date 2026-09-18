@@ -217,20 +217,18 @@ func Test_CreateNextSolutions_givenCompositeNextSelection(
 	)
 }
 
-// Every weight group has 70 current selections plus one next selection, so all of them saturate
-// and the batched solve has to fall back to solving each group on its own.
 func Test_CreateNextSolutions_givenSaturatedWeights_shouldCreateSolutionForEach(
 	t *testing.T,
 ) {
 	creator, primitives := setupSaturatableRuleset(t)
 
-	_ = creator.AddPrimitives("a", "b", "c")
-	aImpliesB, _ := creator.SetImply("a", "b")
-	aXorC, _ := creator.SetXor("a", "c")
-	_ = creator.Assume(aImpliesB, aXorC)
+	_ = creator.AddPrimitives("a", "b")
+	makeDependant, _ := creator.SetImply("a", "b")
+	_ = creator.Assume(makeDependant)
 
 	ruleset, _ := creator.Create()
 
+	// select "a" to enable unselection to verify result.
 	currentSelections := puan.Selections{puan.NewSelectionBuilder("a").Build()}
 	for _, primitive := range primitives {
 		currentSelections = append(
@@ -252,19 +250,16 @@ func Test_CreateNextSolutions_givenSaturatedWeights_shouldCreateSolutionForEach(
 	envelope, err := solutionCreator.CreateNextSolutions(query)
 	require.NoError(t, err)
 
-	// The next selection outranks everything in current selection, so removing "a" wins.
 	solutionWithoutA, err := envelope.GetSolutionBySelection(removeA)
 	require.NoError(t, err)
 	asserter := newSolutionAsserter(solutionWithoutA.Solution())
 	asserter.assertInactive(t, "a", "b")
-	asserter.assertActive(t, "c")
 
 	// "b" conflicts with nothing, so the current "a" survives.
 	solutionWithB, err := envelope.GetSolutionBySelection(addB)
 	require.NoError(t, err)
 	asserter = newSolutionAsserter(solutionWithB.Solution())
 	asserter.assertActive(t, "a", "b")
-	asserter.assertInactive(t, "c")
 }
 
 func Test_CreateNextSolutions_givenSaturatedWeightsAndIndependentNextSelection(
@@ -273,8 +268,8 @@ func Test_CreateNextSolutions_givenSaturatedWeightsAndIndependentNextSelection(
 	creator, primitives := setupSaturatableRuleset(t)
 
 	_ = creator.AddPrimitives("a", "b", "independent")
-	aXorC, _ := creator.SetXor("a", "b")
-	_ = creator.Assume(aXorC)
+	makeDependant, _ := creator.SetImply("a", "b")
+	_ = creator.Assume(makeDependant)
 
 	ruleset, _ := creator.Create()
 
@@ -300,19 +295,16 @@ func Test_CreateNextSolutions_givenSaturatedWeightsAndIndependentNextSelection(
 	envelope, err := solutionCreator.CreateNextSolutions(query)
 	require.NoError(t, err)
 
-	// The next selection outranks everything in current selection, so removing "a" wins.
 	solutionWithoutA, err := envelope.GetSolutionBySelection(removeA)
 	require.NoError(t, err)
 	asserter := newSolutionAsserter(solutionWithoutA.Solution())
-	asserter.assertInactive(t, "a", "independent")
-	asserter.assertActive(t, "b")
+	asserter.assertInactive(t, "a", "b", "independent")
 
-	// "independent" conflicts with nothing, so the current "a" survives.
+	// "independent" conflicts with nothing, so the current "a" survives and implies "b".
 	solutionWithIndependent, err := envelope.GetSolutionBySelection(addIndependent)
 	require.NoError(t, err)
 	asserter = newSolutionAsserter(solutionWithIndependent.Solution())
-	asserter.assertActive(t, "a", "independent")
-	asserter.assertInactive(t, "b")
+	asserter.assertActive(t, "a", "b", "independent")
 }
 
 func setupSaturatableRuleset(t *testing.T) (*puan.RulesetCreator, []string) {

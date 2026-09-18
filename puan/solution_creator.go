@@ -248,13 +248,10 @@ func (c *SolutionCreator) calculateDependentSolutionsBySelection(
 		return nil, err
 	}
 
-	for _, weights := range solverQuery.WeightGroups() {
+	for i, weights := range solverQuery.WeightGroups() {
 		tooLarge := weights.WeightsTooLarge()
 		if tooLarge {
-			return nil, errors.Errorf(
-				"%w: weights are too large to solve by selection",
-				puanerror.InvalidArgument,
-			)
+			return nil, errors.Errorf("weights are too large at index %d", i)
 		}
 	}
 
@@ -405,19 +402,19 @@ func (c *SolutionCreator) calculateNextDependentSolutions(
 		return nil, err
 	}
 
-	weighted, err := newWeightedSelections(query.nextSelections, solverQuery.WeightGroups())
+	weights, err := newWeightsBySelections(query.nextSelections, solverQuery.WeightGroups())
 	if err != nil {
 		return nil, err
 	}
 
-	batchable, saturated := weighted.splitBySaturation()
+	batchable, saturated := weights.splitBySaturation()
 
 	batchedSolutions, err := c.calculateBatchedNextSolutions(query.ruleset, solverQuery, batchable)
 	if err != nil {
 		return nil, err
 	}
 
-	saturatedSolutions, err := c.calculateManySaturatedNextSolutions(query, saturated.selections())
+	saturatedSolutions, err := c.calculateSaturatedNextSolutions(query, saturated.selections())
 	if err != nil {
 		return nil, err
 	}
@@ -432,7 +429,7 @@ func (c *SolutionCreator) calculateNextDependentSolutions(
 func (c *SolutionCreator) calculateBatchedNextSolutions(
 	ruleset Ruleset,
 	solverQuery *MultiWeightSolverQuery,
-	batchable weightedSelections,
+	batchable manyWeightsBySelections,
 ) ([]SolutionBySelection, error) {
 	if len(batchable) == 0 {
 		return nil, nil
@@ -458,13 +455,13 @@ func (c *SolutionCreator) calculateBatchedNextSolutions(
 // outweighs all current selections, so the split has to start above the next
 // selection and cannot be shared between the groups - solve them one at a time
 // and let calculateDependentSolution split each one.
-func (c *SolutionCreator) calculateManySaturatedNextSolutions(
+func (c *SolutionCreator) calculateSaturatedNextSolutions(
 	query NextSolutionsQuery,
 	nextSelections Selections,
 ) ([]SolutionBySelection, error) {
 	solutions := make([]Solution, len(nextSelections))
 	for i, nextSelection := range nextSelections {
-		solution, err := c.calculateSaturatedNextDependentSolution(query, nextSelection)
+		solution, err := c.calculateSaturatedNextSolution(query, nextSelection)
 		if err != nil {
 			return nil, err
 		}
@@ -475,12 +472,11 @@ func (c *SolutionCreator) calculateManySaturatedNextSolutions(
 	return c.groupSolutionsBySelection(solutions, nextSelections)
 }
 
-func (c *SolutionCreator) calculateSaturatedNextDependentSolution(
+func (c *SolutionCreator) calculateSaturatedNextSolution(
 	query NextSolutionsQuery,
 	nextSelection Selection,
 ) (Solution, error) {
 	selections := query.currentSelections.copy()
-
 	selections = append(selections, nextSelection)
 
 	selectionQuery, err := NewSolutionQueryBuilder().
@@ -493,7 +489,7 @@ func (c *SolutionCreator) calculateSaturatedNextDependentSolution(
 		return Solution{}, err
 	}
 
-	return c.calculateDependentSolution(selectionQuery)
+	return c.calculateSolution(selectionQuery)
 }
 
 func (c *SolutionCreator) calculateNextSolutionsForIndependentSelections(
@@ -542,19 +538,18 @@ func (c *SolutionCreator) calculateManyIndependentSolutions(
 	return solutions
 }
 
-// Carries the weight-group and corresponding next selection.
 type (
-	weightedSelection struct {
+	weightsBySelection struct {
 		selection Selection
 		weights   weights.Weights
 	}
-	weightedSelections []weightedSelection
+	manyWeightsBySelections []weightsBySelection
 )
 
-func newWeightedSelections(
+func newWeightsBySelections(
 	selections Selections,
 	weightGroups []weights.Weights,
-) (weightedSelections, error) {
+) (manyWeightsBySelections, error) {
 	if len(selections) != len(weightGroups) {
 		return nil, errors.Errorf(
 			"%w: expected %d weight groups, got %d",
@@ -564,21 +559,21 @@ func newWeightedSelections(
 		)
 	}
 
-	weighted := make(weightedSelections, len(selections))
+	weights := make(manyWeightsBySelections, len(selections))
 	for i, selection := range selections {
-		weighted[i] = weightedSelection{
+		weights[i] = weightsBySelection{
 			selection: selection,
 			weights:   weightGroups[i],
 		}
 	}
 
-	return weighted, nil
+	return weights, nil
 }
 
-func (w weightedSelections) splitBySaturation() (weightedSelections, weightedSelections) {
-	var batchable weightedSelections
-	var saturated weightedSelections
-
+func (w manyWeightsBySelections) splitBySaturation() (
+	batchable manyWeightsBySelections,
+	saturated manyWeightsBySelections,
+) {
 	for _, weighted := range w {
 		tooLarge := weighted.weights.WeightsTooLarge()
 		if tooLarge {
@@ -593,7 +588,7 @@ func (w weightedSelections) splitBySaturation() (weightedSelections, weightedSel
 	return batchable, saturated
 }
 
-func (w weightedSelections) selections() Selections {
+func (w manyWeightsBySelections) selections() Selections {
 	selections := make(Selections, len(w))
 	for i, weighted := range w {
 		selections[i] = weighted.selection
@@ -602,7 +597,7 @@ func (w weightedSelections) selections() Selections {
 	return selections
 }
 
-func (w weightedSelections) weightGroups() []weights.Weights {
+func (w manyWeightsBySelections) weightGroups() []weights.Weights {
 	weightGroups := make([]weights.Weights, len(w))
 	for i, weighted := range w {
 		weightGroups[i] = weighted.weights
