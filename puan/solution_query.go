@@ -124,25 +124,25 @@ func NewNextSolutionsQuery(
 	}, nil
 }
 
-func (nq NextSolutionsQuery) prepareRuleset() (Ruleset, error) {
-	preparedRuleset, err := nq.ruleset.modifyForQuery(
-		nq.currentSelections,
-		nq.from,
-		nq.to,
+func (q NextSolutionsQuery) prepareRuleset() (Ruleset, error) {
+	preparedRuleset, err := q.ruleset.modifyForQuery(
+		q.currentSelections,
+		q.from,
+		q.to,
 	)
 	if err != nil {
 		return Ruleset{}, err
 	}
 
-	if err = preparedRuleset.setCompositeSelectionConstraints(nq.nextSelections); err != nil {
+	if err = preparedRuleset.setCompositeSelectionConstraints(q.nextSelections); err != nil {
 		return Ruleset{}, err
 	}
 
 	return preparedRuleset, nil
 }
 
-func (nq NextSolutionsQuery) emptyNextSelections() bool {
-	return len(nq.nextSelections) == 0
+func (q NextSolutionsQuery) hasEmptyNextSelections() bool {
+	return len(q.nextSelections) == 0
 }
 
 type nextSolutionQueryPartitioner struct {
@@ -173,7 +173,7 @@ func newNextSolutionQueryPartitioner(
 	}, nil
 }
 
-func (p nextSolutionQueryPartitioner) batchable() (NextSolutionsQuery, error) {
+func (p nextSolutionQueryPartitioner) combinable() (NextSolutionsQuery, error) {
 	allSelections := p.initialQuery.nextSelections.copy()
 	var batchableSelections Selections
 	for i, group := range p.weightGroups {
@@ -199,7 +199,7 @@ func (p nextSolutionQueryPartitioner) batchable() (NextSolutionsQuery, error) {
 	return query, nil
 }
 
-func (p nextSolutionQueryPartitioner) saturated() (NextSolutionsQuery, error) {
+func (p nextSolutionQueryPartitioner) oversized() (NextSolutionsQuery, error) {
 	allSelections := p.initialQuery.nextSelections.copy()
 	var saturatedSelections Selections
 	for i, group := range p.weightGroups {

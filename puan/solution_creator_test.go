@@ -71,7 +71,7 @@ func Test_SolutionCreator_calculateNextDependentSolutions_givenSmallWeights_shou
 	assert.Zero(t, client.solveCalls)
 }
 
-func Test_SolutionCreator_calculateNextDependentSolutions_givenSaturatedWeights_shouldSolveOneByOne(
+func Test_SolutionCreator_calculateNextDependentSolutions_givenOversizedWeights_shouldSolveOneByOne(
 	t *testing.T,
 ) {
 	ruleset, primitives := setupSaturatableRuleset(t)
@@ -94,7 +94,7 @@ func Test_SolutionCreator_calculateNextDependentSolutions_givenSaturatedWeights_
 
 	require.NoError(t, err)
 	assertSolutionExistsForEachSelection(t, actual, nextSelections)
-	assert.Empty(t, client.multiSolveCalls)
+	assert.Zero(t, client.multiSolveCalls)
 	// each selection is split once, 2 calls per next selection, therefore 4 in total.
 	assert.Equal(t, 4, client.solveCalls)
 }

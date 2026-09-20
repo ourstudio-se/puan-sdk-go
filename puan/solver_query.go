@@ -157,7 +157,7 @@ func newWeights(
 	return weights, nil
 }
 
-func (c *solverQueryCreator) newNextSolutionsSolverQuery(
+func (c *solverQueryCreator) newNextSolutionsQuery(
 	query NextSolutionsQuery,
 ) (*MultiWeightSolverQuery, error) {
 	preparedRuleset, err := query.prepareRuleset()

@@ -153,12 +153,11 @@ func (c *SolutionCreator) newRulesetWithAssumedSolution(
 		isNotSelected := !solution.isSelected(selection.id)
 		if isNotSelected {
 			// Large selection sets are split and solved by priority, locking
-			// higher-priority results first. If a selection isn't chosen in this
-			// split, it must be explicitly assumeNot, otherwise unwanted behavior can occur.
-			// E.g. an ADD followed by a REMOVE, ending up in different splits, would let the
-			// lower-priority ADD have effect and end up in the solution.
-			// Note: subSelectionIDs are not assumeNot here as they may
-			// be included in other selections/subselections.
+			// higher-priority solution first. Unselected selections in a split must be explicitly
+			// assumeNot, or unwanted behavior can occur, e.g. an ADD and REMOVE ending
+			// up in different splits could let the lower-priority ADD take effect.
+			// Note: subSelectionIDs are excluded from assumeNot here, since they may
+			// appear in other selections/subselections.
 			err := newRuleset.assumeNot(selection.id)
 			if err != nil {
 				return Ruleset{}, err
@@ -419,41 +418,41 @@ func (c *SolutionCreator) calculateNextDependentSolutions(
 		return nil, err
 	}
 
-	batchable, err := partitioner.batchable()
+	combinable, err := partitioner.combinable()
 	if err != nil {
 		return nil, err
 	}
 
-	saturated, err := partitioner.saturated()
+	oversized, err := partitioner.oversized()
 	if err != nil {
 		return nil, err
 	}
 
-	batchedSolutions, err := c.calculateBatchedNextSolutions(batchable)
+	combinableSolutions, err := c.calculateCombinableNextSolutions(combinable)
 	if err != nil {
 		return nil, err
 	}
 
-	saturatedSolutions, err := c.calculateSaturatedNextSolutions(saturated)
+	oversizedSolutions, err := c.calculateOversizedNextSolutions(oversized)
 	if err != nil {
 		return nil, err
 	}
 
 	var solutions []SolutionBySelection
-	solutions = append(solutions, batchedSolutions...)
-	solutions = append(solutions, saturatedSolutions...)
+	solutions = append(solutions, combinableSolutions...)
+	solutions = append(solutions, oversizedSolutions...)
 
 	return solutions, nil
 }
 
-func (c *SolutionCreator) calculateBatchedNextSolutions(
+func (c *SolutionCreator) calculateCombinableNextSolutions(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
-	if query.emptyNextSelections() {
+	if query.hasEmptyNextSelections() {
 		return nil, nil
 	}
 
-	solverQuery, err := c.queryCreator.newNextSolutionsSolverQuery(query)
+	solverQuery, err := c.queryCreator.newNextSolutionsQuery(query)
 	if err != nil {
 		return nil, err
 	}
@@ -468,12 +467,12 @@ func (c *SolutionCreator) calculateBatchedNextSolutions(
 	return c.groupSolutionsBySelection(primitiveSolutions, query.nextSelections)
 }
 
-func (c *SolutionCreator) calculateSaturatedNextSolutions(
+func (c *SolutionCreator) calculateOversizedNextSolutions(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
 	solutions := make([]Solution, len(query.nextSelections))
 	for i, nextSelection := range query.nextSelections {
-		solution, err := c.calculateSaturatedNextSolution(query, nextSelection)
+		solution, err := c.calculateOversizedNextSolution(query, nextSelection)
 		if err != nil {
 			return nil, err
 		}
@@ -484,7 +483,7 @@ func (c *SolutionCreator) calculateSaturatedNextSolutions(
 	return c.groupSolutionsBySelection(solutions, query.nextSelections)
 }
 
-func (c *SolutionCreator) calculateSaturatedNextSolution(
+func (c *SolutionCreator) calculateOversizedNextSolution(
 	query NextSolutionsQuery,
 	nextSelection Selection,
 ) (Solution, error) {

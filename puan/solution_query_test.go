@@ -3,6 +3,7 @@ package puan
 import (
 	"testing"
 
+	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,23 +34,37 @@ func Test_nextSolutionQueryPartitioner_givenMixedWeightGroups_shouldSplit(
 		},
 	}
 
-	batchable, err := partitioner.batchable()
+	batchable, err := partitioner.combinable()
 	require.NoError(t, err)
 	require.Len(t, batchable.nextSelections, 1)
-
-	saturated, err := partitioner.saturated()
-	require.NoError(t, err)
-	require.Len(t, saturated.nextSelections, 1)
-
 	assert.Equal(
 		t,
 		batchable.nextSelections[0],
 		addX,
 	)
 
+	saturated, err := partitioner.oversized()
+	require.NoError(t, err)
+	require.Len(t, saturated.nextSelections, 1)
 	assert.Equal(
 		t,
 		saturated.nextSelections[0],
 		addY,
 	)
+}
+
+func Test_NextSolutionsQuery_hasEmptyNextSelections_givenEmpty_shouldReturnTrue(
+	t *testing.T,
+) {
+	query := NextSolutionsQuery{}
+	assert.True(t, query.hasEmptyNextSelections())
+}
+
+func Test_NextSolutionsQuery_hasEmptyNextSelections_givenSelections_shouldReturnFalse(
+	t *testing.T,
+) {
+	query := NextSolutionsQuery{
+		nextSelections: fake.New[Selections](),
+	}
+	assert.False(t, query.hasEmptyNextSelections())
 }

@@ -217,7 +217,7 @@ func Test_CreateNextSolutions_givenCompositeNextSelection(
 	)
 }
 
-func Test_CreateNextSolutions_givenADDThenREMOVEWithSaturatedWeights_shouldNotBeInSolution(
+func Test_CreateNextSolutions_givenADDThenREMOVEWithOversizedWeights_shouldNotBeInSolution(
 	t *testing.T,
 ) {
 	creator, primitives := setupSaturatableRuleset(t)
@@ -254,7 +254,7 @@ func Test_CreateNextSolutions_givenADDThenREMOVEWithSaturatedWeights_shouldNotBe
 	asserter.assertInactive(t, "a")
 }
 
-func Test_CreateNextSolutions_givenSaturatedCompositeNextSelection_shouldKeepSubSelection(
+func Test_CreateNextSolutions_givenCompositeNextSelectionWithOversizedWeights_shouldKeepSubSelection(
 	t *testing.T,
 ) {
 	creator, primitives := setupSaturatableRuleset(t)
@@ -311,7 +311,7 @@ func Test_CreateNextSolutions_givenSaturatedCompositeNextSelection_shouldKeepSub
 	asserter.assertInactive(t, "itemZ")
 }
 
-func Test_CreateNextSolutions_givenSaturatedREMOVECompositeNextSelectionWithSubSelection_shouldNotRemoveSubSelection(
+func Test_CreateNextSolutions_givenREMOVENSelectionWithSubsAndOversizedWeights_shouldNotRemovePreviousSubSelection(
 	t *testing.T,
 ) {
 	creator, primitives := setupSaturatableRuleset(t)
