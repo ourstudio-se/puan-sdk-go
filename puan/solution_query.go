@@ -175,19 +175,19 @@ func newNextSolutionQueryPartitioner(
 
 func (p nextSolutionQueryPartitioner) combinable() (NextSolutionsQuery, error) {
 	allSelections := p.initialQuery.nextSelections.copy()
-	var batchableSelections Selections
+	var combinableSelections Selections
 	for i, group := range p.weightGroups {
 		if group.WeightsTooLarge() {
 			continue
 		}
 
 		selection := allSelections[i]
-		batchableSelections = append(batchableSelections, selection)
+		combinableSelections = append(combinableSelections, selection)
 	}
 
 	query, err := NewNextSolutionsQuery(
 		p.initialQuery.currentSelections,
-		batchableSelections,
+		combinableSelections,
 		p.initialQuery.ruleset,
 		p.initialQuery.from,
 		p.initialQuery.to,
@@ -201,17 +201,17 @@ func (p nextSolutionQueryPartitioner) combinable() (NextSolutionsQuery, error) {
 
 func (p nextSolutionQueryPartitioner) oversized() (NextSolutionsQuery, error) {
 	allSelections := p.initialQuery.nextSelections.copy()
-	var saturatedSelections Selections
+	var oversizedSelections Selections
 	for i, group := range p.weightGroups {
 		if group.WeightsTooLarge() {
 			selection := allSelections[i]
-			saturatedSelections = append(saturatedSelections, selection)
+			oversizedSelections = append(oversizedSelections, selection)
 		}
 	}
 
 	query, err := NewNextSolutionsQuery(
 		p.initialQuery.currentSelections,
-		saturatedSelections,
+		oversizedSelections,
 		p.initialQuery.ruleset,
 		p.initialQuery.from,
 		p.initialQuery.to,

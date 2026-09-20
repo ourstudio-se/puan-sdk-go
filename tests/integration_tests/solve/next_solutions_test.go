@@ -311,7 +311,7 @@ func Test_CreateNextSolutions_givenCompositeNextSelectionWithOversizedWeights_sh
 	asserter.assertInactive(t, "itemZ")
 }
 
-func Test_CreateNextSolutions_givenREMOVENSelectionWithSubsAndOversizedWeights_shouldNotRemovePreviousSubSelection(
+func Test_CreateNextSolutions_givenREMOVESelectionWithSubsAndOversizedWeights_shouldNotRemovePreviousSubSelection(
 	t *testing.T,
 ) {
 	creator, primitives := setupSaturatableRuleset(t)
