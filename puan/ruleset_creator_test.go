@@ -112,6 +112,7 @@ func Test_Create_givenDifferentModelingOrder_shouldReturnSamePolyhedron(
 	rulesetOne, _ := creatorOne.Create()
 
 	shuffledPrimitives := append([]string(nil), primitives...)
+	// nolint:gosec
 	rand.Shuffle(len(shuffledPrimitives), func(i, j int) {
 		shuffledPrimitives[i], shuffledPrimitives[j] = shuffledPrimitives[j], shuffledPrimitives[i]
 	})

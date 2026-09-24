@@ -88,12 +88,11 @@ func Test_newSolveRequestFromMultiQuery(t *testing.T) {
 		{"x": 1, "y": 2},
 	}
 
-	query, err := puan.NewMultiWeightSolverQuery(
+	query := puan.NewMultiWeightSolverQuery(
 		polyhedron,
 		variableIDs,
 		queryWeights,
 	)
-	assert.NoError(t, err)
 
 	want := SolveRequest{
 		Polyhedron: Polyhedron{

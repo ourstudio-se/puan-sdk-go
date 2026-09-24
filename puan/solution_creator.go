@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
-
 	"github.com/ourstudio-se/puan-sdk-go/puanerror"
 )
 
@@ -143,24 +142,42 @@ func (c *SolutionCreator) calculateSplitDependentSolution(
 	return c.calculateDependentSolution(remainingQuery)
 }
 
+// nolint:gocyclo
 func (c *SolutionCreator) newRulesetWithAssumedSolution(
 	ruleset Ruleset,
 	selections Selections,
 	solution Solution,
 ) (Ruleset, error) {
 	newRuleset := ruleset.copy()
-
 	for _, selection := range selections {
-		isSelected := solution.isSelected(selection.id)
-		if isSelected {
-			err := newRuleset.assume(selection.id)
-			if err != nil {
-				return Ruleset{}, err
-			}
-		} else {
+		isNotSelected := !solution.isSelected(selection.id)
+		if isNotSelected {
+			// Large selection sets are split and solved by priority, locking
+			// higher-priority solution first. Unselected selections in a split must be explicitly
+			// assumeNot, or unwanted behavior can occur, e.g. an ADD and REMOVE ending
+			// up in different splits could let the lower-priority ADD take effect.
+			// Note: subSelectionIDs are excluded from assumeNot here, since they may
+			// appear in other selections/subselections.
 			err := newRuleset.assumeNot(selection.id)
 			if err != nil {
 				return Ruleset{}, err
+			}
+
+			continue
+		}
+
+		err := newRuleset.assume(selection.id)
+		if err != nil {
+			return Ruleset{}, err
+		}
+
+		for _, subSelection := range selection.subSelectionIDs {
+			isSubSelected := solution.isSelected(subSelection)
+			if isSubSelected {
+				err = newRuleset.assume(subSelection)
+				if err != nil {
+					return Ruleset{}, err
+				}
 			}
 		}
 	}
@@ -245,6 +262,13 @@ func (c *SolutionCreator) calculateDependentSolutionsBySelection(
 	solverQuery, err := c.queryCreator.newSolutionsBySelectionQuery(query)
 	if err != nil {
 		return nil, err
+	}
+
+	for i, weights := range solverQuery.WeightGroups() {
+		tooLarge := weights.WeightsTooLarge()
+		if tooLarge {
+			return nil, errors.Errorf("weights are too large at index %d", i)
+		}
 	}
 
 	solutions, err := c.SolveWithManyWeights(solverQuery)
@@ -375,37 +399,86 @@ func (c *SolutionCreator) calculateNextSolutionsForDependentSelections(
 		currentIndependentSelections,
 	)
 
-	nextSolutions := make([]Solution, len(nextDependentSolutions))
-	for i := range nextDependentSolutions {
-		nextSolutions[i] = nextDependentSolutions[i].merge(currentIndependentSolution)
+	solutionBySelection := make([]SolutionBySelection, len(nextDependentSolutions))
+	for i, nextSolution := range nextDependentSolutions {
+		mergedSolution := nextSolution.solution.merge(currentIndependentSolution)
+		solutionBySelection[i] = SolutionBySelection{
+			selection: nextSolution.selection,
+			solution:  mergedSolution,
+		}
 	}
 
-	solutionsBySelection, err := c.groupSolutionsBySelection(
-		nextSolutions,
-		nextDependentSelections,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return solutionsBySelection, nil
+	return solutionBySelection, nil
 }
 
 func (c *SolutionCreator) calculateNextDependentSolutions(
 	query NextSolutionsQuery,
-) ([]Solution, error) {
+) ([]SolutionBySelection, error) {
+	batchable, nonBatchable, err := query.splitByBatchability()
+	if err != nil {
+		return nil, err
+	}
+
+	batchedSolutions, err := c.calculateBatchableNextSolutions(batchable)
+	if err != nil {
+		return nil, err
+	}
+
+	nonBatchableSolutions, err := c.calculateNonBatchableNextSolutions(nonBatchable)
+	if err != nil {
+		return nil, err
+	}
+
+	var solutions []SolutionBySelection
+	solutions = append(solutions, batchedSolutions...)
+	solutions = append(solutions, nonBatchableSolutions...)
+
+	return solutions, nil
+}
+
+func (c *SolutionCreator) calculateBatchableNextSolutions(
+	query NextSolutionsQuery,
+) ([]SolutionBySelection, error) {
+	// This check ensures that no extra solving with empty selections is performed.
+	// Next selection can be empty if it splits all to 'nonBatchable',
+	if query.hasEmptyNextSelections() {
+		return nil, nil
+	}
+
 	solverQuery, err := c.queryCreator.newNextSolutionsQuery(query)
 	if err != nil {
 		return nil, err
 	}
 
-	dependentSolutions, err := c.SolveWithManyWeights(solverQuery)
+	solutions, err := c.SolveWithManyWeights(solverQuery)
 	if err != nil {
 		return nil, err
 	}
 
-	primitiveSolutions := query.ruleset.RemoveSupportVariablesForMany(dependentSolutions)
-	return primitiveSolutions, nil
+	primitiveSolutions := query.ruleset.RemoveSupportVariablesForMany(solutions)
+
+	return c.groupSolutionsBySelection(primitiveSolutions, query.nextSelections)
+}
+
+func (c *SolutionCreator) calculateNonBatchableNextSolutions(
+	query NextSolutionsQuery,
+) ([]SolutionBySelection, error) {
+	solutionQueries, err := query.asSolutionQueries()
+	if err != nil {
+		return nil, err
+	}
+
+	solutions := make([]Solution, len(query.nextSelections))
+	for i, solutionQuery := range solutionQueries {
+		solution, err := c.calculateDependentSolution(solutionQuery)
+		if err != nil {
+			return nil, err
+		}
+
+		solutions[i] = solution
+	}
+
+	return c.groupSolutionsBySelection(solutions, query.nextSelections)
 }
 
 func (c *SolutionCreator) calculateNextSolutionsForIndependentSelections(

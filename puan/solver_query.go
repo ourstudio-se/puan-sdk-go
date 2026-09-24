@@ -1,7 +1,6 @@
 package puan
 
 import (
-	"github.com/go-errors/errors"
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
 )
@@ -46,18 +45,12 @@ func NewMultiWeightSolverQuery(
 	polyhedron *pldag.Polyhedron,
 	variables []string,
 	weights []weights.Weights,
-) (*MultiWeightSolverQuery, error) {
-	for i, weights := range weights {
-		if weights.WeightsTooLarge() {
-			return nil, errors.Errorf("weights are too large at index %d", i)
-		}
-	}
-
+) *MultiWeightSolverQuery {
 	return &MultiWeightSolverQuery{
 		polyhedron: polyhedron,
 		variables:  variables,
 		weights:    weights,
-	}, nil
+	}
 }
 
 func (q *MultiWeightSolverQuery) Polyhedron() *pldag.Polyhedron {
@@ -111,14 +104,11 @@ func (c *solverQueryCreator) newSolutionsBySelectionQuery(
 		return nil, err
 	}
 
-	solverQuery, err := NewMultiWeightSolverQuery(
+	solverQuery := NewMultiWeightSolverQuery(
 		preparedRuleset.polyhedron,
 		preparedRuleset.dependentVariables,
 		weightGroups,
 	)
-	if err != nil {
-		return nil, err
-	}
 
 	return solverQuery, nil
 }
@@ -170,20 +160,12 @@ func newWeights(
 func (c *solverQueryCreator) newNextSolutionsQuery(
 	query NextSolutionsQuery,
 ) (*MultiWeightSolverQuery, error) {
-	preparedRuleset, err := query.ruleset.modifyForQuery(
-		query.currentSelections,
-		query.from,
-		query.to,
-	)
+	preparedRuleset, err := query.prepareRuleset()
 	if err != nil {
 		return nil, err
 	}
 
-	if err := preparedRuleset.setCompositeSelectionConstraints(query.nextSelections); err != nil {
-		return nil, err
-	}
-
-	weightGroups, err := c.calculateNextWeightGroups(
+	weightGroups, err := calculateNextWeightGroups(
 		preparedRuleset,
 		query.currentSelections,
 		query.nextSelections,
@@ -192,26 +174,23 @@ func (c *solverQueryCreator) newNextSolutionsQuery(
 		return nil, err
 	}
 
-	solverQuery, err := NewMultiWeightSolverQuery(
+	solverQuery := NewMultiWeightSolverQuery(
 		preparedRuleset.polyhedron,
 		preparedRuleset.dependentVariables,
 		weightGroups,
 	)
-	if err != nil {
-		return nil, err
-	}
 
 	return solverQuery, nil
 }
 
-func (c *solverQueryCreator) calculateNextWeightGroups(
+func calculateNextWeightGroups(
 	ruleset Ruleset,
 	currentSelections Selections,
 	nextSelections Selections,
 ) ([]weights.Weights, error) {
 	weightGroups := make([]weights.Weights, len(nextSelections))
 	for i, nextSelection := range nextSelections {
-		weights, err := c.calculateNextWeights(ruleset, currentSelections, nextSelection)
+		weights, err := calculateNextWeights(ruleset, currentSelections, nextSelection)
 		if err != nil {
 			return nil, err
 		}
@@ -221,7 +200,7 @@ func (c *solverQueryCreator) calculateNextWeightGroups(
 	return weightGroups, nil
 }
 
-func (c *solverQueryCreator) calculateNextWeights(
+func calculateNextWeights(
 	ruleset Ruleset,
 	currentSelections Selections,
 	nextSelection Selection,
