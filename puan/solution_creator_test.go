@@ -79,12 +79,14 @@ func (s *solutionCreatorSuite) SetupSuite() {
 
 	s.ruleset = ruleset
 	s.primitives = primitives
-}
 
-// SetupTest gives every test a client with reset call counters.
-func (s *solutionCreatorSuite) SetupTest() {
 	s.client = &mockSolverClient{}
 	s.creator = NewSolutionCreator(s.client)
+}
+
+func (s *solutionCreatorSuite) TearDownTest() {
+	s.client.multiSolveCalls = 0
+	s.client.solveCalls = 0
 }
 
 func (

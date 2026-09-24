@@ -439,8 +439,8 @@ func (c *SolutionCreator) calculateNextDependentSolutions(
 func (c *SolutionCreator) calculateBatchableNextSolutions(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
-	// This check ensures that there no extra solving with empty selections.
-	// Next selection can be empty it splits all to 'nonBatchable',
+	// This check ensures that no extra solving with empty selections is performed.
+	// Next selection can be empty if it splits all to 'nonBatchable',
 	if query.hasEmptyNextSelections() {
 		return nil, nil
 	}

@@ -363,11 +363,6 @@ func Test_CreateNextSolutions_givenREMOVESelectionWithSubsAndOversizedWeights_sh
 	asserter.assertActive(t, "itemX")
 }
 
-// Creates a ruleset where 70 dependent primitives are selected. That many
-// selections saturate the weights, which forces the solver to split the query
-// and solve the selections in several steps instead of in one batch. Tests add
-// their own primitives and constraints to the returned creator, and their own
-// selections on top of the returned ones.
 func setupSaturatableRuleset(t *testing.T) (*puan.RulesetCreator, puan.Selections) {
 	t.Helper()
 	creator := puan.NewRulesetCreator()
