@@ -217,10 +217,17 @@ func Test_CreateNextSolutions_givenCompositeNextSelection(
 	)
 }
 
-func Test_CreateNextSolutions_givenADDThenREMOVEWithOversizedWeights_shouldNotBeInSolution(
+// "a" is selected, and the next selection removes it. The many selections
+// saturate the weights, so the solver splits the query and solves it in
+// several steps. The ADD and the REMOVE of "a" can then end up in different
+// steps, where the lower prioritised ADD must not make "a" selected again.
+//
+// "a" implies "b" only to make "a" a dependent variable, so that it is solved
+// instead of resolved independently.
+func Test_CreateNextSolutions_givenADDThenREMOVEWithOversizedWeights_shouldNotBeSelected(
 	t *testing.T,
 ) {
-	creator, primitives := setupSaturatableRuleset(t)
+	creator, saturatingSelections := setupSaturatableRuleset(t)
 
 	_ = creator.AddPrimitives("a", "b")
 	makeDependant, _ := creator.SetImply("a", "b")
@@ -228,13 +235,10 @@ func Test_CreateNextSolutions_givenADDThenREMOVEWithOversizedWeights_shouldNotBe
 
 	ruleset, _ := creator.Create()
 
-	currentSelections := puan.Selections{puan.NewSelectionBuilder("a").Build()}
-	for _, primitive := range primitives {
-		currentSelections = append(
-			currentSelections,
-			puan.NewSelectionBuilder(primitive).Build(),
-		)
-	}
+	currentSelections := append(
+		puan.Selections{puan.NewSelectionBuilder("a").Build()},
+		saturatingSelections...,
+	)
 
 	removeA := puan.NewSelectionBuilder("a").WithAction(puan.REMOVE).Build()
 	nextSelections := puan.Selections{removeA}
@@ -254,10 +258,15 @@ func Test_CreateNextSolutions_givenADDThenREMOVEWithOversizedWeights_shouldNotBe
 	asserter.assertInactive(t, "a")
 }
 
-func Test_CreateNextSolutions_givenCompositeNextSelectionWithOversizedWeights_shouldKeepSubSelection(
+// "packageA" is selected with the sub selections "itemY" and "itemZ", and the
+// next selection is the same package with "itemX" instead. The many selections
+// saturate the weights, so the package is solved in several steps. The sub
+// selection of the next selection must still decide which item the package is
+// solved with.
+func Test_CreateNextSolutions_givenCompositeNextSelectionWithOversizedWeights_shouldSolveWithNextSubSelection(
 	t *testing.T,
 ) {
-	creator, primitives := setupSaturatableRuleset(t)
+	creator, saturatingSelections := setupSaturatableRuleset(t)
 
 	_ = creator.AddPrimitives("packageA", "itemX", "itemY", "itemZ")
 
@@ -272,18 +281,15 @@ func Test_CreateNextSolutions_givenCompositeNextSelectionWithOversizedWeights_sh
 	ruleset, err := creator.Create()
 	require.NoError(t, err)
 
-	currentSelections := puan.Selections{
-		puan.NewSelectionBuilder("packageA").
-			WithSubSelectionID("itemY").
-			WithSubSelectionID("itemZ").
-			Build(),
-	}
-	for _, primitive := range primitives {
-		currentSelections = append(
-			currentSelections,
-			puan.NewSelectionBuilder(primitive).Build(),
-		)
-	}
+	currentSelections := append(
+		puan.Selections{
+			puan.NewSelectionBuilder("packageA").
+				WithSubSelectionID("itemY").
+				WithSubSelectionID("itemZ").
+				Build(),
+		},
+		saturatingSelections...,
+	)
 
 	addPackageAWithItemX := puan.NewSelectionBuilder("packageA").
 		WithSubSelectionID("itemX").
@@ -311,10 +317,14 @@ func Test_CreateNextSolutions_givenCompositeNextSelectionWithOversizedWeights_sh
 	asserter.assertInactive(t, "itemZ")
 }
 
-func Test_CreateNextSolutions_givenREMOVESelectionWithSubsAndOversizedWeights_shouldNotRemovePreviousSubSelection(
+// "itemX" is selected on its own, and the next selection removes "packageA"
+// with "itemX" as a sub selection. The many selections saturate the weights,
+// so the query is split and solved in several steps. Removing the package must
+// not remove "itemX", since it is selected outside of the package.
+func Test_CreateNextSolutions_givenREMOVESelectionWithSubsAndOversizedWeights_shouldNotRemoveSeparatelySelectedItem(
 	t *testing.T,
 ) {
-	creator, primitives := setupSaturatableRuleset(t)
+	creator, saturatingSelections := setupSaturatableRuleset(t)
 	_ = creator.AddPrimitives("packageA", "itemX")
 	pkgImpliesX, _ := creator.SetImply("packageA", "itemX")
 
@@ -323,15 +333,10 @@ func Test_CreateNextSolutions_givenREMOVESelectionWithSubsAndOversizedWeights_sh
 	ruleset, err := creator.Create()
 	require.NoError(t, err)
 
-	currentSelections := puan.Selections{
-		puan.NewSelectionBuilder("itemX").Build(),
-	}
-	for _, primitive := range primitives {
-		currentSelections = append(
-			currentSelections,
-			puan.NewSelectionBuilder(primitive).Build(),
-		)
-	}
+	currentSelections := append(
+		puan.Selections{puan.NewSelectionBuilder("itemX").Build()},
+		saturatingSelections...,
+	)
 
 	removePackageAWithItemX := puan.NewSelectionBuilder("packageA").
 		WithSubSelectionID("itemX").
@@ -358,7 +363,12 @@ func Test_CreateNextSolutions_givenREMOVESelectionWithSubsAndOversizedWeights_sh
 	asserter.assertActive(t, "itemX")
 }
 
-func setupSaturatableRuleset(t *testing.T) (*puan.RulesetCreator, []string) {
+// Creates a ruleset where 70 dependent primitives are selected. That many
+// selections saturate the weights, which forces the solver to split the query
+// and solve the selections in several steps instead of in one batch. Tests add
+// their own primitives and constraints to the returned creator, and their own
+// selections on top of the returned ones.
+func setupSaturatableRuleset(t *testing.T) (*puan.RulesetCreator, puan.Selections) {
 	t.Helper()
 	creator := puan.NewRulesetCreator()
 	primitives := fake.New[[]string](
@@ -372,5 +382,10 @@ func setupSaturatableRuleset(t *testing.T) (*puan.RulesetCreator, []string) {
 	orID, _ := creator.SetOr(primitives...)
 	_ = creator.Assume(orID)
 
-	return creator, primitives
+	saturatingSelections := make(puan.Selections, len(primitives))
+	for i, primitive := range primitives {
+		saturatingSelections[i] = puan.NewSelectionBuilder(primitive).Build()
+	}
+
+	return creator, saturatingSelections
 }

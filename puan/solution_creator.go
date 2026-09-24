@@ -401,9 +401,10 @@ func (c *SolutionCreator) calculateNextSolutionsForDependentSelections(
 
 	solutionBySelection := make([]SolutionBySelection, len(nextDependentSolutions))
 	for i, nextSolution := range nextDependentSolutions {
+		mergedSolution := nextSolution.solution.merge(currentIndependentSolution)
 		solutionBySelection[i] = SolutionBySelection{
 			selection: nextSolution.selection,
-			solution:  nextSolution.solution.merge(currentIndependentSolution),
+			solution:  mergedSolution,
 		}
 	}
 
@@ -413,41 +414,33 @@ func (c *SolutionCreator) calculateNextSolutionsForDependentSelections(
 func (c *SolutionCreator) calculateNextDependentSolutions(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
-	partitioner, err := newNextSolutionQueryPartitioner(query)
+	batchable, nonBatchable, err := query.splitByBatchability()
 	if err != nil {
 		return nil, err
 	}
 
-	combinable, err := partitioner.combinable()
+	batchedSolutions, err := c.calculateBatchableNextSolutions(batchable)
 	if err != nil {
 		return nil, err
 	}
 
-	oversized, err := partitioner.oversized()
-	if err != nil {
-		return nil, err
-	}
-
-	combinableSolutions, err := c.calculateCombinableNextSolutions(combinable)
-	if err != nil {
-		return nil, err
-	}
-
-	oversizedSolutions, err := c.calculateOversizedNextSolutions(oversized)
+	nonBatchableSolutions, err := c.calculateNonBatchableNextSolutions(nonBatchable)
 	if err != nil {
 		return nil, err
 	}
 
 	var solutions []SolutionBySelection
-	solutions = append(solutions, combinableSolutions...)
-	solutions = append(solutions, oversizedSolutions...)
+	solutions = append(solutions, batchedSolutions...)
+	solutions = append(solutions, nonBatchableSolutions...)
 
 	return solutions, nil
 }
 
-func (c *SolutionCreator) calculateCombinableNextSolutions(
+func (c *SolutionCreator) calculateBatchableNextSolutions(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
+	// This check ensures that there no extra solving with empty selections.
+	// Next selection can be empty it splits all to 'nonBatchable',
 	if query.hasEmptyNextSelections() {
 		return nil, nil
 	}
@@ -467,12 +460,17 @@ func (c *SolutionCreator) calculateCombinableNextSolutions(
 	return c.groupSolutionsBySelection(primitiveSolutions, query.nextSelections)
 }
 
-func (c *SolutionCreator) calculateOversizedNextSolutions(
+func (c *SolutionCreator) calculateNonBatchableNextSolutions(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
+	solutionQueries, err := query.asSolutionQueries()
+	if err != nil {
+		return nil, err
+	}
+
 	solutions := make([]Solution, len(query.nextSelections))
-	for i, nextSelection := range query.nextSelections {
-		solution, err := c.calculateOversizedNextSolution(query, nextSelection)
+	for i, solutionQuery := range solutionQueries {
+		solution, err := c.calculateDependentSolution(solutionQuery)
 		if err != nil {
 			return nil, err
 		}
@@ -481,26 +479,6 @@ func (c *SolutionCreator) calculateOversizedNextSolutions(
 	}
 
 	return c.groupSolutionsBySelection(solutions, query.nextSelections)
-}
-
-func (c *SolutionCreator) calculateOversizedNextSolution(
-	query NextSolutionsQuery,
-	nextSelection Selection,
-) (Solution, error) {
-	selections := query.currentSelections.copy()
-	selections = append(selections, nextSelection)
-
-	selectionQuery, err := NewSolutionQueryBuilder().
-		WithRuleset(query.ruleset).
-		WithFrom(query.from).
-		WithTo(query.to).
-		WithSelections(selections).
-		Build()
-	if err != nil {
-		return Solution{}, err
-	}
-
-	return c.calculateDependentSolution(selectionQuery)
 }
 
 func (c *SolutionCreator) calculateNextSolutionsForIndependentSelections(

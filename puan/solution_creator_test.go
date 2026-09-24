@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
 func Test_SolutionCreator_groupSolutionsBySelection(t *testing.T) {
@@ -45,80 +46,109 @@ func Test_SolutionCreator_groupSolutionsBySelection_givenLengthMismatch_shouldRe
 	assert.Error(t, err)
 }
 
-func Test_SolutionCreator_calculateNextDependentSolutions_givenSmallWeights_shouldSolveInOneBatch(
-	t *testing.T,
-) {
-	ruleset, primitives := setupSaturatableRuleset(t)
-	client := &fakeSolverClient{}
-	creator := NewSolutionCreator(client)
+type solutionCreatorSuite struct {
+	suite.Suite
 
-	currentSelections := selectionsFor(t, primitives[:3])
-	nextSelections := selectionsFor(t, primitives[3:5])
+	ruleset    Ruleset
+	primitives []string
+	client     *mockSolverClient
+	creator    *SolutionCreator
+}
+
+func Test_SolutionCreator_Suite(t *testing.T) {
+	suite.Run(t, new(solutionCreatorSuite))
+}
+
+// SetupSuite builds a saturatable ruleset once, as it is shared and never
+// mutated by the tests.
+func (s *solutionCreatorSuite) SetupSuite() {
+	primitives := make([]string, 100)
+	for i := range primitives {
+		primitives[i] = fmt.Sprintf("p%d", i)
+	}
+
+	creator := NewRulesetCreator()
+	_ = creator.AddPrimitives(primitives...)
+
+	orID, err := creator.SetOr(primitives...)
+	s.Require().NoError(err)
+	s.Require().NoError(creator.Assume(orID))
+
+	ruleset, err := creator.Create()
+	s.Require().NoError(err)
+
+	s.ruleset = ruleset
+	s.primitives = primitives
+}
+
+// SetupTest gives every test a client with reset call counters.
+func (s *solutionCreatorSuite) SetupTest() {
+	s.client = &mockSolverClient{}
+	s.creator = NewSolutionCreator(s.client)
+}
+
+func (
+	s *solutionCreatorSuite,
+) Test_calculateNextDependentSolutions_givenSmallWeights_shouldSolveInOneBatch() {
+	currentSelections := selectionsFor(s.T(), s.primitives[:3])
+	nextSelections := selectionsFor(s.T(), s.primitives[3:5])
 	query, err := NewNextSolutionsQuery(
 		currentSelections,
 		nextSelections,
-		ruleset,
+		s.ruleset,
 		nil,
 		nil,
 	)
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
-	actual, err := creator.calculateNextDependentSolutions(query)
+	actual, err := s.creator.calculateNextDependentSolutions(query)
 
-	require.NoError(t, err)
-	assertSolutionExistsForEachSelection(t, actual, nextSelections)
-	assert.Equal(t, 1, client.multiSolveCalls)
-	assert.Zero(t, client.solveCalls)
+	s.Require().NoError(err)
+	assertSolutionExistsForEachSelection(s.T(), actual, nextSelections)
+	s.Assert().Equal(1, s.client.multiSolveCalls)
+	s.Assert().Zero(s.client.solveCalls)
 }
 
-func Test_SolutionCreator_calculateNextDependentSolutions_givenOversizedWeights_shouldSolveOneByOne(
-	t *testing.T,
-) {
-	ruleset, primitives := setupSaturatableRuleset(t)
-	client := &fakeSolverClient{}
-	creator := NewSolutionCreator(client)
-
+func (
+	s *solutionCreatorSuite,
+) Test_calculateNextDependentSolutions_givenOversizedWeights_shouldSolveOneByOne() {
 	// Select many for current to enforce saturation.
-	currentSelections := selectionsFor(t, primitives[:25])
-	nextSelections := selectionsFor(t, primitives[25:27])
+	currentSelections := selectionsFor(s.T(), s.primitives[:25])
+	nextSelections := selectionsFor(s.T(), s.primitives[25:27])
 	query, err := NewNextSolutionsQuery(
 		currentSelections,
 		nextSelections,
-		ruleset,
+		s.ruleset,
 		nil,
 		nil,
 	)
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
-	actual, err := creator.calculateNextDependentSolutions(query)
+	actual, err := s.creator.calculateNextDependentSolutions(query)
 
-	require.NoError(t, err)
-	assertSolutionExistsForEachSelection(t, actual, nextSelections)
-	assert.Zero(t, client.multiSolveCalls)
+	s.Require().NoError(err)
+	assertSolutionExistsForEachSelection(s.T(), actual, nextSelections)
+	s.Assert().Zero(s.client.multiSolveCalls)
 	// each selection is split once, 2 calls per next selection, therefore 4 in total.
-	assert.Equal(t, 4, client.solveCalls)
+	s.Assert().Equal(4, s.client.solveCalls)
 }
 
-func Test_SolutionCreator_CreateNextSolutions_givenNoNextSelections_shouldReturnEmptyEnvelope(
-	t *testing.T,
-) {
-	ruleset, primitives := setupSaturatableRuleset(t)
-	client := &fakeSolverClient{}
-	creator := NewSolutionCreator(client)
-
+func (
+	s *solutionCreatorSuite,
+) Test_CreateNextSolutions_givenNoNextSelections_shouldReturnEmptyEnvelope() {
 	query, err := NewNextSolutionsQuery(
-		selectionsFor(t, primitives[:3]),
+		selectionsFor(s.T(), s.primitives[:3]),
 		nil,
-		ruleset,
+		s.ruleset,
 		nil,
 		nil,
 	)
-	require.NoError(t, err)
+	s.Require().NoError(err)
 
-	envelope, err := creator.CreateNextSolutions(query)
+	envelope, err := s.creator.CreateNextSolutions(query)
 
-	require.NoError(t, err)
-	assert.Empty(t, envelope.SolutionsBySelection())
+	s.Require().NoError(err)
+	s.Assert().Empty(envelope.SolutionsBySelection())
 }
 
 func selectionsFor(t *testing.T, primitives []string) Selections {
@@ -149,39 +179,18 @@ func assertSolutionExistsForEachSelection(
 	}
 }
 
-func setupSaturatableRuleset(t *testing.T) (Ruleset, []string) {
-	t.Helper()
-
-	primitives := make([]string, 100)
-	for i := range primitives {
-		primitives[i] = fmt.Sprintf("p%d", i)
-	}
-
-	creator := NewRulesetCreator()
-	_ = creator.AddPrimitives(primitives...)
-
-	orID, err := creator.SetOr(primitives...)
-	require.NoError(t, err)
-	require.NoError(t, creator.Assume(orID))
-
-	ruleset, err := creator.Create()
-	require.NoError(t, err)
-
-	return ruleset, primitives
-}
-
-type fakeSolverClient struct {
+type mockSolverClient struct {
 	solveCalls      int
 	multiSolveCalls int
 }
 
-func (c *fakeSolverClient) Solve(_ *SolverQuery) (Solution, error) {
+func (c *mockSolverClient) Solve(_ *SolverQuery) (Solution, error) {
 	c.solveCalls++
 
 	return Solution{}, nil
 }
 
-func (c *fakeSolverClient) SolveWithManyWeights(
+func (c *mockSolverClient) SolveWithManyWeights(
 	query *MultiWeightSolverQuery,
 ) ([]Solution, error) {
 	c.multiSolveCalls++

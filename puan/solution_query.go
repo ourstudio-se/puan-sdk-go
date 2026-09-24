@@ -145,52 +145,78 @@ func (q NextSolutionsQuery) hasEmptyNextSelections() bool {
 	return len(q.nextSelections) == 0
 }
 
-type nextSolutionQueryPartitioner struct {
-	initialQuery NextSolutionsQuery
-	weightGroups []weights.Weights
+func (q NextSolutionsQuery) asSolutionQueries() ([]SolutionQuery, error) {
+	queries := make([]SolutionQuery, len(q.nextSelections))
+	for i, nextSelection := range q.nextSelections {
+		selections := q.currentSelections.copy()
+		selections = append(selections, nextSelection)
+
+		query, err := NewSolutionQueryBuilder().
+			WithRuleset(q.ruleset).
+			WithFrom(q.from).
+			WithTo(q.to).
+			WithSelections(selections).
+			Build()
+		if err != nil {
+			return nil, err
+		}
+
+		queries[i] = query
+	}
+
+	return queries, nil
 }
 
-func newNextSolutionQueryPartitioner(
-	query NextSolutionsQuery,
-) (nextSolutionQueryPartitioner, error) {
-	ruleset, err := query.prepareRuleset()
+func (q NextSolutionsQuery) splitByBatchability() (
+	NextSolutionsQuery, NextSolutionsQuery, error,
+) {
+	ruleset, err := q.prepareRuleset()
 	if err != nil {
-		return nextSolutionQueryPartitioner{}, err
+		return NextSolutionsQuery{}, NextSolutionsQuery{}, err
 	}
 
 	weightGroups, err := calculateNextWeightGroups(
 		ruleset,
-		query.currentSelections,
-		query.nextSelections,
+		q.currentSelections,
+		q.nextSelections,
 	)
 	if err != nil {
-		return nextSolutionQueryPartitioner{}, err
+		return NextSolutionsQuery{}, NextSolutionsQuery{}, err
 	}
 
-	return nextSolutionQueryPartitioner{
-		initialQuery: query,
-		weightGroups: weightGroups,
-	}, nil
+	batchable, err := q.batchableQuery(weightGroups)
+	if err != nil {
+		return NextSolutionsQuery{}, NextSolutionsQuery{}, err
+	}
+
+	nonBatchable, err := q.nonBatchableQuery(weightGroups)
+	if err != nil {
+		return NextSolutionsQuery{}, NextSolutionsQuery{}, err
+	}
+
+	return batchable, nonBatchable, nil
 }
 
-func (p nextSolutionQueryPartitioner) combinable() (NextSolutionsQuery, error) {
-	allSelections := p.initialQuery.nextSelections.copy()
-	var combinableSelections Selections
-	for i, group := range p.weightGroups {
+func (q NextSolutionsQuery) batchableQuery(
+	weightGroups []weights.Weights,
+) (NextSolutionsQuery, error) {
+	allSelections := q.nextSelections.copy()
+	var batchableSelections Selections
+	for i, group := range weightGroups {
 		if group.WeightsTooLarge() {
 			continue
 		}
 
 		selection := allSelections[i]
-		combinableSelections = append(combinableSelections, selection)
+		batchableSelections = append(batchableSelections, selection)
 	}
 
 	query, err := NewNextSolutionsQuery(
-		p.initialQuery.currentSelections,
-		combinableSelections,
-		p.initialQuery.ruleset,
-		p.initialQuery.from,
-		p.initialQuery.to,
+		q.currentSelections,
+		batchableSelections,
+		q.ruleset,
+		q.from,
+		q.to,
 	)
 	if err != nil {
 		return NextSolutionsQuery{}, err
@@ -199,22 +225,24 @@ func (p nextSolutionQueryPartitioner) combinable() (NextSolutionsQuery, error) {
 	return query, nil
 }
 
-func (p nextSolutionQueryPartitioner) oversized() (NextSolutionsQuery, error) {
-	allSelections := p.initialQuery.nextSelections.copy()
-	var oversizedSelections Selections
-	for i, group := range p.weightGroups {
+func (q NextSolutionsQuery) nonBatchableQuery(
+	weightGroups []weights.Weights,
+) (NextSolutionsQuery, error) {
+	allSelections := q.nextSelections.copy()
+	var nonBatchableSelections Selections
+	for i, group := range weightGroups {
 		if group.WeightsTooLarge() {
 			selection := allSelections[i]
-			oversizedSelections = append(oversizedSelections, selection)
+			nonBatchableSelections = append(nonBatchableSelections, selection)
 		}
 	}
 
 	query, err := NewNextSolutionsQuery(
-		p.initialQuery.currentSelections,
-		oversizedSelections,
-		p.initialQuery.ruleset,
-		p.initialQuery.from,
-		p.initialQuery.to,
+		q.currentSelections,
+		nonBatchableSelections,
+		q.ruleset,
+		q.from,
+		q.to,
 	)
 	if err != nil {
 		return NextSolutionsQuery{}, err
