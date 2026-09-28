@@ -75,6 +75,23 @@ func (s Selection) Equals(other Selection) bool {
 	return s.Hash() == other.Hash()
 }
 
+// does not preserve order
+func (s Selections) dedupeUnordered() Selections {
+	byHash := make(map[string]Selection)
+	for _, selection := range s {
+		hash := selection.Hash()
+		if _, exists := byHash[hash]; !exists {
+			byHash[hash] = selection
+		}
+	}
+
+	deduped := make(Selections, 0, len(byHash))
+	for _, selection := range byHash {
+		deduped = append(deduped, selection)
+	}
+	return deduped
+}
+
 func (s Selection) makesRedundant(other Selection) bool {
 	if utils.ContainsAll(other.IDs(), s.IDs()) {
 		return true
@@ -95,15 +112,6 @@ func (s Selection) makesRedundant(other Selection) bool {
 	prioritisedIsNotComposite := !s.IsComposite()
 
 	return prioritisedIsNotComposite
-}
-
-func (s Selections) Contains(selection Selection) bool {
-	for _, s := range s {
-		if s.Equals(selection) {
-			return true
-		}
-	}
-	return false
 }
 
 // split into two contiguous slices, preserving order

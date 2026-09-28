@@ -273,13 +273,14 @@ func NewManySolutionQueries(
 }
 
 func (q ManySolutionQueries) modifyForQuery() (Ruleset, error) {
-	var flattenedSelections Selections
+	var allSelections Selections
 	for _, selectionGroup := range q.selectionGroups {
-		flattenedSelections = append(flattenedSelections, selectionGroup...)
+		allSelections = append(allSelections, selectionGroup...)
 	}
+	unorderedUniqueSelections := allSelections.dedupeUnordered()
 
 	preparedRuleset, err := q.ruleset.modifyForQuery(
-		flattenedSelections,
+		unorderedUniqueSelections,
 		q.from,
 		q.to,
 	)
