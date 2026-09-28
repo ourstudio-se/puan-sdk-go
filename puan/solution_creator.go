@@ -41,6 +41,31 @@ func (c *SolutionCreator) Create(
 	}, nil
 }
 
+func (c *SolutionCreator) CreateNextSolutions(
+	query NextSolutionsQuery,
+) (SolutionsBySelectionEnvelope, error) {
+	solutions, err := c.createNextSolutions(query)
+	if err != nil {
+		err = updateSolveError(err, query.ruleset, query.from)
+		return SolutionsBySelectionEnvelope{}, err
+	}
+
+	return NewSolutionsBySelectionEnvelope(solutions)
+}
+
+func (c *SolutionCreator) CreateManySolutions(
+	query ManySolutionQueries,
+) (SolutionsBySelectionGroupEnvelope, error) {
+	solutions, err := c.createManySolutions(query)
+	if err != nil {
+		err = updateSolveError(err, query.ruleset, query.from)
+		return SolutionsBySelectionGroupEnvelope{}, err
+	}
+
+	envelope := NewSolutionsBySelectionGroupEnvelope(solutions)
+	return envelope, nil
+}
+
 func (c *SolutionCreator) calculateSolution(
 	query SolutionQuery,
 ) (Solution, error) {
@@ -339,18 +364,6 @@ func (c *SolutionCreator) calculateIndependentSolutionsBySelection(
 	return solutions, nil
 }
 
-func (c *SolutionCreator) CreateNextSolutions(
-	query NextSolutionsQuery,
-) (SolutionsBySelectionEnvelope, error) {
-	solutions, err := c.createNextSolutions(query)
-	if err != nil {
-		err = updateSolveError(err, query.ruleset, query.from)
-		return SolutionsBySelectionEnvelope{}, err
-	}
-
-	return NewSolutionsBySelectionEnvelope(solutions)
-}
-
 func (c *SolutionCreator) createNextSolutions(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
@@ -523,6 +536,87 @@ func (c *SolutionCreator) calculateManyIndependentSolutions(
 			selection: selection,
 			solution:  solution,
 		}
+	}
+	return solutions
+}
+
+func (c *SolutionCreator) createManySolutions(
+	query ManySolutionQueries,
+) ([]SolutionForSelectionGroup, error) {
+	dependentSelectionGroups := make([]Selections, len(query.selectionGroups))
+	indipendentSelectionGroups := make([]Selections, len(query.selectionGroups))
+
+	for i, selectionGroup := range query.selectionGroups {
+		dependentSelections, independentSelections := query.ruleset.CategorizeSelections(selectionGroup)
+		dependentSelectionGroups[i] = dependentSelections
+		indipendentSelectionGroups[i] = independentSelections
+	}
+
+	dependentQuery := NewManySolutionQueries(
+		dependentSelectionGroups,
+		query.ruleset,
+		query.from,
+		query.to,
+	)
+
+	dependentSolutions, err := c.createManyDependentSolutions(dependentQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	independentSolutions := c.createManyIndependentSolutions(
+		query.ruleset,
+		indipendentSelectionGroups,
+	)
+
+	solutionsBySelectionGroup := make([]SolutionForSelectionGroup, len(query.selectionGroups))
+	for i, selections := range query.selectionGroups {
+		dependentSolution := dependentSolutions[i]
+		independentSolution := independentSolutions[i]
+		mergedSolution := dependentSolution.merge(independentSolution)
+
+		solutionForSelectionGroup := SolutionForSelectionGroup{
+			selections: selections,
+			solution:   mergedSolution,
+		}
+		solutionsBySelectionGroup[i] = solutionForSelectionGroup
+	}
+
+	return solutionsBySelectionGroup, nil
+}
+
+func (c *SolutionCreator) createManyDependentSolutions(
+	query ManySolutionQueries,
+) ([]Solution, error) {
+	solverQuery, err := c.queryCreator.newManySolutionsQuery(query)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, weights := range solverQuery.WeightGroups() {
+		tooLarge := weights.WeightsTooLarge()
+		if tooLarge {
+			return nil, errors.Errorf("weights are too large at index %d", i)
+		}
+	}
+
+	solutions, err := c.SolveWithManyWeights(solverQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	primitiveSolutions := query.ruleset.RemoveSupportVariablesForMany(solutions)
+	return primitiveSolutions, nil
+}
+
+func (c *SolutionCreator) createManyIndependentSolutions(
+	ruleset Ruleset,
+	selectionGroups []Selections,
+) []Solution {
+	solutions := make([]Solution, len(selectionGroups))
+	for i, selections := range selectionGroups {
+		independentSolution := ruleset.calculateIndependentSolution(selections)
+		solutions[i] = independentSolution
 	}
 	return solutions
 }

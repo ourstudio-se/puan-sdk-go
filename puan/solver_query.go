@@ -216,3 +216,44 @@ func calculateNextWeights(
 
 	return weights, nil
 }
+
+func (c *solverQueryCreator) newManySolutionsQuery(
+	query ManySolutionQueries,
+) (*MultiWeightSolverQuery, error) {
+	preparedRuleset, err := query.modifyForQuery()
+	if err != nil {
+		return nil, err
+	}
+
+	weightGroups, err := calculateWeightGroups(
+		preparedRuleset,
+		query.selectionGroups,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	solverQuery := NewMultiWeightSolverQuery(
+		preparedRuleset.polyhedron,
+		preparedRuleset.dependentVariables,
+		weightGroups,
+	)
+
+	return solverQuery, nil
+}
+
+func calculateWeightGroups(
+	ruleset Ruleset,
+	selectionGroups []Selections,
+) ([]weights.Weights, error) {
+	weightGroups := make([]weights.Weights, len(selectionGroups))
+	for i, selections := range selectionGroups {
+		weights, err := newWeights(ruleset, selections)
+		if err != nil {
+			return nil, err
+		}
+		weightGroups[i] = weights
+	}
+
+	return weightGroups, nil
+}

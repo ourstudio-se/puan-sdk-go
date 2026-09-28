@@ -250,3 +250,42 @@ func (q NextSolutionsQuery) nonBatchableQuery(
 
 	return query, nil
 }
+
+type ManySolutionQueries struct {
+	selectionGroups []Selections
+	ruleset         Ruleset
+	from            *time.Time
+	to              *time.Time
+}
+
+func NewManySolutionQueries(
+	selectionGroups []Selections,
+	ruleset Ruleset,
+	from *time.Time,
+	to *time.Time,
+) ManySolutionQueries {
+	return ManySolutionQueries{
+		selectionGroups: selectionGroups,
+		ruleset:         ruleset,
+		from:            from,
+		to:              to,
+	}
+}
+
+func (q ManySolutionQueries) modifyForQuery() (Ruleset, error) {
+	var flattenedSelections Selections
+	for _, selectionGroup := range q.selectionGroups {
+		flattenedSelections = append(flattenedSelections, selectionGroup...)
+	}
+
+	preparedRuleset, err := q.ruleset.modifyForQuery(
+		flattenedSelections,
+		q.from,
+		q.to,
+	)
+	if err != nil {
+		return Ruleset{}, err
+	}
+
+	return preparedRuleset, nil
+}

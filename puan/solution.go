@@ -98,3 +98,24 @@ func (s SolutionBySelection) Selection() Selection {
 func (s SolutionBySelection) Solution() Solution {
 	return s.solution
 }
+
+type SolutionForSelectionGroup struct {
+	selections Selections
+	solution   Solution
+}
+
+type SolutionsBySelectionGroupEnvelope struct {
+	solutionsBySelectionGroup []SolutionForSelectionGroup
+}
+
+func NewSolutionsBySelectionGroupEnvelope(
+	solutions []SolutionForSelectionGroup,
+) SolutionsBySelectionGroupEnvelope {
+	return SolutionsBySelectionGroupEnvelope{
+		solutionsBySelectionGroup: solutions,
+	}
+}
+
+func (e SolutionsBySelectionGroupEnvelope) SolutionsBySelectionGroup() []SolutionForSelectionGroup {
+	return e.solutionsBySelectionGroup
+}
