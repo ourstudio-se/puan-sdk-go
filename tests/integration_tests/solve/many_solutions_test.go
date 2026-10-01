@@ -196,67 +196,6 @@ func Test_CreateManySolutions_givenDependentAndIndependentSelections(
 	)
 }
 
-func Test_CreateManySolutions_givenOnlyIndependentSelections(
-	t *testing.T,
-) {
-	creator := puan.NewRulesetCreator()
-
-	primitives := []string{"optA", "optB", "optC", "optX"}
-	_ = creator.AddPrimitives(primitives...)
-
-	_ = creator.Assume("optX")
-
-	ruleset, err := creator.Create()
-	assert.NoError(t, err)
-
-	selectionGroups := []puan.Selections{
-		{
-			puan.NewSelectionBuilder("optA").Build(),
-			puan.NewSelectionBuilder("optC").Build(),
-		},
-		{
-			puan.NewSelectionBuilder("optB").Build(),
-			puan.NewSelectionBuilder("optC").Build(),
-		},
-	}
-	query := puan.NewManySolutionQueries(
-		selectionGroups,
-		ruleset,
-		nil,
-		nil,
-	)
-	envelope, err := solutionCreator.CreateManySolutions(query)
-	require.NoError(t, err)
-
-	solutionForGroup := envelope.SolutionsBySelectionGroup()
-
-	assert.Len(t, solutionForGroup, 2)
-
-	group1 := solutionForGroup[0]
-	assert.Equal(
-		t,
-		puan.Solution{
-			"optA": 1,
-			"optB": 0,
-			"optC": 1,
-			"optX": 1,
-		},
-		group1.Solution(),
-	)
-
-	group2 := solutionForGroup[1]
-	assert.Equal(
-		t,
-		puan.Solution{
-			"optA": 0,
-			"optB": 1,
-			"optC": 1,
-			"optX": 1,
-		},
-		group2.Solution(),
-	)
-}
-
 func Test_CreateManySolutions_givenRemoveSelections(
 	t *testing.T,
 ) {

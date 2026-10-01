@@ -9,59 +9,22 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func Test_SolutionCreator_groupSolutionsBySelection(t *testing.T) {
-	creator := &SolutionCreator{}
-
-	selection1 := NewSelectionBuilder("x").Build()
-	selection2 := NewSelectionBuilder("y").WithAction(REMOVE).Build()
-	solution1 := Solution{"x": 1, "y": 0}
-	solution2 := Solution{"x": 0, "y": 1}
-
-	got, err := creator.groupSolutionsBySelection(
-		[]Solution{solution1, solution2},
-		Selections{selection1, selection2},
-	)
-
-	assert.NoError(t, err)
-	assert.Equal(t, []SolutionBySelection{
-		{selection: selection1, solution: solution1},
-		{selection: selection2, solution: solution2},
-	}, got)
-}
-
-func Test_SolutionCreator_groupSolutionsBySelection_givenLengthMismatch_shouldReturnError(
-	t *testing.T,
-) {
-	creator := &SolutionCreator{}
-
-	got, err := creator.groupSolutionsBySelection(
-		[]Solution{{"x": 1}},
-		Selections{
-			NewSelectionBuilder("x").Build(),
-			NewSelectionBuilder("y").Build(),
-		},
-	)
-
-	assert.Nil(t, got)
-	assert.Error(t, err)
-}
-
-type solutionCreatorSuite struct {
+type nextSolutionsCreatorSuite struct {
 	suite.Suite
 
 	ruleset    Ruleset
 	primitives []string
 	client     *mockSolverClient
-	creator    *SolutionCreator
+	creator    *nextSolutionsCreator
 }
 
 func Test_SolutionCreator_Suite(t *testing.T) {
-	suite.Run(t, new(solutionCreatorSuite))
+	suite.Run(t, new(nextSolutionsCreatorSuite))
 }
 
 // SetupSuite builds a saturatable ruleset once, as it is shared and never
 // mutated by the tests.
-func (s *solutionCreatorSuite) SetupSuite() {
+func (s *nextSolutionsCreatorSuite) SetupSuite() {
 	primitives := make([]string, 100)
 	for i := range primitives {
 		primitives[i] = fmt.Sprintf("p%d", i)
@@ -81,16 +44,18 @@ func (s *solutionCreatorSuite) SetupSuite() {
 	s.primitives = primitives
 
 	s.client = &mockSolverClient{}
-	s.creator = NewSolutionCreator(s.client)
+	queryCreator := newSolverQueryCreator()
+	singleSolutionCreator := newSingleSolutionCreator(s.client, queryCreator)
+	s.creator = newNextSolutionsCreator(s.client, queryCreator, singleSolutionCreator)
 }
 
-func (s *solutionCreatorSuite) TearDownTest() {
+func (s *nextSolutionsCreatorSuite) TearDownTest() {
 	s.client.multiSolveCalls = 0
 	s.client.solveCalls = 0
 }
 
 func (
-	s *solutionCreatorSuite,
+	s *nextSolutionsCreatorSuite,
 ) Test_calculateNextDependentSolutions_givenSmallWeights_shouldSolveInOneBatch() {
 	currentSelections := selectionsFor(s.T(), s.primitives[:3])
 	nextSelections := selectionsFor(s.T(), s.primitives[3:5])
@@ -112,7 +77,7 @@ func (
 }
 
 func (
-	s *solutionCreatorSuite,
+	s *nextSolutionsCreatorSuite,
 ) Test_calculateNextDependentSolutions_givenOversizedWeights_shouldSolveOneByOne() {
 	// Select many for current to enforce saturation.
 	currentSelections := selectionsFor(s.T(), s.primitives[:25])
@@ -136,7 +101,7 @@ func (
 }
 
 func (
-	s *solutionCreatorSuite,
+	s *nextSolutionsCreatorSuite,
 ) Test_CreateNextSolutions_givenNoNextSelections_shouldReturnEmptyEnvelope() {
 	query, err := NewNextSolutionsQuery(
 		selectionsFor(s.T(), s.primitives[:3]),
@@ -147,10 +112,10 @@ func (
 	)
 	s.Require().NoError(err)
 
-	envelope, err := s.creator.CreateNextSolutions(query)
+	solutions, err := s.creator.createNextSolutions(query)
 
 	s.Require().NoError(err)
-	s.Assert().Empty(envelope.SolutionsBySelection())
+	s.Assert().Empty(solutions)
 }
 
 func selectionsFor(t *testing.T, primitives []string) Selections {
