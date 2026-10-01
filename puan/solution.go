@@ -104,6 +104,14 @@ type SolutionForSelectionGroup struct {
 	solution   Solution
 }
 
+func (s SolutionForSelectionGroup) Selections() Selections {
+	return s.selections
+}
+
+func (s SolutionForSelectionGroup) Solution() Solution {
+	return s.solution
+}
+
 type SolutionsBySelectionGroupEnvelope struct {
 	solutionsBySelectionGroup []SolutionForSelectionGroup
 }

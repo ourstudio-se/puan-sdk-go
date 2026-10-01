@@ -1,154 +1,183 @@
+//nolint:lll
 package solve
 
 import (
 	"testing"
-	"time"
 
-	"github.com/go-faker/faker/v4/pkg/options"
-	"github.com/ourstudio-se/puan-sdk-go/internal/fake"
 	"github.com/ourstudio-se/puan-sdk-go/puan"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-// Ruleset with many dependent primitives.
-// Create selections for all, some of which are composite.
-// The solver should create a solution for each selection.
-// nolint:lll
-func Test_CreateSolutionsBySelection_givenManyDependentSelections_shouldCreateSolutionForEach(
+func Test_CreateManySolutions_givenOnlyDependentSelections(
 	t *testing.T,
 ) {
 	creator := puan.NewRulesetCreator()
-	from := time.Now()
-	end := from.Add(1 * time.Hour)
-	_ = creator.EnableTime(from, end)
 
-	primitivesCount := 80
-	primitives := fake.New[[]string](
-		func(oo *options.Options) {
-			oo.RandomMinSliceSize = primitivesCount
-			oo.RandomMaxSliceSize = primitivesCount
-		},
-	)
+	primitives := []string{"optA", "optB", "optC", "optD", "optE", "optF"}
 	_ = creator.AddPrimitives(primitives...)
 
-	orID, _ := creator.SetOr(primitives...)
-	_ = creator.Assume(orID)
+	orABC, _ := creator.SetOr("optA", "optB", "optC")
+	_ = creator.Assume(orABC)
 
-	ruleset, _ := creator.Create()
+	orDEF, _ := creator.SetOr("optD", "optE", "optF")
+	_ = creator.Assume(orDEF)
 
-	// Make half of the selections composite.
-	selections := make([]puan.Selection, len(primitives))
-	for i, primitive := range primitives {
-		builder := puan.NewSelectionBuilder(primitive)
-		if i < (primitivesCount / 2) {
-			otherPrimitive := primitives[i*2]
-			builder.WithSubSelectionID(otherPrimitive)
-		}
-		selections[i] = builder.Build()
+	ruleset, err := creator.Create()
+	assert.NoError(t, err)
+
+	selectionGroups := []puan.Selections{
+		{
+			puan.NewSelectionBuilder("optA").Build(),
+			puan.NewSelectionBuilder("optD").Build(),
+		},
+		{
+			puan.NewSelectionBuilder("optB").Build(),
+			puan.NewSelectionBuilder("optF").Build(),
+		},
+		{
+			puan.NewSelectionBuilder("optC").Build(),
+			puan.NewSelectionBuilder("optE").Build(),
+		},
 	}
+	query := puan.NewManySolutionQueries(
+		selectionGroups,
+		ruleset,
+		nil,
+		nil,
+	)
+	envelope, err := solutionCreator.CreateManySolutions(query)
+	require.NoError(t, err)
 
-	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
-	solutions, _ := solutionCreator.CreateSolutionsBySelection(query)
+	solutionForGroup := envelope.SolutionsBySelectionGroup()
 
-	assert.Len(t, solutions.SolutionsBySelection(), len(primitives))
-	for _, selection := range selections {
-		solution, err := solutions.GetSolutionBySelection(selection)
+	assert.Len(t, solutionForGroup, 3)
 
-		assert.NoError(t, err)
-		newSolutionAsserter(solution.Solution()).
-			assertActive(t, selection.IDs()...)
-	}
+	group1 := solutionForGroup[0]
+	assert.Equal(
+		t,
+		selectionGroups[0],
+		group1.Selections(),
+	)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"optA": 1,
+			"optB": 0,
+			"optC": 0,
+			"optD": 1,
+			"optE": 0,
+			"optF": 0,
+		},
+		group1.Solution(),
+	)
+
+	group2 := solutionForGroup[1]
+	assert.Equal(
+		t,
+		selectionGroups[1],
+		group2.Selections(),
+	)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"optA": 0,
+			"optB": 1,
+			"optC": 0,
+			"optD": 0,
+			"optE": 0,
+			"optF": 1,
+		},
+		group2.Solution(),
+	)
+
+	group3 := solutionForGroup[2]
+	assert.Equal(
+		t,
+		selectionGroups[2],
+		group3.Selections(),
+	)
+	assert.Equal(t,
+		puan.Solution{
+			"optA": 0,
+			"optB": 0,
+			"optC": 1,
+			"optD": 0,
+			"optE": 1,
+			"optF": 0,
+		},
+		group3.Solution(),
+	)
 }
 
-// Ruleset with many independent primitives.
-// The solver should create a solution for each selection.
-// nolint:lll
-func Test_CreateSolutionsBySelection_givenManyIndependentSelections_shouldCreateSolutionForEach(
+func Test_CreateManySolutions_givenDependentAndIndependentSelections(
 	t *testing.T,
 ) {
 	creator := puan.NewRulesetCreator()
-	from := time.Now()
-	end := from.Add(1 * time.Hour)
-	_ = creator.EnableTime(from, end)
 
-	primitivesCount := 80
-	primitives := fake.New[[]string](
-		func(oo *options.Options) {
-			oo.RandomMinSliceSize = primitivesCount
-			oo.RandomMaxSliceSize = primitivesCount
-		},
-	)
+	primitives := []string{"optA", "optB", "optC", "optD"}
 	_ = creator.AddPrimitives(primitives...)
 
-	ruleset, _ := creator.Create()
+	orABC, _ := creator.SetOr("optA", "optB")
+	_ = creator.Assume(orABC)
 
-	selections := make([]puan.Selection, len(primitives))
-	for i, primitive := range primitives {
-		selections[i] = puan.NewSelectionBuilder(primitive).Build()
-	}
+	ruleset, err := creator.Create()
+	assert.NoError(t, err)
 
-	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
-	solutions, _ := solutionCreator.CreateSolutionsBySelection(query)
-
-	assert.Len(t, solutions.SolutionsBySelection(), len(primitives))
-	for _, selection := range selections {
-		solution, err := solutions.GetSolutionBySelection(selection)
-
-		assert.NoError(t, err)
-		newSolutionAsserter(solution.Solution()).
-			assertActive(t, selection.IDs()...)
-	}
-}
-
-// Ruleset with many dependent and independent primitives.
-// The solver should create a solution for each selection.
-// nolint:lll
-func Test_CreateSolutionsBySelection_givenMixedSelections_shouldCreateSolutionForEach(
-	t *testing.T,
-) {
-	creator := puan.NewRulesetCreator()
-	from := time.Now()
-	end := from.Add(1 * time.Hour)
-	_ = creator.EnableTime(from, end)
-
-	dependentPrimitives := fake.New[[]string](
-		func(oo *options.Options) {
-			oo.RandomMinSliceSize = 40
-			oo.RandomMaxSliceSize = 40
+	selectionGroups := []puan.Selections{
+		{
+			puan.NewSelectionBuilder("optA").Build(),
+			puan.NewSelectionBuilder("optC").Build(),
 		},
-	)
-	independentPrimitives := fake.New[[]string](
-		func(oo *options.Options) {
-			oo.RandomMinSliceSize = 40
-			oo.RandomMaxSliceSize = 40
+		{
+			puan.NewSelectionBuilder("optB").Build(),
+			puan.NewSelectionBuilder("optD").Build(),
 		},
+	}
+	query := puan.NewManySolutionQueries(
+		selectionGroups,
+		ruleset,
+		nil,
+		nil,
+	)
+	envelope, err := solutionCreator.CreateManySolutions(query)
+	require.NoError(t, err)
+
+	solutionForGroup := envelope.SolutionsBySelectionGroup()
+
+	assert.Len(t, solutionForGroup, 2)
+
+	group1 := solutionForGroup[0]
+	assert.Equal(
+		t,
+		selectionGroups[0],
+		group1.Selections(),
+	)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"optA": 1,
+			"optB": 0,
+			"optC": 1,
+			"optD": 0,
+		},
+		group1.Solution(),
 	)
 
-	var primitives []string
-	primitives = append(primitives, dependentPrimitives...)
-	primitives = append(primitives, independentPrimitives...)
-
-	_ = creator.AddPrimitives(primitives...)
-
-	orID, _ := creator.SetOr(dependentPrimitives...)
-	_ = creator.Assume(orID)
-
-	selections := make([]puan.Selection, len(primitives))
-	for i, primitive := range primitives {
-		selections[i] = puan.NewSelectionBuilder(primitive).Build()
-	}
-
-	ruleset, _ := creator.Create()
-
-	query, _ := puan.NewSolutionQueryBuilder().WithSelections(selections).WithRuleset(ruleset).Build()
-	solutions, _ := solutionCreator.CreateSolutionsBySelection(query)
-
-	assert.Len(t, solutions.SolutionsBySelection(), len(primitives))
-	for _, selection := range selections {
-		solution, err := solutions.GetSolutionBySelection(selection)
-
-		assert.NoError(t, err)
-		newSolutionAsserter(solution.Solution()).
-			assertActive(t, selection.IDs()...)
-	}
+	group2 := solutionForGroup[1]
+	assert.Equal(
+		t,
+		selectionGroups[1],
+		group2.Selections(),
+	)
+	assert.Equal(
+		t,
+		puan.Solution{
+			"optA": 0,
+			"optB": 1,
+			"optC": 0,
+			"optD": 1,
+		},
+		group2.Solution(),
+	)
 }
