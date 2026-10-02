@@ -4,16 +4,13 @@ import "github.com/go-errors/errors"
 
 type singleSolutionCreator struct {
 	SolverClient
-	queryCreator *solverQueryCreator
 }
 
 func newSingleSolutionCreator(
 	client SolverClient,
-	queryCreator *solverQueryCreator,
 ) *singleSolutionCreator {
 	return &singleSolutionCreator{
 		SolverClient: client,
-		queryCreator: queryCreator,
 	}
 }
 
@@ -46,7 +43,7 @@ func (c *singleSolutionCreator) create(
 func (c *singleSolutionCreator) calculateDependentSolution(
 	query SolutionQuery,
 ) (Solution, error) {
-	solverQuery, err := c.queryCreator.new(query)
+	solverQuery, err := query.asSolverQuery()
 	if err != nil {
 		return Solution{}, err
 	}

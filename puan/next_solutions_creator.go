@@ -3,18 +3,15 @@ package puan
 type nextSolutionsCreator struct {
 	SolverClient
 
-	queryCreator          *solverQueryCreator
 	singleSolutionCreator *singleSolutionCreator
 }
 
 func newNextSolutionsCreator(
 	client SolverClient,
-	queryCreator *solverQueryCreator,
 	singleSolutionCreator *singleSolutionCreator,
 ) *nextSolutionsCreator {
 	return &nextSolutionsCreator{
 		SolverClient:          client,
-		queryCreator:          queryCreator,
 		singleSolutionCreator: singleSolutionCreator,
 	}
 }
@@ -129,7 +126,7 @@ func (c *nextSolutionsCreator) calculateBatchableSolutions(
 		return nil, nil
 	}
 
-	solverQuery, err := c.queryCreator.newNextSolutionsQuery(query)
+	solverQuery, err := query.asSolverQuery()
 	if err != nil {
 		return nil, err
 	}

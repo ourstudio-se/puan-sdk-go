@@ -3,18 +3,15 @@ package puan
 type solutionsBySelectionCreator struct {
 	SolverClient
 
-	queryCreator          *solverQueryCreator
 	singleSolutionCreator *singleSolutionCreator
 }
 
 func newSolutionsBySelectionCreator(
 	solverClient SolverClient,
-	queryCreator *solverQueryCreator,
 	singleSolutionCreator *singleSolutionCreator,
 ) *solutionsBySelectionCreator {
 	return &solutionsBySelectionCreator{
 		SolverClient:          solverClient,
-		queryCreator:          queryCreator,
 		singleSolutionCreator: singleSolutionCreator,
 	}
 }
@@ -61,7 +58,7 @@ func (c *solutionsBySelectionCreator) create(
 func (c *solutionsBySelectionCreator) calculateDependentSolutions(
 	query SolutionQuery,
 ) ([]SolutionBySelection, error) {
-	solverQuery, err := c.queryCreator.newSolutionsBySelectionQuery(query)
+	solverQuery, err := query.asSolutionsBySelectionSolverQuery()
 	if err != nil {
 		return nil, err
 	}

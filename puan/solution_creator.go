@@ -22,24 +22,19 @@ type SolutionCreator struct {
 func NewSolutionCreator(
 	client SolverClient,
 ) *SolutionCreator {
-	queryCreator := newSolverQueryCreator()
 	singleSolutionCreator := newSingleSolutionCreator(
 		client,
-		queryCreator,
 	)
 	solutionsBySelectionCreator := newSolutionsBySelectionCreator(
 		client,
-		queryCreator,
 		singleSolutionCreator,
 	)
 	nextSolutionsCreator := newNextSolutionsCreator(
 		client,
-		queryCreator,
 		singleSolutionCreator,
 	)
 	manySolutionsCreator := newManySolutionsCreator(
 		client,
-		queryCreator,
 	)
 	return &SolutionCreator{
 		singleSolutionCreator:       singleSolutionCreator,

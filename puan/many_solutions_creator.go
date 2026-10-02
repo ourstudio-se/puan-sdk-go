@@ -4,17 +4,13 @@ import "github.com/go-errors/errors"
 
 type manySolutionsCreator struct {
 	SolverClient
-
-	queryCreator *solverQueryCreator
 }
 
 func newManySolutionsCreator(
 	client SolverClient,
-	queryCreator *solverQueryCreator,
 ) *manySolutionsCreator {
 	return &manySolutionsCreator{
 		SolverClient: client,
-		queryCreator: queryCreator,
 	}
 }
 
@@ -63,7 +59,7 @@ func (c *manySolutionsCreator) create(
 func (c *manySolutionsCreator) createDependentSolutions(
 	query ManySolutionsQuery,
 ) ([]Solution, error) {
-	solverQuery, err := c.queryCreator.newManySolutionsQuery(query)
+	solverQuery, err := query.asSolverQuery()
 	if err != nil {
 		return nil, err
 	}

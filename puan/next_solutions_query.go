@@ -6,84 +6,6 @@ import (
 	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
 )
 
-type SolutionQuery struct {
-	selections Selections
-	ruleset    Ruleset
-	from       *time.Time
-	to         *time.Time
-}
-
-func NewSolutionQuery(
-	selections Selections,
-	ruleset Ruleset,
-	from *time.Time,
-	to *time.Time,
-) (SolutionQuery, error) {
-	if err := validateRuleset(ruleset); err != nil {
-		return SolutionQuery{}, err
-	}
-
-	if err := validateTimestamps(from, to); err != nil {
-		return SolutionQuery{}, err
-	}
-
-	if err := validateSelections(ruleset, selections); err != nil {
-		return SolutionQuery{}, err
-	}
-
-	return SolutionQuery{
-		selections: selections,
-		ruleset:    ruleset,
-		from:       from,
-		to:         to,
-	}, nil
-}
-
-type SolutionQueryBuilder struct {
-	selections Selections
-	ruleset    Ruleset
-	from       *time.Time
-	to         *time.Time
-}
-
-func NewSolutionQueryBuilder() *SolutionQueryBuilder {
-	return &SolutionQueryBuilder{}
-}
-
-func (b *SolutionQueryBuilder) fromQuery(
-	query SolutionQuery,
-) *SolutionQueryBuilder {
-	b.selections = query.selections
-	b.ruleset = query.ruleset
-	b.from = query.from
-	b.to = query.to
-	return b
-}
-
-func (b *SolutionQueryBuilder) WithSelections(selections Selections) *SolutionQueryBuilder {
-	b.selections = selections
-	return b
-}
-
-func (b *SolutionQueryBuilder) WithRuleset(ruleset Ruleset) *SolutionQueryBuilder {
-	b.ruleset = ruleset
-	return b
-}
-
-func (b *SolutionQueryBuilder) WithFrom(from *time.Time) *SolutionQueryBuilder {
-	b.from = from
-	return b
-}
-
-func (b *SolutionQueryBuilder) WithTo(to *time.Time) *SolutionQueryBuilder {
-	b.to = to
-	return b
-}
-
-func (b *SolutionQueryBuilder) Build() (SolutionQuery, error) {
-	return NewSolutionQuery(b.selections, b.ruleset, b.from, b.to)
-}
-
 type NextSolutionsQuery struct {
 	currentSelections Selections
 	nextSelections    Selections
@@ -186,23 +108,6 @@ func (b *NextSolutionsQueryBuilder) Build() (NextSolutionsQuery, error) {
 	)
 }
 
-func (q NextSolutionsQuery) prepareRuleset() (Ruleset, error) {
-	preparedRuleset, err := q.ruleset.modifyForQuery(
-		q.currentSelections,
-		q.from,
-		q.to,
-	)
-	if err != nil {
-		return Ruleset{}, err
-	}
-
-	if err = preparedRuleset.setCompositeSelectionConstraints(q.nextSelections); err != nil {
-		return Ruleset{}, err
-	}
-
-	return preparedRuleset, nil
-}
-
 func (q NextSolutionsQuery) hasEmptyNextSelections() bool {
 	return len(q.nextSelections) == 0
 }
@@ -259,6 +164,23 @@ func (q NextSolutionsQuery) splitByBatchability() (
 	return batchable, nonBatchable, nil
 }
 
+func (q NextSolutionsQuery) prepareRuleset() (Ruleset, error) {
+	preparedRuleset, err := q.ruleset.modifyForQuery(
+		q.currentSelections,
+		q.from,
+		q.to,
+	)
+	if err != nil {
+		return Ruleset{}, err
+	}
+
+	if err = preparedRuleset.setCompositeSelectionConstraints(q.nextSelections); err != nil {
+		return Ruleset{}, err
+	}
+
+	return preparedRuleset, nil
+}
+
 func (q NextSolutionsQuery) batchableQuery(
 	weightGroups []weights.Weights,
 ) (NextSolutionsQuery, error) {
@@ -307,42 +229,41 @@ func (q NextSolutionsQuery) nonBatchableQuery(
 	return query, nil
 }
 
-type ManySolutionsQuery struct {
-	selectionGroups []Selections
-	ruleset         Ruleset
-	from            *time.Time
-	to              *time.Time
-}
-
-func NewManySolutionsQuery(
-	selectionGroups []Selections,
-	ruleset Ruleset,
-	from *time.Time,
-	to *time.Time,
-) ManySolutionsQuery {
-	return ManySolutionsQuery{
-		selectionGroups: selectionGroups,
-		ruleset:         ruleset,
-		from:            from,
-		to:              to,
+func (query NextSolutionsQuery) asSolverQuery() (*MultiWeightSolverQuery, error) {
+	preparedRuleset, err := query.prepareRuleset()
+	if err != nil {
+		return nil, err
 	}
-}
 
-func (q ManySolutionsQuery) modifyForQuery() (Ruleset, error) {
-	var allSelections Selections
-	for _, selectionGroup := range q.selectionGroups {
-		allSelections = append(allSelections, selectionGroup...)
-	}
-	unorderedUniqueSelections := allSelections.dedupeUnordered()
-
-	preparedRuleset, err := q.ruleset.modifyForQuery(
-		unorderedUniqueSelections,
-		q.from,
-		q.to,
+	weightGroups, err := calculateNextWeightGroups(
+		preparedRuleset,
+		query.currentSelections,
+		query.nextSelections,
 	)
 	if err != nil {
-		return Ruleset{}, err
+		return nil, err
 	}
 
-	return preparedRuleset, nil
+	solverQuery := NewMultiWeightSolverQuery(
+		preparedRuleset.polyhedron,
+		preparedRuleset.dependentVariables,
+		weightGroups,
+	)
+
+	return solverQuery, nil
+}
+
+func calculateNextWeightGroups(
+	ruleset Ruleset,
+	currentSelections Selections,
+	nextSelections Selections,
+) ([]weights.Weights, error) {
+	selectionGroups := make([]Selections, len(nextSelections))
+	for i, nextSelection := range nextSelections {
+		selections := currentSelections.copy()
+		selections = append(selections, nextSelection)
+		selectionGroups[i] = selections
+	}
+
+	return calculateWeightGroups(ruleset, selectionGroups)
 }

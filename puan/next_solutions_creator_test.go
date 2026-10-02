@@ -44,9 +44,8 @@ func (s *nextSolutionsCreatorSuite) SetupSuite() {
 	s.primitives = primitives
 
 	s.client = &mockSolverClient{}
-	queryCreator := newSolverQueryCreator()
-	singleSolutionCreator := newSingleSolutionCreator(s.client, queryCreator)
-	s.creator = newNextSolutionsCreator(s.client, queryCreator, singleSolutionCreator)
+	singleSolutionCreator := newSingleSolutionCreator(s.client)
+	s.creator = newNextSolutionsCreator(s.client, singleSolutionCreator)
 }
 
 func (s *nextSolutionsCreatorSuite) TearDownTest() {
