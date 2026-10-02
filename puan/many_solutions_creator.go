@@ -68,11 +68,9 @@ func (c *manySolutionsCreator) createDependentSolutions(
 		return nil, err
 	}
 
-	for i, weights := range solverQuery.WeightGroups() {
-		tooLarge := weights.WeightsTooLarge()
-		if tooLarge {
-			return nil, errors.Errorf("weights are too large at index %d", i)
-		}
+	err = solverQuery.validateWeightLimit()
+	if err != nil {
+		return nil, err
 	}
 
 	solutions, err := c.SolveWithManyWeights(solverQuery)

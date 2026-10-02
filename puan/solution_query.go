@@ -124,6 +124,68 @@ func NewNextSolutionsQuery(
 	}, nil
 }
 
+type NextSolutionsQueryBuilder struct {
+	currentSelections Selections
+	nextSelections    Selections
+	ruleset           Ruleset
+	from              *time.Time
+	to                *time.Time
+}
+
+func NewNextSolutionsQueryBuilder() *NextSolutionsQueryBuilder {
+	return &NextSolutionsQueryBuilder{}
+}
+
+func (b *NextSolutionsQueryBuilder) fromQuery(
+	query NextSolutionsQuery,
+) *NextSolutionsQueryBuilder {
+	b.currentSelections = query.currentSelections
+	b.nextSelections = query.nextSelections
+	b.ruleset = query.ruleset
+	b.from = query.from
+	b.to = query.to
+	return b
+}
+
+func (b *NextSolutionsQueryBuilder) WithCurrentSelections(
+	selections Selections,
+) *NextSolutionsQueryBuilder {
+	b.currentSelections = selections
+	return b
+}
+
+func (b *NextSolutionsQueryBuilder) WithNextSelections(
+	selections Selections,
+) *NextSolutionsQueryBuilder {
+	b.nextSelections = selections
+	return b
+}
+
+func (b *NextSolutionsQueryBuilder) WithRuleset(ruleset Ruleset) *NextSolutionsQueryBuilder {
+	b.ruleset = ruleset
+	return b
+}
+
+func (b *NextSolutionsQueryBuilder) WithFrom(from *time.Time) *NextSolutionsQueryBuilder {
+	b.from = from
+	return b
+}
+
+func (b *NextSolutionsQueryBuilder) WithTo(to *time.Time) *NextSolutionsQueryBuilder {
+	b.to = to
+	return b
+}
+
+func (b *NextSolutionsQueryBuilder) Build() (NextSolutionsQuery, error) {
+	return NewNextSolutionsQuery(
+		b.currentSelections,
+		b.nextSelections,
+		b.ruleset,
+		b.from,
+		b.to,
+	)
+}
+
 func (q NextSolutionsQuery) prepareRuleset() (Ruleset, error) {
 	preparedRuleset, err := q.ruleset.modifyForQuery(
 		q.currentSelections,
@@ -211,13 +273,10 @@ func (q NextSolutionsQuery) batchableQuery(
 		batchableSelections = append(batchableSelections, selection)
 	}
 
-	query, err := NewNextSolutionsQuery(
-		q.currentSelections,
-		batchableSelections,
-		q.ruleset,
-		q.from,
-		q.to,
-	)
+	query, err := NewNextSolutionsQueryBuilder().
+		fromQuery(q).
+		WithNextSelections(batchableSelections).
+		Build()
 	if err != nil {
 		return NextSolutionsQuery{}, err
 	}
@@ -237,13 +296,10 @@ func (q NextSolutionsQuery) nonBatchableQuery(
 		}
 	}
 
-	query, err := NewNextSolutionsQuery(
-		q.currentSelections,
-		nonBatchableSelections,
-		q.ruleset,
-		q.from,
-		q.to,
-	)
+	query, err := NewNextSolutionsQueryBuilder().
+		fromQuery(q).
+		WithNextSelections(nonBatchableSelections).
+		Build()
 	if err != nil {
 		return NextSolutionsQuery{}, err
 	}

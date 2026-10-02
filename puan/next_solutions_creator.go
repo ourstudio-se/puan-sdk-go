@@ -22,12 +22,31 @@ func newNextSolutionsCreator(
 func (c *nextSolutionsCreator) create(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
-	solutionsForDependentSelections, err := c.createForDependentSelections(query)
+	nextDependentSelections, nextIndependentSelections := query.ruleset.CategorizeSelections(
+		query.nextSelections,
+	)
+
+	dependentQuery, err := NewNextSolutionsQueryBuilder().
+		fromQuery(query).
+		WithNextSelections(nextDependentSelections).
+		Build()
 	if err != nil {
 		return nil, err
 	}
 
-	solutionsForIndependentSelections, err := c.createForIndependentSelections(query)
+	solutionsForDependentSelections, err := c.createForDependentSelections(dependentQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	independentQuery, err := NewNextSolutionsQueryBuilder().
+		fromQuery(query).
+		WithNextSelections(nextIndependentSelections).
+		Build()
+	if err != nil {
+		return nil, err
+	}
+	solutionsForIndependentSelections, err := c.createForIndependentSelections(independentQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -45,15 +64,10 @@ func (c *nextSolutionsCreator) createForDependentSelections(
 	currentDependentSelections, currentIndependentSelections :=
 		query.ruleset.CategorizeSelections(query.currentSelections)
 
-	nextDependentSelections, _ := query.ruleset.CategorizeSelections(query.nextSelections)
-
-	dependentQuery, err := NewNextSolutionsQuery(
-		currentDependentSelections,
-		nextDependentSelections,
-		query.ruleset,
-		query.from,
-		query.to,
-	)
+	dependentQuery, err := NewNextSolutionsQueryBuilder().
+		fromQuery(query).
+		WithCurrentSelections(currentDependentSelections).
+		Build()
 	if err != nil {
 		return nil, err
 	}
@@ -67,16 +81,18 @@ func (c *nextSolutionsCreator) createForDependentSelections(
 		currentIndependentSelections,
 	)
 
-	solutionBySelection := make([]SolutionBySelection, len(nextDependentSolutions))
+	solutions := make([]Solution, len(nextDependentSolutions))
 	for i, nextSolution := range nextDependentSolutions {
 		mergedSolution := nextSolution.solution.merge(currentIndependentSolution)
-		solutionBySelection[i] = SolutionBySelection{
-			selection: nextSolution.selection,
-			solution:  mergedSolution,
-		}
+		solutions[i] = mergedSolution
 	}
 
-	return solutionBySelection, nil
+	solutionsBySelection, err := newSolutionsBySelection(solutions, query.nextSelections)
+	if err != nil {
+		return nil, err
+	}
+
+	return solutionsBySelection, nil
 }
 
 func (c *nextSolutionsCreator) calculateDependentSolutions(
@@ -92,14 +108,14 @@ func (c *nextSolutionsCreator) calculateDependentSolutions(
 		return nil, err
 	}
 
-	nonBatchableSolutions, err := c.calculateNonBatchableSolutions(nonBatchable)
+	nonBatchedSolutions, err := c.calculateNonBatchableSolutions(nonBatchable)
 	if err != nil {
 		return nil, err
 	}
 
 	var solutions []SolutionBySelection
 	solutions = append(solutions, batchedSolutions...)
-	solutions = append(solutions, nonBatchableSolutions...)
+	solutions = append(solutions, nonBatchedSolutions...)
 
 	return solutions, nil
 }
@@ -167,13 +183,9 @@ func (c *nextSolutionsCreator) createForIndependentSelections(
 		return nil, err
 	}
 
-	_, nextIndependentSelections := query.ruleset.CategorizeSelections(
-		query.nextSelections,
-	)
-
 	nextSolutions := c.calculateIndependentSolutionsFromCurrent(
 		currentSolution,
-		nextIndependentSelections,
+		query.nextSelections,
 	)
 
 	return nextSolutions, nil
