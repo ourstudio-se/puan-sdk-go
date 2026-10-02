@@ -448,35 +448,48 @@ func Test_Selection_Hash(t *testing.T) {
 	theories := []struct {
 		name      string
 		selection Selection
-		expected  string
+		want      string
 	}{
 		{
 			name:      "ADD selection",
 			selection: NewSelectionBuilder("x").Build(),
-			expected:  "c3b14e6c5ba76924b48df086f52c5e3237675ff5",
+			want:      "d503fe456f8a633642f2350a9aa272def76922f6",
 		},
 		{
 			name:      "REMOVE selection",
 			selection: NewSelectionBuilder("x").WithAction(REMOVE).Build(),
-			expected:  "235b76cf9d9c9334c4736b4c1f5439fe92f49327",
+			want:      "7bfcbf14538ce071383d0ef33369a5fdea878a4e",
 		},
 		{
 			name:      "different id same action",
 			selection: NewSelectionBuilder("y").Build(),
-			expected:  "390671eaeda30f8b9a6ee3dae4a357f47da8803b",
+			want:      "6d2dd8ee92f936e256131f7387c52286b9dbe09b",
 		},
 		{
 			name:      "composite with sub-selection",
 			selection: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
-			expected:  "c93cf323b09bf5b73b27a92c4208b3c8c1f5bded",
+			want:      "96405cd2918e881447c415057668adb145c6637f",
 		},
 	}
 
 	for _, tt := range theories {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, tt.selection.Hash())
+			got := tt.selection.Hash()
+			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func Test_Selection_Hash_givenSameCharactersButDividedDifferently_shouldNotHaveSameHash(
+	t *testing.T,
+) {
+	a := NewSelectionBuilder("x").WithSubSelectionID("y").Build()
+	b := NewSelectionBuilder("xy").Build()
+
+	aHash := a.Hash()
+	bHash := b.Hash()
+
+	assert.NotEqual(t, aHash, bHash)
 }
 
 func Test_Selection_Equals(t *testing.T) {

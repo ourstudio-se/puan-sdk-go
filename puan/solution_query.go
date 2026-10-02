@@ -40,7 +40,7 @@ func NewSolutionQuery(
 }
 
 func (query SolutionQuery) asSolverQuery() (*SolverQuery, error) {
-	preparedRuleset, err := query.ruleset.modifyForQuery(query.selections, query.from, query.to)
+	preparedRuleset, err := query.ruleset.prepareForSolve(query.selections, query.from, query.to)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (query SolutionQuery) asSolverQuery() (*SolverQuery, error) {
 }
 
 func (query SolutionQuery) asSolutionsBySelectionSolverQuery() (*MultiWeightSolverQuery, error) {
-	preparedRuleset, err := query.ruleset.modifyForQuery(query.selections, query.from, query.to)
+	preparedRuleset, err := query.ruleset.prepareForSolve(query.selections, query.from, query.to)
 	if err != nil {
 		return nil, err
 	}

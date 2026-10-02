@@ -18,12 +18,12 @@ func (c *manySolutionsCreator) create(
 	query ManySolutionsQuery,
 ) ([]SolutionForSelectionGroup, error) {
 	dependentSelectionGroups := make([]Selections, len(query.selectionGroups))
-	indipendentSelectionGroups := make([]Selections, len(query.selectionGroups))
+	independentSelectionGroups := make([]Selections, len(query.selectionGroups))
 
 	for i, selectionGroup := range query.selectionGroups {
 		dependentSelections, independentSelections := query.ruleset.CategorizeSelections(selectionGroup)
 		dependentSelectionGroups[i] = dependentSelections
-		indipendentSelectionGroups[i] = independentSelections
+		independentSelectionGroups[i] = independentSelections
 	}
 
 	dependentQuery, err := NewManySolutionsQuery(
@@ -43,7 +43,7 @@ func (c *manySolutionsCreator) create(
 
 	independentSolutions := c.createIndependentSolutions(
 		query.ruleset,
-		indipendentSelectionGroups,
+		independentSelectionGroups,
 	)
 
 	solutions, err := c.mergeSolutions(dependentSolutions, independentSolutions)
@@ -98,7 +98,11 @@ func (c *manySolutionsCreator) mergeSolutions(
 	independentSolutions []Solution,
 ) ([]Solution, error) {
 	if len(dependentSolutions) != len(independentSolutions) {
-		return nil, errors.Errorf("dependent and independent solutions must have the same length")
+		return nil, errors.Errorf(
+			"mismatch in length of dependent (%d) and independent (%d) solutions",
+			len(dependentSolutions),
+			len(independentSolutions),
+		)
 	}
 
 	mergedSolutions := make([]Solution, len(dependentSolutions))
@@ -115,7 +119,11 @@ func (c *manySolutionsCreator) groupSolutions(
 	solutions []Solution,
 ) ([]SolutionForSelectionGroup, error) {
 	if len(selectionGroups) != len(solutions) {
-		return nil, errors.Errorf("selection groups and solutions must have the same length")
+		return nil, errors.Errorf(
+			"mismatch in length of selection groups (%d) and solutions (%d)",
+			len(selectionGroups),
+			len(solutions),
+		)
 	}
 
 	solutionsBySelectionGroup := make([]SolutionForSelectionGroup, len(selectionGroups))

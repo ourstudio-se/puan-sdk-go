@@ -165,7 +165,7 @@ func (q NextSolutionsQuery) splitByBatchability() (
 }
 
 func (q NextSolutionsQuery) prepareRuleset() (Ruleset, error) {
-	preparedRuleset, err := q.ruleset.modifyForQuery(
+	preparedRuleset, err := q.ruleset.prepareForSolve(
 		q.currentSelections,
 		q.from,
 		q.to,
@@ -187,7 +187,7 @@ func (q NextSolutionsQuery) batchableQuery(
 	allSelections := q.nextSelections.copy()
 	var batchableSelections Selections
 	for i, group := range weightGroups {
-		if group.WeightsTooLarge() {
+		if group.AboveSaturationLimit() {
 			continue
 		}
 
@@ -212,7 +212,7 @@ func (q NextSolutionsQuery) nonBatchableQuery(
 	allSelections := q.nextSelections.copy()
 	var nonBatchableSelections Selections
 	for i, group := range weightGroups {
-		if group.WeightsTooLarge() {
+		if group.AboveSaturationLimit() {
 			selection := allSelections[i]
 			nonBatchableSelections = append(nonBatchableSelections, selection)
 		}

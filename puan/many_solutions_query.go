@@ -69,7 +69,7 @@ func (q ManySolutionsQuery) prepareRuleset() (Ruleset, error) {
 	}
 	unorderedUniqueSelections := allSelections.dedupeUnordered()
 
-	preparedRuleset, err := q.ruleset.modifyForQuery(
+	preparedRuleset, err := q.ruleset.prepareForSolve(
 		unorderedUniqueSelections,
 		q.from,
 		q.to,

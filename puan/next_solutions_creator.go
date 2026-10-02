@@ -78,18 +78,17 @@ func (c *nextSolutionsCreator) createForDependentSelections(
 		currentIndependentSelections,
 	)
 
-	solutions := make([]Solution, len(nextDependentSolutions))
-	for i, nextSolution := range nextDependentSolutions {
-		mergedSolution := nextSolution.solution.merge(currentIndependentSolution)
-		solutions[i] = mergedSolution
+	solutions := make([]SolutionBySelection, len(nextDependentSolutions))
+	for i, dependentSolution := range nextDependentSolutions {
+		mergedSolution := dependentSolution.solution.merge(currentIndependentSolution)
+		solutionBySelection := SolutionBySelection{
+			selection: dependentSolution.selection,
+			solution:  mergedSolution,
+		}
+		solutions[i] = solutionBySelection
 	}
 
-	solutionsBySelection, err := newSolutionsBySelection(solutions, query.nextSelections)
-	if err != nil {
-		return nil, err
-	}
-
-	return solutionsBySelection, nil
+	return solutions, nil
 }
 
 func (c *nextSolutionsCreator) calculateDependentSolutions(

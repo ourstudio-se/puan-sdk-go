@@ -3,6 +3,7 @@ package puan
 import (
 	"crypto/sha1"
 	"fmt"
+	"strings"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
@@ -63,11 +64,17 @@ func (s Selection) IDs() []string {
 
 func (s Selection) Hash() string {
 	h := sha1.New()
-	h.Write([]byte(s.action))
-	h.Write([]byte(s.id))
-	for _, subID := range utils.Sorted(s.subSelectionIDs) {
-		h.Write([]byte(subID))
+	h.Write(
+		fmt.Appendf(nil, "action=%s,id=%s", s.action, s.id),
+	)
+
+	subIDStrings := make([]string, len(s.subSelectionIDs))
+	for i, subID := range utils.Sorted(s.subSelectionIDs) {
+		subIDStrings[i] = fmt.Sprintf("subID=%s", subID)
 	}
+	subIDsString := strings.Join(subIDStrings, ",")
+	h.Write([]byte(subIDsString))
+
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 

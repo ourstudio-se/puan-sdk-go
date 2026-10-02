@@ -48,7 +48,7 @@ func (c *singleSolutionCreator) calculateDependentSolution(
 		return Solution{}, err
 	}
 
-	tooLarge := solverQuery.weights.WeightsTooLarge()
+	tooLarge := solverQuery.weights.AboveSaturationLimit()
 	if tooLarge {
 		return c.calculateSplitDependentSolution(query)
 	}
@@ -163,8 +163,8 @@ func (c *singleSolutionCreator) getIDsToAssume(
 
 	var idsToAssume []string
 	var idsToAssumeNot []string
-	for id, isSelected := range assumeByID {
-		if isSelected {
+	for id, shouldAssume := range assumeByID {
+		if shouldAssume {
 			idsToAssume = append(idsToAssume, id)
 		} else {
 			idsToAssumeNot = append(idsToAssumeNot, id)

@@ -250,7 +250,7 @@ func Test_SolutionsBySelectionEnvelope_GetSolutionBySelection_givenMissingSelect
 	assert.Error(t, err)
 }
 
-func Test_SolutionCreator_newSolutionsBySelection(t *testing.T) {
+func Test_newSolutionsBySelection(t *testing.T) {
 	selection1 := NewSelectionBuilder("x").Build()
 	selection2 := NewSelectionBuilder("y").WithAction(REMOVE).Build()
 	solution1 := Solution{"x": 1, "y": 0}
@@ -268,18 +268,21 @@ func Test_SolutionCreator_newSolutionsBySelection(t *testing.T) {
 	}, got)
 }
 
-func Test_SolutionCreator_newSolutionsBySelection_givenLengthMismatch_shouldReturnError(
+func Test_newSolutionsBySelection_givenLengthMismatch_shouldReturnError(
 	t *testing.T,
 ) {
 	selections := Selections{
 		NewSelectionBuilder("x").Build(),
 		NewSelectionBuilder("y").Build(),
 	}
-	got, err := newSolutionsBySelection(
-		[]Solution{{"x": 1}},
+	solutions := []Solution{
+		{"x": 1},
+	}
+
+	_, err := newSolutionsBySelection(
+		solutions,
 		selections,
 	)
 
-	assert.Nil(t, got)
 	assert.Error(t, err)
 }

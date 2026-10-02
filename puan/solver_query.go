@@ -68,7 +68,7 @@ func (q *MultiWeightSolverQuery) WeightGroups() []weights.Weights {
 
 func (q *MultiWeightSolverQuery) validateWeightLimit() error {
 	for i, weights := range q.WeightGroups() {
-		if weights.WeightsTooLarge() {
+		if weights.AboveSaturationLimit() {
 			return errors.Errorf("weights too large at index %d", i)
 		}
 	}

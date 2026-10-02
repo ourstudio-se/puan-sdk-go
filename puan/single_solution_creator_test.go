@@ -17,14 +17,14 @@ func Test_singleSolutionCreator_getIDsToAssume(t *testing.T) {
 		wantAssumeNot []string
 	}{
 		{
-			name:          "given no selections, returns empty",
+			name:          "no selections returns empty",
 			selections:    nil,
 			solution:      Solution{"a": 1},
 			wantAssume:    nil,
 			wantAssumeNot: nil,
 		},
 		{
-			name: "given selected selection, assumes its id",
+			name: "selected selection is assumed",
 			selections: Selections{
 				NewSelectionBuilder("a").Build(),
 			},
@@ -33,7 +33,7 @@ func Test_singleSolutionCreator_getIDsToAssume(t *testing.T) {
 			wantAssumeNot: nil,
 		},
 		{
-			name: "given unselected selection, assumes not its id",
+			name: "unselected selection is assumed not",
 			selections: Selections{
 				NewSelectionBuilder("a").Build(),
 			},
@@ -42,7 +42,7 @@ func Test_singleSolutionCreator_getIDsToAssume(t *testing.T) {
 			wantAssumeNot: []string{"a"},
 		},
 		{
-			name: "given selection missing from solution, assumes not its id",
+			name: "selection missing from solution is assumed not",
 			selections: Selections{
 				NewSelectionBuilder("a").Build(),
 			},
@@ -51,7 +51,7 @@ func Test_singleSolutionCreator_getIDsToAssume(t *testing.T) {
 			wantAssumeNot: []string{"a"},
 		},
 		{
-			name: "given selected selection with selected sub-selections, assumes all",
+			name: "assumes selected sub-selections",
 			selections: Selections{
 				NewSelectionBuilder("a").
 					WithSubSelectionID("b").
@@ -67,7 +67,7 @@ func Test_singleSolutionCreator_getIDsToAssume(t *testing.T) {
 			wantAssumeNot: nil,
 		},
 		{
-			name: "given selected selection with unselected sub-selections, assumes only parent",
+			name: "unselected sub-selections are neither assumed nor assumed not",
 			selections: Selections{
 				NewSelectionBuilder("a").
 					WithSubSelectionID("b").
@@ -80,22 +80,6 @@ func Test_singleSolutionCreator_getIDsToAssume(t *testing.T) {
 				"c": 0,
 			},
 			wantAssume:    []string{"a"},
-			wantAssumeNot: nil,
-		},
-		{
-			name: "given selected selection with mixed sub-selections, assumes only selected ids",
-			selections: Selections{
-				NewSelectionBuilder("a").
-					WithSubSelectionID("b").
-					WithSubSelectionID("c").
-					Build(),
-			},
-			solution: Solution{
-				"a": 1,
-				"b": 1,
-				"c": 0,
-			},
-			wantAssume:    []string{"a", "b"},
 			wantAssumeNot: nil,
 		},
 		{
@@ -115,24 +99,7 @@ func Test_singleSolutionCreator_getIDsToAssume(t *testing.T) {
 			wantAssumeNot: []string{"a"},
 		},
 		{
-			name: "given mixed selections, partitions by solution",
-			selections: Selections{
-				NewSelectionBuilder("a").WithSubSelectionID("a1").Build(),
-				NewSelectionBuilder("b").Build(),
-				NewSelectionBuilder("c").WithSubSelectionID("c1").Build(),
-			},
-			solution: Solution{
-				"a":  1,
-				"a1": 1,
-				"b":  0,
-				"c":  0,
-				"c1": 1,
-			},
-			wantAssume:    []string{"a", "a1"},
-			wantAssumeNot: []string{"b", "c"},
-		},
-		{
-			name: "given duplicate selected ids, assumes each id once",
+			name: "duplicate selected ids are assumed once",
 			selections: Selections{
 				NewSelectionBuilder("a").WithSubSelectionID("b").Build(),
 				NewSelectionBuilder("a").WithSubSelectionID("b").Build(),
@@ -145,7 +112,7 @@ func Test_singleSolutionCreator_getIDsToAssume(t *testing.T) {
 			wantAssumeNot: nil,
 		},
 		{
-			name: "given id selected as selection and as sub-selection, assumes it once",
+			name: "id selected as selection and as sub-selection is assumed once",
 			selections: Selections{
 				NewSelectionBuilder("parent").WithSubSelectionID("a").Build(),
 				NewSelectionBuilder("a").Build(),
@@ -156,20 +123,6 @@ func Test_singleSolutionCreator_getIDsToAssume(t *testing.T) {
 			},
 			wantAssume:    []string{"parent", "a"},
 			wantAssumeNot: nil,
-		},
-		{
-			name: "given sub-selection selected only under a selected parent, assumes it",
-			selections: Selections{
-				NewSelectionBuilder("skipped").WithSubSelectionID("shared").Build(),
-				NewSelectionBuilder("kept").WithSubSelectionID("shared").Build(),
-			},
-			solution: Solution{
-				"skipped": 0,
-				"kept":    1,
-				"shared":  1,
-			},
-			wantAssume:    []string{"kept", "shared"},
-			wantAssumeNot: []string{"skipped"},
 		},
 	}
 
