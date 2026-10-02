@@ -13,10 +13,8 @@ type SolverClient interface {
 }
 
 type SolutionCreator struct {
-	SolverClient
-	queryCreator                *solverQueryCreator
 	singleSolutionCreator       *singleSolutionCreator
-	solutionsBySelectionCreator *SolutionsBySelectionCreator
+	solutionsBySelectionCreator *solutionsBySelectionCreator
 	nextSolutionsCreator        *nextSolutionsCreator
 	manySolutionsCreator        *manySolutionsCreator
 }
@@ -44,8 +42,6 @@ func NewSolutionCreator(
 		queryCreator,
 	)
 	return &SolutionCreator{
-		SolverClient:                client,
-		queryCreator:                queryCreator,
 		singleSolutionCreator:       singleSolutionCreator,
 		solutionsBySelectionCreator: solutionsBySelectionCreator,
 		nextSolutionsCreator:        nextSolutionsCreator,
@@ -70,7 +66,7 @@ func (c *SolutionCreator) Create(
 func (c *SolutionCreator) CreateSolutionsBySelection(
 	query SolutionQuery,
 ) (SolutionsBySelectionEnvelope, error) {
-	solutions, err := c.solutionsBySelectionCreator.calculateSolutionsBySelection(query)
+	solutions, err := c.solutionsBySelectionCreator.create(query)
 	if err != nil {
 		err = updateSolveError(err, query.ruleset, query.from)
 		return SolutionsBySelectionEnvelope{}, err
@@ -82,7 +78,7 @@ func (c *SolutionCreator) CreateSolutionsBySelection(
 func (c *SolutionCreator) CreateNextSolutions(
 	query NextSolutionsQuery,
 ) (SolutionsBySelectionEnvelope, error) {
-	solutions, err := c.nextSolutionsCreator.createNextSolutions(query)
+	solutions, err := c.nextSolutionsCreator.create(query)
 	if err != nil {
 		err = updateSolveError(err, query.ruleset, query.from)
 		return SolutionsBySelectionEnvelope{}, err
@@ -92,9 +88,9 @@ func (c *SolutionCreator) CreateNextSolutions(
 }
 
 func (c *SolutionCreator) CreateManySolutions(
-	query ManySolutionQueries,
+	query ManySolutionsQuery,
 ) (SolutionsBySelectionGroupEnvelope, error) {
-	solutions, err := c.manySolutionsCreator.createManySolutions(query)
+	solutions, err := c.manySolutionsCreator.create(query)
 	if err != nil {
 		err = updateSolveError(err, query.ruleset, query.from)
 		return SolutionsBySelectionGroupEnvelope{}, err

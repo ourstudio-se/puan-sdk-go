@@ -18,8 +18,8 @@ func newManySolutionsCreator(
 	}
 }
 
-func (c *manySolutionsCreator) createManySolutions(
-	query ManySolutionQueries,
+func (c *manySolutionsCreator) create(
+	query ManySolutionsQuery,
 ) ([]SolutionForSelectionGroup, error) {
 	dependentSelectionGroups := make([]Selections, len(query.selectionGroups))
 	indipendentSelectionGroups := make([]Selections, len(query.selectionGroups))
@@ -30,41 +30,38 @@ func (c *manySolutionsCreator) createManySolutions(
 		indipendentSelectionGroups[i] = independentSelections
 	}
 
-	dependentQuery := NewManySolutionQueries(
+	dependentQuery := NewManySolutionsQuery(
 		dependentSelectionGroups,
 		query.ruleset,
 		query.from,
 		query.to,
 	)
 
-	dependentSolutions, err := c.createManyDependentSolutions(dependentQuery)
+	dependentSolutions, err := c.createDependentSolutions(dependentQuery)
 	if err != nil {
 		return nil, err
 	}
 
-	independentSolutions := c.createManyIndependentSolutions(
+	independentSolutions := c.createIndependentSolutions(
 		query.ruleset,
 		indipendentSelectionGroups,
 	)
 
-	solutionsBySelectionGroup := make([]SolutionForSelectionGroup, len(query.selectionGroups))
-	for i, selections := range query.selectionGroups {
-		dependentSolution := dependentSolutions[i]
-		independentSolution := independentSolutions[i]
-		mergedSolution := dependentSolution.merge(independentSolution)
+	solutions, err := c.mergeSolutions(dependentSolutions, independentSolutions)
+	if err != nil {
+		return nil, err
+	}
 
-		solutionForSelectionGroup := SolutionForSelectionGroup{
-			selections: selections,
-			solution:   mergedSolution,
-		}
-		solutionsBySelectionGroup[i] = solutionForSelectionGroup
+	solutionsBySelectionGroup, err := c.groupSolutions(query.selectionGroups, solutions)
+	if err != nil {
+		return nil, err
 	}
 
 	return solutionsBySelectionGroup, nil
 }
 
-func (c *manySolutionsCreator) createManyDependentSolutions(
-	query ManySolutionQueries,
+func (c *manySolutionsCreator) createDependentSolutions(
+	query ManySolutionsQuery,
 ) ([]Solution, error) {
 	solverQuery, err := c.queryCreator.newManySolutionsQuery(query)
 	if err != nil {
@@ -87,7 +84,7 @@ func (c *manySolutionsCreator) createManyDependentSolutions(
 	return primitiveSolutions, nil
 }
 
-func (c *manySolutionsCreator) createManyIndependentSolutions(
+func (c *manySolutionsCreator) createIndependentSolutions(
 	ruleset Ruleset,
 	selectionGroups []Selections,
 ) []Solution {
@@ -97,4 +94,40 @@ func (c *manySolutionsCreator) createManyIndependentSolutions(
 		solutions[i] = independentSolution
 	}
 	return solutions
+}
+
+func (c *manySolutionsCreator) mergeSolutions(
+	dependentSolutions []Solution,
+	independentSolutions []Solution,
+) ([]Solution, error) {
+	if len(dependentSolutions) != len(independentSolutions) {
+		return nil, errors.Errorf("dependent and independent solutions must have the same length")
+	}
+
+	mergedSolutions := make([]Solution, len(dependentSolutions))
+	for i, dependentSolution := range dependentSolutions {
+		independentSolution := independentSolutions[i]
+		mergedSolution := dependentSolution.merge(independentSolution)
+		mergedSolutions[i] = mergedSolution
+	}
+	return mergedSolutions, nil
+}
+
+func (c *manySolutionsCreator) groupSolutions(
+	selectionGroups []Selections,
+	solutions []Solution,
+) ([]SolutionForSelectionGroup, error) {
+	if len(selectionGroups) != len(solutions) {
+		return nil, errors.Errorf("selection groups and solutions must have the same length")
+	}
+
+	solutionsBySelectionGroup := make([]SolutionForSelectionGroup, len(selectionGroups))
+	for i, selections := range selectionGroups {
+		solutionForSelectionGroup := SolutionForSelectionGroup{
+			selections: selections,
+			solution:   solutions[i],
+		}
+		solutionsBySelectionGroup[i] = solutionForSelectionGroup
+	}
+	return solutionsBySelectionGroup, nil
 }

@@ -2,7 +2,7 @@ package puan
 
 import "github.com/go-errors/errors"
 
-type SolutionsBySelectionCreator struct {
+type solutionsBySelectionCreator struct {
 	SolverClient
 
 	queryCreator          *solverQueryCreator
@@ -13,15 +13,15 @@ func newSolutionsBySelectionCreator(
 	solverClient SolverClient,
 	queryCreator *solverQueryCreator,
 	singleSolutionCreator *singleSolutionCreator,
-) *SolutionsBySelectionCreator {
-	return &SolutionsBySelectionCreator{
+) *solutionsBySelectionCreator {
+	return &solutionsBySelectionCreator{
 		SolverClient:          solverClient,
 		queryCreator:          queryCreator,
 		singleSolutionCreator: singleSolutionCreator,
 	}
 }
 
-func (c *SolutionsBySelectionCreator) calculateSolutionsBySelection(
+func (c *solutionsBySelectionCreator) create(
 	query SolutionQuery,
 ) ([]SolutionBySelection, error) {
 	dependantSelections, independentSelections :=
@@ -35,7 +35,7 @@ func (c *SolutionsBySelectionCreator) calculateSolutionsBySelection(
 		return nil, err
 	}
 
-	dependentSolutions, err := c.calculateDependentSolutionsBySelection(dependentQuery)
+	dependentSolutions, err := c.calculateDependentSolutions(dependentQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (c *SolutionsBySelectionCreator) calculateSolutionsBySelection(
 		return nil, err
 	}
 
-	independentSolutions, err := c.calculateIndependentSolutionsBySelection(independentQuery)
+	independentSolutions, err := c.calculateIndependentSolutions(independentQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (c *SolutionsBySelectionCreator) calculateSolutionsBySelection(
 	return solutions, nil
 }
 
-func (c *SolutionsBySelectionCreator) calculateDependentSolutionsBySelection(
+func (c *solutionsBySelectionCreator) calculateDependentSolutions(
 	query SolutionQuery,
 ) ([]SolutionBySelection, error) {
 	solverQuery, err := c.queryCreator.newSolutionsBySelectionQuery(query)
@@ -88,7 +88,7 @@ func (c *SolutionsBySelectionCreator) calculateDependentSolutionsBySelection(
 	)
 }
 
-func (c *SolutionsBySelectionCreator) calculateIndependentSolutionsBySelection(
+func (c *solutionsBySelectionCreator) calculateIndependentSolutions(
 	query SolutionQuery,
 ) ([]SolutionBySelection, error) {
 	defaultQuery, err := NewSolutionQueryBuilder().
@@ -104,7 +104,7 @@ func (c *SolutionsBySelectionCreator) calculateIndependentSolutionsBySelection(
 		return nil, err
 	}
 
-	solutions := c.calculateManyIndependentSolutions(
+	solutions := c.calculateIndependentSolutionsFromDefault(
 		defaultSolution,
 		query.selections,
 	)
@@ -112,13 +112,13 @@ func (c *SolutionsBySelectionCreator) calculateIndependentSolutionsBySelection(
 	return solutions, nil
 }
 
-func (c *SolutionsBySelectionCreator) calculateManyIndependentSolutions(
-	solution Solution,
+func (c *solutionsBySelectionCreator) calculateIndependentSolutionsFromDefault(
+	defaultSolution Solution,
 	selections Selections,
 ) []SolutionBySelection {
 	solutions := make([]SolutionBySelection, len(selections))
 	for i, selection := range selections {
-		solution := solution.copy()
+		solution := defaultSolution.copy()
 		solution[selection.id] = selection.action.asInt()
 		solutions[i] = SolutionBySelection{
 			selection: selection,

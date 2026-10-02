@@ -19,15 +19,15 @@ func newNextSolutionsCreator(
 	}
 }
 
-func (c *nextSolutionsCreator) createNextSolutions(
+func (c *nextSolutionsCreator) create(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
-	solutionsForDependentSelections, err := c.calculateNextSolutionsForDependentSelections(query)
+	solutionsForDependentSelections, err := c.createForDependentSelections(query)
 	if err != nil {
 		return nil, err
 	}
 
-	solutionsForIndependentSelections, err := c.calculateNextSolutionsForIndependentSelections(query)
+	solutionsForIndependentSelections, err := c.createForIndependentSelections(query)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (c *nextSolutionsCreator) createNextSolutions(
 	return solutions, nil
 }
 
-func (c *nextSolutionsCreator) calculateNextSolutionsForDependentSelections(
+func (c *nextSolutionsCreator) createForDependentSelections(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
 	currentDependentSelections, currentIndependentSelections :=
@@ -58,7 +58,7 @@ func (c *nextSolutionsCreator) calculateNextSolutionsForDependentSelections(
 		return nil, err
 	}
 
-	nextDependentSolutions, err := c.calculateNextDependentSolutions(dependentQuery)
+	nextDependentSolutions, err := c.calculateDependentSolutions(dependentQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (c *nextSolutionsCreator) calculateNextSolutionsForDependentSelections(
 	return solutionBySelection, nil
 }
 
-func (c *nextSolutionsCreator) calculateNextDependentSolutions(
+func (c *nextSolutionsCreator) calculateDependentSolutions(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
 	batchable, nonBatchable, err := query.splitByBatchability()
@@ -87,12 +87,12 @@ func (c *nextSolutionsCreator) calculateNextDependentSolutions(
 		return nil, err
 	}
 
-	batchedSolutions, err := c.calculateBatchableNextSolutions(batchable)
+	batchedSolutions, err := c.calculateBatchableSolutions(batchable)
 	if err != nil {
 		return nil, err
 	}
 
-	nonBatchableSolutions, err := c.calculateNonBatchableNextSolutions(nonBatchable)
+	nonBatchableSolutions, err := c.calculateNonBatchableSolutions(nonBatchable)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func (c *nextSolutionsCreator) calculateNextDependentSolutions(
 	return solutions, nil
 }
 
-func (c *nextSolutionsCreator) calculateBatchableNextSolutions(
+func (c *nextSolutionsCreator) calculateBatchableSolutions(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
 	// This check ensures that no extra solving with empty selections is performed.
@@ -128,7 +128,7 @@ func (c *nextSolutionsCreator) calculateBatchableNextSolutions(
 	return newSolutionsBySelection(primitiveSolutions, query.nextSelections)
 }
 
-func (c *nextSolutionsCreator) calculateNonBatchableNextSolutions(
+func (c *nextSolutionsCreator) calculateNonBatchableSolutions(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
 	solutionQueries, err := query.asSolutionQueries()
@@ -149,7 +149,7 @@ func (c *nextSolutionsCreator) calculateNonBatchableNextSolutions(
 	return newSolutionsBySelection(solutions, query.nextSelections)
 }
 
-func (c *nextSolutionsCreator) calculateNextSolutionsForIndependentSelections(
+func (c *nextSolutionsCreator) createForIndependentSelections(
 	query NextSolutionsQuery,
 ) ([]SolutionBySelection, error) {
 	currentQuery, err := NewSolutionQueryBuilder().
@@ -171,7 +171,7 @@ func (c *nextSolutionsCreator) calculateNextSolutionsForIndependentSelections(
 		query.nextSelections,
 	)
 
-	nextSolutions := c.calculateManyIndependentSolutions(
+	nextSolutions := c.calculateIndependentSolutionsFromCurrent(
 		currentSolution,
 		nextIndependentSelections,
 	)
@@ -179,13 +179,13 @@ func (c *nextSolutionsCreator) calculateNextSolutionsForIndependentSelections(
 	return nextSolutions, nil
 }
 
-func (c *nextSolutionsCreator) calculateManyIndependentSolutions(
-	solution Solution,
+func (c *nextSolutionsCreator) calculateIndependentSolutionsFromCurrent(
+	currentSolution Solution,
 	selections Selections,
 ) []SolutionBySelection {
 	solutions := make([]SolutionBySelection, len(selections))
 	for i, selection := range selections {
-		solution := solution.copy()
+		solution := currentSolution.copy()
 		solution[selection.id] = selection.action.asInt()
 		solutions[i] = SolutionBySelection{
 			selection: selection,

@@ -218,7 +218,7 @@ func calculateNextWeights(
 }
 
 func (c *solverQueryCreator) newManySolutionsQuery(
-	query ManySolutionQueries,
+	query ManySolutionsQuery,
 ) (*MultiWeightSolverQuery, error) {
 	preparedRuleset, err := query.modifyForQuery()
 	if err != nil {

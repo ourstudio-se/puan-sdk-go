@@ -251,20 +251,20 @@ func (q NextSolutionsQuery) nonBatchableQuery(
 	return query, nil
 }
 
-type ManySolutionQueries struct {
+type ManySolutionsQuery struct {
 	selectionGroups []Selections
 	ruleset         Ruleset
 	from            *time.Time
 	to              *time.Time
 }
 
-func NewManySolutionQueries(
+func NewManySolutionsQuery(
 	selectionGroups []Selections,
 	ruleset Ruleset,
 	from *time.Time,
 	to *time.Time,
-) ManySolutionQueries {
-	return ManySolutionQueries{
+) ManySolutionsQuery {
+	return ManySolutionsQuery{
 		selectionGroups: selectionGroups,
 		ruleset:         ruleset,
 		from:            from,
@@ -272,7 +272,7 @@ func NewManySolutionQueries(
 	}
 }
 
-func (q ManySolutionQueries) modifyForQuery() (Ruleset, error) {
+func (q ManySolutionsQuery) modifyForQuery() (Ruleset, error) {
 	var allSelections Selections
 	for _, selectionGroup := range q.selectionGroups {
 		allSelections = append(allSelections, selectionGroup...)

@@ -56,7 +56,7 @@ func (s *nextSolutionsCreatorSuite) TearDownTest() {
 
 func (
 	s *nextSolutionsCreatorSuite,
-) Test_calculateNextDependentSolutions_givenSmallWeights_shouldSolveInOneBatch() {
+) Test_calculateDependentSolutions_givenSmallWeights_shouldSolveInOneBatch() {
 	currentSelections := selectionsFor(s.T(), s.primitives[:3])
 	nextSelections := selectionsFor(s.T(), s.primitives[3:5])
 	query, err := NewNextSolutionsQuery(
@@ -68,7 +68,7 @@ func (
 	)
 	s.Require().NoError(err)
 
-	actual, err := s.creator.calculateNextDependentSolutions(query)
+	actual, err := s.creator.calculateDependentSolutions(query)
 
 	s.Require().NoError(err)
 	assertSolutionExistsForEachSelection(s.T(), actual, nextSelections)
@@ -78,7 +78,7 @@ func (
 
 func (
 	s *nextSolutionsCreatorSuite,
-) Test_calculateNextDependentSolutions_givenOversizedWeights_shouldSolveOneByOne() {
+) Test_calculateDependentSolutions_givenOversizedWeights_shouldSolveOneByOne() {
 	// Select many for current to enforce saturation.
 	currentSelections := selectionsFor(s.T(), s.primitives[:25])
 	nextSelections := selectionsFor(s.T(), s.primitives[25:27])
@@ -91,7 +91,7 @@ func (
 	)
 	s.Require().NoError(err)
 
-	actual, err := s.creator.calculateNextDependentSolutions(query)
+	actual, err := s.creator.calculateDependentSolutions(query)
 
 	s.Require().NoError(err)
 	assertSolutionExistsForEachSelection(s.T(), actual, nextSelections)
@@ -102,7 +102,7 @@ func (
 
 func (
 	s *nextSolutionsCreatorSuite,
-) Test_CreateNextSolutions_givenNoNextSelections_shouldReturnEmptyEnvelope() {
+) Test_create_givenNoNextSelections_shouldReturnEmptyEnvelope() {
 	query, err := NewNextSolutionsQuery(
 		selectionsFor(s.T(), s.primitives[:3]),
 		nil,
@@ -112,7 +112,7 @@ func (
 	)
 	s.Require().NoError(err)
 
-	solutions, err := s.creator.createNextSolutions(query)
+	solutions, err := s.creator.create(query)
 
 	s.Require().NoError(err)
 	s.Assert().Empty(solutions)

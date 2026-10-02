@@ -40,7 +40,7 @@ func Test_CreateManySolutions_givenOnlyDependentSelections(
 			puan.NewSelectionBuilder("optE").Build(),
 		},
 	}
-	query := puan.NewManySolutionQueries(
+	query := puan.NewManySolutionsQuery(
 		selectionGroups,
 		ruleset,
 		nil,
@@ -135,7 +135,7 @@ func Test_CreateManySolutions_givenDependentAndIndependentSelections(
 		},
 		{},
 	}
-	query := puan.NewManySolutionQueries(
+	query := puan.NewManySolutionsQuery(
 		selectionGroups,
 		ruleset,
 		nil,
@@ -220,7 +220,7 @@ func Test_CreateManySolutions_givenRemoveSelections(
 			puan.NewSelectionBuilder("optB").WithAction(puan.REMOVE).Build(),
 		},
 	}
-	query := puan.NewManySolutionQueries(
+	query := puan.NewManySolutionsQuery(
 		selectionGroups,
 		ruleset,
 		nil,
@@ -277,7 +277,7 @@ func Test_CreateManySolutions_givenSubSelections(
 		selections2,
 	}
 
-	query := puan.NewManySolutionQueries(
+	query := puan.NewManySolutionsQuery(
 		selectionGroups,
 		ruleset,
 		nil,
