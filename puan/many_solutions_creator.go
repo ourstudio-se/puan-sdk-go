@@ -26,12 +26,15 @@ func (c *manySolutionsCreator) create(
 		indipendentSelectionGroups[i] = independentSelections
 	}
 
-	dependentQuery := NewManySolutionsQuery(
+	dependentQuery, err := NewManySolutionsQuery(
 		dependentSelectionGroups,
 		query.ruleset,
 		query.from,
 		query.to,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	dependentSolutions, err := c.createDependentSolutions(dependentQuery)
 	if err != nil {

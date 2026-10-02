@@ -16,13 +16,27 @@ func NewManySolutionsQuery(
 	ruleset Ruleset,
 	from *time.Time,
 	to *time.Time,
-) ManySolutionsQuery {
+) (ManySolutionsQuery, error) {
+	if err := validateRuleset(ruleset); err != nil {
+		return ManySolutionsQuery{}, err
+	}
+
+	if err := validateTimestamps(from, to); err != nil {
+		return ManySolutionsQuery{}, err
+	}
+
+	for _, selectionGroup := range selectionGroups {
+		if err := validateSelections(ruleset, selectionGroup); err != nil {
+			return ManySolutionsQuery{}, err
+		}
+	}
+
 	return ManySolutionsQuery{
 		selectionGroups: selectionGroups,
 		ruleset:         ruleset,
 		from:            from,
 		to:              to,
-	}
+	}, nil
 }
 
 func (query ManySolutionsQuery) asSolverQuery() (*MultiWeightSolverQuery, error) {

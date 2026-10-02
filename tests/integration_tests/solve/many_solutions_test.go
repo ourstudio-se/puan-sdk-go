@@ -40,12 +40,14 @@ func Test_CreateManySolutions_givenOnlyDependentSelections(
 			puan.NewSelectionBuilder("optE").Build(),
 		},
 	}
-	query := puan.NewManySolutionsQuery(
+	query, err := puan.NewManySolutionsQuery(
 		selectionGroups,
 		ruleset,
 		nil,
 		nil,
 	)
+	require.NoError(t, err)
+
 	envelope, err := solutionCreator.CreateManySolutions(query)
 	require.NoError(t, err)
 
@@ -135,12 +137,14 @@ func Test_CreateManySolutions_givenDependentAndIndependentSelections(
 		},
 		{},
 	}
-	query := puan.NewManySolutionsQuery(
+	query, err := puan.NewManySolutionsQuery(
 		selectionGroups,
 		ruleset,
 		nil,
 		nil,
 	)
+	require.NoError(t, err)
+
 	envelope, err := solutionCreator.CreateManySolutions(query)
 	require.NoError(t, err)
 
@@ -220,12 +224,14 @@ func Test_CreateManySolutions_givenRemoveSelections(
 			puan.NewSelectionBuilder("optB").WithAction(puan.REMOVE).Build(),
 		},
 	}
-	query := puan.NewManySolutionsQuery(
+	query, err := puan.NewManySolutionsQuery(
 		selectionGroups,
 		ruleset,
 		nil,
 		nil,
 	)
+	require.NoError(t, err)
+
 	envelope, err := solutionCreator.CreateManySolutions(query)
 	require.NoError(t, err)
 
@@ -277,12 +283,14 @@ func Test_CreateManySolutions_givenSubSelections(
 		selections2,
 	}
 
-	query := puan.NewManySolutionsQuery(
+	query, err := puan.NewManySolutionsQuery(
 		selectionGroups,
 		ruleset,
 		nil,
 		nil,
 	)
+	require.NoError(t, err)
+
 	envelope, _ := solutionCreator.CreateManySolutions(query)
 	solutionForGroup := envelope.SolutionsBySelectionGroup()
 
