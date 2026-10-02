@@ -448,35 +448,48 @@ func Test_Selection_Hash(t *testing.T) {
 	theories := []struct {
 		name      string
 		selection Selection
-		expected  string
+		want      string
 	}{
 		{
 			name:      "ADD selection",
 			selection: NewSelectionBuilder("x").Build(),
-			expected:  "c3b14e6c5ba76924b48df086f52c5e3237675ff5",
+			want:      "d503fe456f8a633642f2350a9aa272def76922f6",
 		},
 		{
 			name:      "REMOVE selection",
 			selection: NewSelectionBuilder("x").WithAction(REMOVE).Build(),
-			expected:  "235b76cf9d9c9334c4736b4c1f5439fe92f49327",
+			want:      "7bfcbf14538ce071383d0ef33369a5fdea878a4e",
 		},
 		{
 			name:      "different id same action",
 			selection: NewSelectionBuilder("y").Build(),
-			expected:  "390671eaeda30f8b9a6ee3dae4a357f47da8803b",
+			want:      "6d2dd8ee92f936e256131f7387c52286b9dbe09b",
 		},
 		{
 			name:      "composite with sub-selection",
 			selection: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
-			expected:  "c93cf323b09bf5b73b27a92c4208b3c8c1f5bded",
+			want:      "96405cd2918e881447c415057668adb145c6637f",
 		},
 	}
 
 	for _, tt := range theories {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, tt.selection.Hash())
+			got := tt.selection.Hash()
+			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func Test_Selection_Hash_givenSameCharactersButDividedDifferently_shouldNotHaveSameHash(
+	t *testing.T,
+) {
+	a := NewSelectionBuilder("x").WithSubSelectionID("y").Build()
+	b := NewSelectionBuilder("xy").Build()
+
+	aHash := a.Hash()
+	bHash := b.Hash()
+
+	assert.NotEqual(t, aHash, bHash)
 }
 
 func Test_Selection_Equals(t *testing.T) {
@@ -547,88 +560,76 @@ func Test_Selection_Equals(t *testing.T) {
 	}
 }
 
-func Test_Selections_Contains(t *testing.T) {
+func Test_Selections_dedupeUnordered(t *testing.T) {
 	theories := []struct {
 		name       string
 		selections Selections
-		selection  Selection
-		want       bool
+		want       Selections
 	}{
 		{
-			name:       "empty selections",
+			name:       "empty",
 			selections: Selections{},
-			selection:  NewSelectionBuilder("x").Build(),
-			want:       false,
+			want:       Selections{},
 		},
 		{
-			name: "contains matching primitive",
+			name: "no duplicates",
 			selections: Selections{
 				NewSelectionBuilder("x").Build(),
 				NewSelectionBuilder("y").Build(),
 			},
-			selection: NewSelectionBuilder("x").Build(),
-			want:      true,
+			want: Selections{
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("y").Build(),
+			},
 		},
 		{
-			name: "does not contain different id",
+			name: "removes duplicates",
 			selections: Selections{
 				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("y").Build(),
 			},
-			selection: NewSelectionBuilder("y").Build(),
-			want:      false,
+			want: Selections{
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("y").Build(),
+			},
 		},
 		{
-			name: "does not contain different action",
+			name: "keeps different actions",
 			selections: Selections{
 				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
 			},
-			selection: NewSelectionBuilder("x").WithAction(REMOVE).Build(),
-			want:      false,
+			want: Selections{
+				NewSelectionBuilder("x").Build(),
+				NewSelectionBuilder("x").WithAction(REMOVE).Build(),
+			},
 		},
 		{
-			name: "contains matching composite",
-			selections: Selections{
-				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
-			},
-			selection: NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
-			want:      true,
-		},
-		{
-			name: "contains composite with sub-selections in different order",
+			name: "treats same sub-selections in different order as duplicate",
 			selections: Selections{
 				NewSelectionBuilder("x").
 					WithSubSelectionID("y").
 					WithSubSelectionID("z").
 					Build(),
+				NewSelectionBuilder("x").
+					WithSubSelectionID("z").
+					WithSubSelectionID("y").
+					Build(),
 			},
-			selection: NewSelectionBuilder("x").
-				WithSubSelectionID("z").
-				WithSubSelectionID("y").
-				Build(),
-			want: true,
-		},
-		{
-			name: "does not contain composite with different sub-selection",
-			selections: Selections{
-				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
+			want: Selections{
+				NewSelectionBuilder("x").
+					WithSubSelectionID("y").
+					WithSubSelectionID("z").
+					Build(),
 			},
-			selection: NewSelectionBuilder("x").WithSubSelectionID("z").Build(),
-			want:      false,
-		},
-		{
-			name: "does not contain primitive when only composite exists",
-			selections: Selections{
-				NewSelectionBuilder("x").WithSubSelectionID("y").Build(),
-			},
-			selection: NewSelectionBuilder("x").Build(),
-			want:      false,
 		},
 	}
 
 	for _, tt := range theories {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.selections.Contains(tt.selection)
-			assert.Equal(t, tt.want, got)
+			got := tt.selections.dedupeUnordered()
+			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
 }

@@ -91,10 +91,65 @@ type SolutionBySelection struct {
 	solution  Solution
 }
 
+func newSolutionsBySelection(
+	solutions []Solution,
+	selections Selections,
+) ([]SolutionBySelection, error) {
+	if len(solutions) != len(selections) {
+		return nil, errors.Errorf(
+			"Expected amount of solutions and selections to match. Got %d and %d",
+			len(solutions),
+			len(selections),
+		)
+	}
+
+	solutionsBySelection := make([]SolutionBySelection, len(solutions))
+	for i, solution := range solutions {
+		selection := selections[i]
+
+		solutionBySelection := SolutionBySelection{
+			selection: selection,
+			solution:  solution,
+		}
+		solutionsBySelection[i] = solutionBySelection
+	}
+
+	return solutionsBySelection, nil
+}
+
 func (s SolutionBySelection) Selection() Selection {
 	return s.selection
 }
 
 func (s SolutionBySelection) Solution() Solution {
 	return s.solution
+}
+
+type SolutionForSelectionGroup struct {
+	selections Selections
+	solution   Solution
+}
+
+func (s SolutionForSelectionGroup) Selections() Selections {
+	return s.selections
+}
+
+func (s SolutionForSelectionGroup) Solution() Solution {
+	return s.solution
+}
+
+type SolutionsBySelectionGroupEnvelope struct {
+	solutionsBySelectionGroup []SolutionForSelectionGroup
+}
+
+func NewSolutionsBySelectionGroupEnvelope(
+	solutions []SolutionForSelectionGroup,
+) SolutionsBySelectionGroupEnvelope {
+	return SolutionsBySelectionGroupEnvelope{
+		solutionsBySelectionGroup: solutions,
+	}
+}
+
+func (e SolutionsBySelectionGroupEnvelope) SolutionsBySelectionGroup() []SolutionForSelectionGroup {
+	return e.solutionsBySelectionGroup
 }

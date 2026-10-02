@@ -9,59 +9,22 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func Test_SolutionCreator_groupSolutionsBySelection(t *testing.T) {
-	creator := &SolutionCreator{}
-
-	selection1 := NewSelectionBuilder("x").Build()
-	selection2 := NewSelectionBuilder("y").WithAction(REMOVE).Build()
-	solution1 := Solution{"x": 1, "y": 0}
-	solution2 := Solution{"x": 0, "y": 1}
-
-	got, err := creator.groupSolutionsBySelection(
-		[]Solution{solution1, solution2},
-		Selections{selection1, selection2},
-	)
-
-	assert.NoError(t, err)
-	assert.Equal(t, []SolutionBySelection{
-		{selection: selection1, solution: solution1},
-		{selection: selection2, solution: solution2},
-	}, got)
-}
-
-func Test_SolutionCreator_groupSolutionsBySelection_givenLengthMismatch_shouldReturnError(
-	t *testing.T,
-) {
-	creator := &SolutionCreator{}
-
-	got, err := creator.groupSolutionsBySelection(
-		[]Solution{{"x": 1}},
-		Selections{
-			NewSelectionBuilder("x").Build(),
-			NewSelectionBuilder("y").Build(),
-		},
-	)
-
-	assert.Nil(t, got)
-	assert.Error(t, err)
-}
-
-type solutionCreatorSuite struct {
+type nextSolutionsCreatorSuite struct {
 	suite.Suite
 
 	ruleset    Ruleset
 	primitives []string
 	client     *mockSolverClient
-	creator    *SolutionCreator
+	creator    *nextSolutionsCreator
 }
 
 func Test_SolutionCreator_Suite(t *testing.T) {
-	suite.Run(t, new(solutionCreatorSuite))
+	suite.Run(t, new(nextSolutionsCreatorSuite))
 }
 
 // SetupSuite builds a saturatable ruleset once, as it is shared and never
 // mutated by the tests.
-func (s *solutionCreatorSuite) SetupSuite() {
+func (s *nextSolutionsCreatorSuite) SetupSuite() {
 	primitives := make([]string, 100)
 	for i := range primitives {
 		primitives[i] = fmt.Sprintf("p%d", i)
@@ -81,17 +44,18 @@ func (s *solutionCreatorSuite) SetupSuite() {
 	s.primitives = primitives
 
 	s.client = &mockSolverClient{}
-	s.creator = NewSolutionCreator(s.client)
+	singleSolutionCreator := newSingleSolutionCreator(s.client)
+	s.creator = newNextSolutionsCreator(s.client, singleSolutionCreator)
 }
 
-func (s *solutionCreatorSuite) TearDownTest() {
+func (s *nextSolutionsCreatorSuite) TearDownTest() {
 	s.client.multiSolveCalls = 0
 	s.client.solveCalls = 0
 }
 
 func (
-	s *solutionCreatorSuite,
-) Test_calculateNextDependentSolutions_givenSmallWeights_shouldSolveInOneBatch() {
+	s *nextSolutionsCreatorSuite,
+) Test_calculateDependentSolutions_givenSmallWeights_shouldSolveInOneBatch() {
 	currentSelections := selectionsFor(s.T(), s.primitives[:3])
 	nextSelections := selectionsFor(s.T(), s.primitives[3:5])
 	query, err := NewNextSolutionsQuery(
@@ -103,7 +67,7 @@ func (
 	)
 	s.Require().NoError(err)
 
-	actual, err := s.creator.calculateNextDependentSolutions(query)
+	actual, err := s.creator.calculateDependentSolutions(query)
 
 	s.Require().NoError(err)
 	assertSolutionExistsForEachSelection(s.T(), actual, nextSelections)
@@ -112,8 +76,8 @@ func (
 }
 
 func (
-	s *solutionCreatorSuite,
-) Test_calculateNextDependentSolutions_givenOversizedWeights_shouldSolveOneByOne() {
+	s *nextSolutionsCreatorSuite,
+) Test_calculateDependentSolutions_givenOversizedWeights_shouldSolveOneByOne() {
 	// Select many for current to enforce saturation.
 	currentSelections := selectionsFor(s.T(), s.primitives[:25])
 	nextSelections := selectionsFor(s.T(), s.primitives[25:27])
@@ -126,7 +90,7 @@ func (
 	)
 	s.Require().NoError(err)
 
-	actual, err := s.creator.calculateNextDependentSolutions(query)
+	actual, err := s.creator.calculateDependentSolutions(query)
 
 	s.Require().NoError(err)
 	assertSolutionExistsForEachSelection(s.T(), actual, nextSelections)
@@ -136,8 +100,8 @@ func (
 }
 
 func (
-	s *solutionCreatorSuite,
-) Test_CreateNextSolutions_givenNoNextSelections_shouldReturnEmptyEnvelope() {
+	s *nextSolutionsCreatorSuite,
+) Test_create_givenNoNextSelections_shouldReturnEmptyEnvelope() {
 	query, err := NewNextSolutionsQuery(
 		selectionsFor(s.T(), s.primitives[:3]),
 		nil,
@@ -147,10 +111,10 @@ func (
 	)
 	s.Require().NoError(err)
 
-	envelope, err := s.creator.CreateNextSolutions(query)
+	solutions, err := s.creator.create(query)
 
 	s.Require().NoError(err)
-	s.Assert().Empty(envelope.SolutionsBySelection())
+	s.Assert().Empty(solutions)
 }
 
 func selectionsFor(t *testing.T, primitives []string) Selections {
@@ -203,4 +167,36 @@ func (c *mockSolverClient) SolveWithManyWeights(
 	}
 
 	return solutions, nil
+}
+
+func Test_nextSolutionsCreator_calculateIndependentSolutionsFromCurrent(t *testing.T) {
+	creator := &nextSolutionsCreator{}
+	currentSolution := Solution{
+		"a": 0,
+		"b": 1,
+		"c": 0,
+	}
+	addSelection := NewSelectionBuilder("a").Build()
+	removeSelection := NewSelectionBuilder("b").WithAction(REMOVE).Build()
+	selections := Selections{addSelection, removeSelection}
+
+	got := creator.calculateIndependentSolutionsFromCurrent(
+		currentSolution,
+		selections,
+	)
+
+	assert.Equal(
+		t,
+		[]SolutionBySelection{
+			{
+				selection: addSelection,
+				solution:  Solution{"a": 1, "b": 1, "c": 0},
+			},
+			{
+				selection: removeSelection,
+				solution:  Solution{"a": 0, "b": 0, "c": 0},
+			},
+		},
+		got,
+	)
 }

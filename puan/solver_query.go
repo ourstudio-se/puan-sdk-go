@@ -1,6 +1,7 @@
 package puan
 
 import (
+	"github.com/go-errors/errors"
 	"github.com/ourstudio-se/puan-sdk-go/internal/pldag"
 	"github.com/ourstudio-se/puan-sdk-go/internal/weights"
 )
@@ -65,70 +66,13 @@ func (q *MultiWeightSolverQuery) WeightGroups() []weights.Weights {
 	return q.weights
 }
 
-type solverQueryCreator struct{}
-
-func newSolverQueryCreator() *solverQueryCreator {
-	return &solverQueryCreator{}
-}
-
-func (c *solverQueryCreator) new(query SolutionQuery) (*SolverQuery, error) {
-	preparedRuleset, err := query.ruleset.modifyForQuery(query.selections, query.from, query.to)
-	if err != nil {
-		return nil, err
-	}
-
-	weights, err := newWeights(preparedRuleset, query.selections)
-	if err != nil {
-		return nil, err
-	}
-
-	solverQuery := NewSolverQuery(
-		preparedRuleset.polyhedron,
-		preparedRuleset.dependentVariables,
-		weights,
-	)
-
-	return solverQuery, nil
-}
-
-func (c *solverQueryCreator) newSolutionsBySelectionQuery(
-	query SolutionQuery,
-) (*MultiWeightSolverQuery, error) {
-	preparedRuleset, err := query.ruleset.modifyForQuery(query.selections, query.from, query.to)
-	if err != nil {
-		return nil, err
-	}
-
-	weightGroups, err := c.calculateWeightsForSelections(preparedRuleset, query.selections)
-	if err != nil {
-		return nil, err
-	}
-
-	solverQuery := NewMultiWeightSolverQuery(
-		preparedRuleset.polyhedron,
-		preparedRuleset.dependentVariables,
-		weightGroups,
-	)
-
-	return solverQuery, nil
-}
-
-func (c *solverQueryCreator) calculateWeightsForSelections(
-	ruleset Ruleset,
-	selections Selections,
-) ([]weights.Weights, error) {
-	weightGroups := make([]weights.Weights, len(selections))
-	for i, selection := range selections {
-		modifiedSelections := Selections{selection}
-
-		weights, err := newWeights(ruleset, modifiedSelections)
-		if err != nil {
-			return nil, err
+func (q *MultiWeightSolverQuery) validateWeightLimit() error {
+	for i, weights := range q.WeightGroups() {
+		if weights.AboveSaturationLimit() {
+			return errors.Errorf("weights too large at index %d", i)
 		}
-		weightGroups[i] = weights
 	}
-
-	return weightGroups, nil
+	return nil
 }
 
 func newWeights(
@@ -157,40 +101,13 @@ func newWeights(
 	return weights, nil
 }
 
-func (c *solverQueryCreator) newNextSolutionsQuery(
-	query NextSolutionsQuery,
-) (*MultiWeightSolverQuery, error) {
-	preparedRuleset, err := query.prepareRuleset()
-	if err != nil {
-		return nil, err
-	}
-
-	weightGroups, err := calculateNextWeightGroups(
-		preparedRuleset,
-		query.currentSelections,
-		query.nextSelections,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	solverQuery := NewMultiWeightSolverQuery(
-		preparedRuleset.polyhedron,
-		preparedRuleset.dependentVariables,
-		weightGroups,
-	)
-
-	return solverQuery, nil
-}
-
-func calculateNextWeightGroups(
+func calculateWeightGroups(
 	ruleset Ruleset,
-	currentSelections Selections,
-	nextSelections Selections,
+	selectionGroups []Selections,
 ) ([]weights.Weights, error) {
-	weightGroups := make([]weights.Weights, len(nextSelections))
-	for i, nextSelection := range nextSelections {
-		weights, err := calculateNextWeights(ruleset, currentSelections, nextSelection)
+	weightGroups := make([]weights.Weights, len(selectionGroups))
+	for i, selections := range selectionGroups {
+		weights, err := newWeights(ruleset, selections)
 		if err != nil {
 			return nil, err
 		}
@@ -198,21 +115,4 @@ func calculateNextWeightGroups(
 	}
 
 	return weightGroups, nil
-}
-
-func calculateNextWeights(
-	ruleset Ruleset,
-	currentSelections Selections,
-	nextSelection Selection,
-) (weights.Weights, error) {
-	selections := currentSelections.copy()
-
-	selections = append(selections, nextSelection)
-
-	weights, err := newWeights(ruleset, selections)
-	if err != nil {
-		return nil, err
-	}
-
-	return weights, nil
 }
