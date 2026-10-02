@@ -118,45 +118,61 @@ func (c *singleSolutionCreator) calculateSplitDependentSolution(
 	return c.calculateDependentSolution(remainingQuery)
 }
 
-// nolint:gocyclo
 func (c *singleSolutionCreator) newRulesetWithAssumedSolution(
 	ruleset Ruleset,
 	selections Selections,
 	solution Solution,
 ) (Ruleset, error) {
+	idsToAssume, idsToAssumeNot := c.getIDsToAssume(selections, solution)
+
 	newRuleset := ruleset.copy()
-	for _, selection := range selections {
-		isNotSelected := !solution.isSelected(selection.id)
-		if isNotSelected {
-			// Large selection sets are split and solved by priority, locking
-			// higher-priority solution first. Unselected selections in a split must be explicitly
-			// assumeNot, or unwanted behavior can occur, e.g. an ADD and REMOVE ending
-			// up in different splits could let the lower-priority ADD take effect.
-			// Note: subSelectionIDs are excluded from assumeNot here, since they may
-			// appear in other selections/subselections.
-			err := newRuleset.assumeNot(selection.id)
-			if err != nil {
-				return Ruleset{}, err
-			}
-
-			continue
-		}
-
-		err := newRuleset.assume(selection.id)
+	for _, id := range idsToAssume {
+		err := newRuleset.assume(id)
 		if err != nil {
 			return Ruleset{}, err
 		}
-
-		for _, subSelection := range selection.subSelectionIDs {
-			isSubSelected := solution.isSelected(subSelection)
-			if isSubSelected {
-				err = newRuleset.assume(subSelection)
-				if err != nil {
-					return Ruleset{}, err
-				}
-			}
+	}
+	for _, id := range idsToAssumeNot {
+		err := newRuleset.assumeNot(id)
+		if err != nil {
+			return Ruleset{}, err
 		}
 	}
 
 	return newRuleset, nil
+}
+
+// nolint:gocyclo
+func (c *singleSolutionCreator) getIDsToAssume(
+	selections Selections,
+	solution Solution,
+) ([]string, []string) {
+	assumeByID := make(map[string]bool)
+	for _, selection := range selections {
+		isSelected := solution.isSelected(selection.id)
+		if isSelected {
+			assumeByID[selection.id] = true
+
+			for _, subSelection := range selection.subSelectionIDs {
+				isSubSelected := solution.isSelected(subSelection)
+				if isSubSelected {
+					assumeByID[subSelection] = true
+				}
+			}
+		} else {
+			assumeByID[selection.id] = false
+		}
+	}
+
+	var idsToAssume []string
+	var idsToAssumeNot []string
+	for id, isSelected := range assumeByID {
+		if isSelected {
+			idsToAssume = append(idsToAssume, id)
+		} else {
+			idsToAssumeNot = append(idsToAssumeNot, id)
+		}
+	}
+
+	return idsToAssume, idsToAssumeNot
 }

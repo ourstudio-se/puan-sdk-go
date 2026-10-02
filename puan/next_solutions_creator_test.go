@@ -169,3 +169,35 @@ func (c *mockSolverClient) SolveWithManyWeights(
 
 	return solutions, nil
 }
+
+func Test_nextSolutionsCreator_calculateIndependentSolutionsFromCurrent(t *testing.T) {
+	creator := &nextSolutionsCreator{}
+	currentSolution := Solution{
+		"a": 0,
+		"b": 1,
+		"c": 0,
+	}
+	addSelection := NewSelectionBuilder("a").Build()
+	removeSelection := NewSelectionBuilder("b").WithAction(REMOVE).Build()
+	selections := Selections{addSelection, removeSelection}
+
+	got := creator.calculateIndependentSolutionsFromCurrent(
+		currentSolution,
+		selections,
+	)
+
+	assert.Equal(
+		t,
+		[]SolutionBySelection{
+			{
+				selection: addSelection,
+				solution:  Solution{"a": 1, "b": 1, "c": 0},
+			},
+			{
+				selection: removeSelection,
+				solution:  Solution{"a": 0, "b": 0, "c": 0},
+			},
+		},
+		got,
+	)
+}
