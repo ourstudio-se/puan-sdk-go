@@ -34,7 +34,7 @@ func main() {
 		panic(err)
 	}
 
-	// `y` is the current selection
+	// 2 selection groups: [-x, z] and [y]
 	selectionGroups := []puan.Selections{
 		{
 			puan.NewSelectionBuilder("y").Build(),
@@ -65,9 +65,11 @@ func main() {
 		panic(err)
 	}
 
+	// Solutions for the first selection group: [y]
 	solutionForSelections1 := envelope.SolutionsBySelectionGroup()[0]
 	fmt.Println(solutionForSelections1.Solution()) // = {x: 0, y: 1, z: 0}
 
+	// Solutions for the second selection group: [-x, z]
 	solutionForSelections2 := envelope.SolutionsBySelectionGroup()[1]
 	fmt.Println(solutionForSelections2.Solution()) // = {x: 0, y: 1, z: 1}
 }

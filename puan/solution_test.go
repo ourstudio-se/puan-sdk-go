@@ -286,3 +286,45 @@ func Test_newSolutionsBySelection_givenLengthMismatch_shouldReturnError(
 
 	assert.Error(t, err)
 }
+
+func Test_newSolutionsBySelectionGroup(t *testing.T) {
+	selectionGroup1 := Selections{
+		NewSelectionBuilder("x").Build(),
+	}
+	selectionGroup2 := Selections{
+		NewSelectionBuilder("y").WithAction(REMOVE).Build(),
+	}
+	solution1 := fake.New[Solution]()
+	solution2 := fake.New[Solution]()
+
+	got, err := newSolutionsBySelectionGroup(
+		[]Solution{solution1, solution2},
+		[]Selections{selectionGroup1, selectionGroup2},
+	)
+
+	assert.NoError(t, err)
+	assert.Equal(
+		t,
+		[]SolutionForSelectionGroup{
+			{selections: selectionGroup1, solution: solution1},
+			{selections: selectionGroup2, solution: solution2},
+		},
+		got,
+	)
+}
+
+func Test_newSolutionsBySelectionGroup_givenLengthMismatch_shouldReturnError(
+	t *testing.T,
+) {
+	selectionGroups := []Selections{
+		{NewSelectionBuilder("x").Build()},
+		{NewSelectionBuilder("y").Build()},
+	}
+	solutions := []Solution{
+		fake.New[Solution](),
+	}
+
+	_, err := newSolutionsBySelectionGroup(solutions, selectionGroups)
+
+	assert.Error(t, err)
+}

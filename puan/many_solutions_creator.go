@@ -51,7 +51,7 @@ func (c *manySolutionsCreator) create(
 		return nil, err
 	}
 
-	solutionsBySelectionGroup, err := c.groupSolutions(query.selectionGroups, solutions)
+	solutionsBySelectionGroup, err := newSolutionsBySelectionGroup(solutions, query.selectionGroups)
 	if err != nil {
 		return nil, err
 	}
@@ -112,27 +112,4 @@ func (c *manySolutionsCreator) mergeSolutions(
 		mergedSolutions[i] = mergedSolution
 	}
 	return mergedSolutions, nil
-}
-
-func (c *manySolutionsCreator) groupSolutions(
-	selectionGroups []Selections,
-	solutions []Solution,
-) ([]SolutionForSelectionGroup, error) {
-	if len(selectionGroups) != len(solutions) {
-		return nil, errors.Errorf(
-			"mismatch in length of selection groups (%d) and solutions (%d)",
-			len(selectionGroups),
-			len(solutions),
-		)
-	}
-
-	solutionsBySelectionGroup := make([]SolutionForSelectionGroup, len(selectionGroups))
-	for i, selections := range selectionGroups {
-		solutionForSelectionGroup := SolutionForSelectionGroup{
-			selections: selections,
-			solution:   solutions[i],
-		}
-		solutionsBySelectionGroup[i] = solutionForSelectionGroup
-	}
-	return solutionsBySelectionGroup, nil
 }

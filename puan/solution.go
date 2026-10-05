@@ -130,6 +130,29 @@ type SolutionForSelectionGroup struct {
 	solution   Solution
 }
 
+func newSolutionsBySelectionGroup(
+	solutions []Solution,
+	selectionGroups []Selections,
+) ([]SolutionForSelectionGroup, error) {
+	if len(solutions) != len(selectionGroups) {
+		return nil, errors.Errorf(
+			"Expected amount of solutions and selection groups to match. Got %d and %d",
+			len(solutions),
+			len(selectionGroups),
+		)
+	}
+
+	solutionsBySelectionGroup := make([]SolutionForSelectionGroup, len(selectionGroups))
+	for i, selectionGroup := range selectionGroups {
+		solutionsBySelectionGroup[i] = SolutionForSelectionGroup{
+			selections: selectionGroup,
+			solution:   solutions[i],
+		}
+	}
+
+	return solutionsBySelectionGroup, nil
+}
+
 func (s SolutionForSelectionGroup) Selections() Selections {
 	return s.selections
 }
