@@ -54,7 +54,7 @@ func (w Weights) maxWeight() int {
 
 // Weights can become very large. This can cause integer oveflows
 // or problems for the external solver.
-func (w Weights) WeightsTooLarge() bool {
+func (w Weights) AboveSaturationLimit() bool {
 	absSum, err := w.absSum()
 	if err != nil {
 		return true

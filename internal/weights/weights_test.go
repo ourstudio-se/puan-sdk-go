@@ -387,3 +387,56 @@ func Test_calculatePeriodWeights(t *testing.T) {
 		})
 	}
 }
+
+func Test_Weights_AboveSaturationLimit(t *testing.T) {
+	tests := []struct {
+		name    string
+		weights Weights
+		want    bool
+	}{
+		{
+			name: "single weight below limit, returns false",
+			weights: Weights{
+				"a": 10,
+			},
+			want: false,
+		},
+		{
+			name: "single weight at limit, returns false",
+			weights: Weights{
+				"a": WEIGHTS_SATURATION_LIMIT,
+			},
+			want: false,
+		},
+		{
+			name: "sum at limit, returns false",
+			weights: Weights{
+				"a": WEIGHTS_SATURATION_LIMIT - 10,
+				"b": 10,
+			},
+			want: false,
+		},
+		{
+			name: "single weight above limit, returns true",
+			weights: Weights{
+				"a": WEIGHTS_SATURATION_LIMIT + 1,
+			},
+			want: true,
+		},
+		{
+			name: "sum above limit, returns true",
+			weights: Weights{
+				"a": WEIGHTS_SATURATION_LIMIT - 1,
+				"b": 10,
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.weights.AboveSaturationLimit()
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

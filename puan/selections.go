@@ -3,6 +3,7 @@ package puan
 import (
 	"crypto/sha1"
 	"fmt"
+	"strings"
 
 	"github.com/ourstudio-se/puan-sdk-go/internal/utils"
 )
@@ -63,16 +64,39 @@ func (s Selection) IDs() []string {
 
 func (s Selection) Hash() string {
 	h := sha1.New()
-	h.Write([]byte(s.action))
-	h.Write([]byte(s.id))
-	for _, subID := range utils.Sorted(s.subSelectionIDs) {
-		h.Write([]byte(subID))
+	h.Write(
+		fmt.Appendf(nil, "action=%s,id=%s", s.action, s.id),
+	)
+
+	subIDStrings := make([]string, len(s.subSelectionIDs))
+	for i, subID := range utils.Sorted(s.subSelectionIDs) {
+		subIDStrings[i] = fmt.Sprintf("subID=%s", subID)
 	}
+	subIDsString := strings.Join(subIDStrings, ",")
+	h.Write([]byte(subIDsString))
+
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 func (s Selection) Equals(other Selection) bool {
 	return s.Hash() == other.Hash()
+}
+
+// does not preserve order
+func (s Selections) dedupeUnordered() Selections {
+	byHash := make(map[string]Selection)
+	for _, selection := range s {
+		hash := selection.Hash()
+		if _, exists := byHash[hash]; !exists {
+			byHash[hash] = selection
+		}
+	}
+
+	deduped := make(Selections, 0, len(byHash))
+	for _, selection := range byHash {
+		deduped = append(deduped, selection)
+	}
+	return deduped
 }
 
 func (s Selection) makesRedundant(other Selection) bool {
@@ -95,15 +119,6 @@ func (s Selection) makesRedundant(other Selection) bool {
 	prioritisedIsNotComposite := !s.IsComposite()
 
 	return prioritisedIsNotComposite
-}
-
-func (s Selections) Contains(selection Selection) bool {
-	for _, s := range s {
-		if s.Equals(selection) {
-			return true
-		}
-	}
-	return false
 }
 
 // split into two contiguous slices, preserving order

@@ -232,7 +232,7 @@ func (r *Ruleset) copy() Ruleset {
 	}
 }
 
-func (r *Ruleset) modifyForQuery(
+func (r *Ruleset) prepareForSolve(
 	selections Selections,
 	from *time.Time,
 	to *time.Time,
