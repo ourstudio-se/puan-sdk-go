@@ -10,8 +10,30 @@ import (
 
 const NOT_SELECTED_WEIGHT = -2
 
-// WEIGHTS_SATURATION_LIMIT is set to 2^32.
-const WEIGHTS_SATURATION_LIMIT = 4294967296
+// GLPK tolerance depends on max solution size. To keep
+// the tolerance below 1, the max solution size must in
+// theory be at most 2^23.2535. In glpk, look at:
+// ```
+// parm->tol_obj = 1e-7;
+// ```
+// and
+// ```
+// eps = tree->parm->tol_obj * (1.0 + fabs(mip->mip_obj));
+// switch (mip->dir)
+// {  case GLP_MIN:
+//
+//	   if (bound >= mip->mip_obj - eps) ret = 0;
+//	   break;
+//	case GLP_MAX:
+//	   if (bound <= mip->mip_obj + eps) ret = 0;
+//	   break;
+//
+// ```
+//
+// In practice using 2^24 will be fine in most cases.
+//
+// WEIGHTS_SATURATION_LIMIT is set to 2^24
+const WEIGHTS_SATURATION_LIMIT = 16777216
 
 type Weights map[string]int
 
@@ -32,12 +54,26 @@ func (w Weights) sum() int {
 	return sum
 }
 
-func (w Weights) absSum() (int, error) {
-	var values []int
+func (w Weights) maxSolutionSize() (int, error) {
+	var positives []int
+	var negatives []int
 	for _, weight := range w {
-		values = append(values, abs(weight))
+		if weight > 0 {
+			positives = append(positives, weight)
+		} else {
+			negatives = append(negatives, weight)
+		}
 	}
-	return absSum(values...)
+	positiveSum, err := absSum(positives...)
+	if err != nil {
+		return 0, err
+	}
+	negativeSum, err := absSum(negatives...)
+	if err != nil {
+		return 0, err
+	}
+
+	return max(positiveSum, negativeSum), nil
 }
 
 func (w Weights) maxWeight() int {
@@ -55,11 +91,12 @@ func (w Weights) maxWeight() int {
 // Weights can become very large. This can cause integer oveflows
 // or problems for the external solver.
 func (w Weights) AboveSaturationLimit() bool {
-	absSum, err := w.absSum()
+	maxSolutionSize, err := w.maxSolutionSize()
 	if err != nil {
 		return true
 	}
-	tooLarge := absSum > WEIGHTS_SATURATION_LIMIT
+
+	tooLarge := maxSolutionSize > WEIGHTS_SATURATION_LIMIT
 	return tooLarge
 }
 

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_concat_noSharedVariables(t *testing.T) {
@@ -56,6 +57,32 @@ func Test_weights_sum(t *testing.T) {
 	actual := w.sum()
 	expected := -1
 	assert.Equal(t, expected, actual)
+}
+
+func Test_Weights_maxSolutionSize_positiveWeightsLarger(t *testing.T) {
+	weights := Weights{
+		"a": 2,
+		"b": 3,
+		"c": -1,
+	}
+
+	got, err := weights.maxSolutionSize()
+
+	require.NoError(t, err)
+	assert.Equal(t, 5, got)
+}
+
+func Test_Weights_maxSolutionSize_negativeWeightsLarger(t *testing.T) {
+	weights := Weights{
+		"a": -2,
+		"b": -4,
+		"c": 3,
+	}
+
+	got, err := weights.maxSolutionSize()
+
+	require.NoError(t, err)
+	assert.Equal(t, 6, got)
 }
 
 func Test_calculatedNotSelectedWeights_shouldReturnWeights(t *testing.T) {
