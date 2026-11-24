@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_concat_noSharedVariables(t *testing.T) {
@@ -56,6 +57,32 @@ func Test_weights_sum(t *testing.T) {
 	actual := w.sum()
 	expected := -1
 	assert.Equal(t, expected, actual)
+}
+
+func Test_Weights_maxObjectiveValue_positiveWeightsLarger(t *testing.T) {
+	weights := Weights{
+		"a": 2,
+		"b": 3,
+		"c": -1,
+	}
+
+	got, err := weights.maxObjectiveValue()
+
+	require.NoError(t, err)
+	assert.Equal(t, 5, got)
+}
+
+func Test_Weights_maxObjectiveValue_negativeWeightsLarger(t *testing.T) {
+	weights := Weights{
+		"a": -2,
+		"b": -4,
+		"c": 3,
+	}
+
+	got, err := weights.maxObjectiveValue()
+
+	require.NoError(t, err)
+	assert.Equal(t, 6, got)
 }
 
 func Test_calculatedNotSelectedWeights_shouldReturnWeights(t *testing.T) {
@@ -409,7 +436,7 @@ func Test_Weights_AboveSaturationLimit(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "sum at limit, returns false",
+			name: "positive sum at limit, returns false",
 			weights: Weights{
 				"a": WEIGHTS_SATURATION_LIMIT - 10,
 				"b": 10,
@@ -424,12 +451,35 @@ func Test_Weights_AboveSaturationLimit(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "sum above limit, returns true",
+			name: "positive sum above limit, returns true",
 			weights: Weights{
 				"a": WEIGHTS_SATURATION_LIMIT - 1,
 				"b": 10,
 			},
 			want: true,
+		},
+		{
+			name: "single negative weight above limit, returns true",
+			weights: Weights{
+				"a": -WEIGHTS_SATURATION_LIMIT - 1,
+			},
+			want: true,
+		},
+		{
+			name: "negative sum above limit, returns true",
+			weights: Weights{
+				"a": -WEIGHTS_SATURATION_LIMIT + 1,
+				"b": -10,
+			},
+			want: true,
+		},
+		{
+			name: "positive and negative weights at limit, returns false",
+			weights: Weights{
+				"a": -WEIGHTS_SATURATION_LIMIT,
+				"b": WEIGHTS_SATURATION_LIMIT,
+			},
+			want: false,
 		},
 	}
 
