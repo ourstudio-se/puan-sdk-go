@@ -54,7 +54,7 @@ func (w Weights) sum() int {
 	return sum
 }
 
-func (w Weights) maxSolutionSize() (int, error) {
+func (w Weights) maxObjectiveValue() (int, error) {
 	var positives []int
 	var negatives []int
 	for _, weight := range w {
@@ -91,12 +91,12 @@ func (w Weights) maxWeight() int {
 // Weights can become very large. This can cause integer oveflows
 // or problems for the external solver.
 func (w Weights) AboveSaturationLimit() bool {
-	maxSolutionSize, err := w.maxSolutionSize()
+	maxObjectiveValue, err := w.maxObjectiveValue()
 	if err != nil {
 		return true
 	}
 
-	tooLarge := maxSolutionSize > WEIGHTS_SATURATION_LIMIT
+	tooLarge := maxObjectiveValue > WEIGHTS_SATURATION_LIMIT
 	return tooLarge
 }
 

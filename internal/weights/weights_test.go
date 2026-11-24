@@ -59,27 +59,27 @@ func Test_weights_sum(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func Test_Weights_maxSolutionSize_positiveWeightsLarger(t *testing.T) {
+func Test_Weights_maxObjectiveValue_positiveWeightsLarger(t *testing.T) {
 	weights := Weights{
 		"a": 2,
 		"b": 3,
 		"c": -1,
 	}
 
-	got, err := weights.maxSolutionSize()
+	got, err := weights.maxObjectiveValue()
 
 	require.NoError(t, err)
 	assert.Equal(t, 5, got)
 }
 
-func Test_Weights_maxSolutionSize_negativeWeightsLarger(t *testing.T) {
+func Test_Weights_maxObjectiveValue_negativeWeightsLarger(t *testing.T) {
 	weights := Weights{
 		"a": -2,
 		"b": -4,
 		"c": 3,
 	}
 
-	got, err := weights.maxSolutionSize()
+	got, err := weights.maxObjectiveValue()
 
 	require.NoError(t, err)
 	assert.Equal(t, 6, got)
