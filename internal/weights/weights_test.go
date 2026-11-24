@@ -436,7 +436,7 @@ func Test_Weights_AboveSaturationLimit(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "sum at limit, returns false",
+			name: "positive sum at limit, returns false",
 			weights: Weights{
 				"a": WEIGHTS_SATURATION_LIMIT - 10,
 				"b": 10,
@@ -451,12 +451,35 @@ func Test_Weights_AboveSaturationLimit(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "sum above limit, returns true",
+			name: "positive sum above limit, returns true",
 			weights: Weights{
 				"a": WEIGHTS_SATURATION_LIMIT - 1,
 				"b": 10,
 			},
 			want: true,
+		},
+		{
+			name: "single negative weight above limit, returns true",
+			weights: Weights{
+				"a": -WEIGHTS_SATURATION_LIMIT - 1,
+			},
+			want: true,
+		},
+		{
+			name: "negative sum above limit, returns true",
+			weights: Weights{
+				"a": -WEIGHTS_SATURATION_LIMIT + 1,
+				"b": -10,
+			},
+			want: true,
+		},
+		{
+			name: "positive and negative weights at limit, returns false",
+			weights: Weights{
+				"a": -WEIGHTS_SATURATION_LIMIT,
+				"b": WEIGHTS_SATURATION_LIMIT,
+			},
+			want: false,
 		},
 	}
 
